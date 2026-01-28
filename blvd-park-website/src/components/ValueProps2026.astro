@@ -1,0 +1,149 @@
+---
+// src/components/ValueProps2026.astro
+// 2026 Refresh - Inline value props strip (NO stacking on mobile)
+// Sleek horizontal scroll on mobile for the affluent social club feel
+
+interface Props {
+  class?: string;
+}
+
+const { class: className = '' } = Astro.props;
+
+const props = [
+  {
+    icon: 'courts',
+    label: 'FREE PICKLEBALL',
+  },
+  {
+    icon: 'cocktails',
+    label: 'CRAFT BAR',
+  },
+  {
+    icon: 'screens',
+    label: '50+ SCREENS',
+  },
+  {
+    icon: 'late',
+    label: 'OPEN LATE',
+  },
+];
+---
+
+<section id="value-props" class:list={['value-props-2026 relative overflow-hidden', className]}>
+  <!-- Background -->
+  <div class="absolute inset-0 bg-[#1A5F36]"></div>
+  <!-- Subtle texture -->
+  <div class="absolute inset-0 opacity-[0.03]" style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27noise%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.65%27 numOctaves=%273%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23noise)%27/%3E%3C/svg%3E');"></div>
+  
+  <div class="relative z-10">
+    <!-- INLINE layout - horizontal scroll on mobile, centered on desktop -->
+    <div class="overflow-x-auto scrollbar-hide">
+      <div class="flex items-center justify-start md:justify-center min-w-max md:min-w-0 px-4 md:px-6 py-5 md:py-6 gap-0">
+        {props.map((prop, index) => (
+          <div class="value-item flex items-center gap-3 px-4 md:px-6 whitespace-nowrap opacity-0" data-index={index}>
+            <!-- Icon -->
+            <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-white/10">
+              {prop.icon === 'courts' && (
+                <svg class="w-4 h-4 text-[#22C55E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="9"/>
+                  <line x1="12" y1="3" x2="12" y2="21"/>
+                  <path d="M3 12h18"/>
+                </svg>
+              )}
+              {prop.icon === 'cocktails' && (
+                <svg class="w-4 h-4 text-[#22C55E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M8 2l-1 9h10l-1-9"/>
+                  <path d="M12 11v9"/>
+                  <path d="M8 22h8"/>
+                  <circle cx="12" cy="6" r="1" fill="currentColor"/>
+                </svg>
+              )}
+              {prop.icon === 'screens' && (
+                <svg class="w-4 h-4 text-[#22C55E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="4" width="20" height="13" rx="2"/>
+                  <path d="M8 21h8"/>
+                  <path d="M12 17v4"/>
+                </svg>
+              )}
+              {prop.icon === 'late' && (
+                <svg class="w-4 h-4 text-[#22C55E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                </svg>
+              )}
+            </div>
+            
+            <!-- Label -->
+            <span class="font-display font-semibold text-white text-sm tracking-wide">
+              {prop.label}
+            </span>
+            
+            <!-- Separator (not on last item) -->
+            {index < props.length - 1 && (
+              <span class="ml-4 md:ml-6 text-white/20">·</span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Fade in animation */
+  .value-item {
+    animation: fadeInSlide 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  
+  .value-item[data-index="0"] { animation-delay: 0.1s; }
+  .value-item[data-index="1"] { animation-delay: 0.2s; }
+  .value-item[data-index="2"] { animation-delay: 0.3s; }
+  .value-item[data-index="3"] { animation-delay: 0.4s; }
+  
+  @keyframes fadeInSlide {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>
+
+<script>
+  // Trigger animation when section is in view
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.querySelectorAll('.value-item').forEach(el => {
+            (el as HTMLElement).style.animationPlayState = 'running';
+          });
+          observer.unobserve(entry.target);
+        }
+      });
+    },
+    { threshold: 0.5 }
+  );
+  
+  document.addEventListener('DOMContentLoaded', () => {
+    const section = document.querySelector('.value-props-2026');
+    if (section) {
+      // Pause animations initially
+      section.querySelectorAll('.value-item').forEach(el => {
+        (el as HTMLElement).style.animationPlayState = 'paused';
+      });
+      observer.observe(section);
+    }
+  });
+</script>

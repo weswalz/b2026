@@ -1,0 +1,9 @@
+---
+// Admin Private Events Management
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import AdminPage from '../../components/admin/AdminPage';
+---
+
+<AdminLayout title="Private Events">
+  <AdminPage client:only="react" currentPath={Astro.url.pathname} page="private-events" />
+</AdminLayout>

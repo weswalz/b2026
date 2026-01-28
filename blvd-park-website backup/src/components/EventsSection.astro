@@ -1,0 +1,78 @@
+---
+// src/components/EventsSection.astro
+import EventAccordion from './EventAccordion.astro';
+
+// Event data with the provided images
+// Event data with the provided images
+const events = [
+  {
+    id: 'event-featured',
+    title: 'Couples Olympics',
+    date: 'April 8–10 • 3 Days',
+    flyerImage: '/images/events/olympics.jpg',
+    featured: true,
+    details: [
+      '3 Days • 4 Rounds • 4 Games',
+      'Volleyball • Pickleball • Beer Pong • Board Game',
+      '$25 Entry Fee Per Couple',
+      'Winner Takes Grand Prize',
+      '2nd Place: $125 Bar Tab',
+      '3rd Place: $75 Bar Tab',
+      '<a href="https://www.seetickets.us/event/BLVD-Park-Couples-Olympics-April-9th-11th/644206" target="_blank" class="inline-block px-4 py-2 mt-2 bg-blvd-green text-blvd-white rounded-md hover:bg-blvd-dark-green transition-colors duration-300">GET TICKETS</a>'
+    ]
+  },
+  {
+    id: 'event-2',
+    title: 'Steak Night',
+    date: 'Every Wednesday 6PM–11PM',
+    flyerImage: '/images/events/blvdsteaknew.jpg',
+    details: [
+      '$22 Ribeye • $20 NY Strip',
+      'Includes 2 sides',
+      '$7 High Noon • $25 Seltzer Buckets',
+      '$8 Casamigos',
+      'Guest DJ',
+      '<a href="/book" class="inline-block px-4 py-2 mt-2 bg-blvd-green text-blvd-white rounded-md hover:bg-blvd-dark-green transition-colors duration-300">Reserve Your Table</a>'
+    ]
+  },
+  {
+    id: 'event-3',
+    title: 'Crawfish Heads or Tails',
+    date: 'Every Sat & Sun • 12PM–7PM',
+    flyerImage: '/images/events/crawfish1.jpg',
+    details: [
+      'Flip a coin:',
+      "Win = It's FREE crawfish (up to 3 lbs)",
+      'Lose = $12 per pound',
+      "Don't flip = $8 per pound",
+      'Drink specials',
+      'Guest DJs',
+      'Free pickleball & volleyball',
+      '<a href="/book" class="inline-block px-4 py-2 mt-2 bg-blvd-green text-blvd-white rounded-md hover:bg-blvd-dark-green transition-colors duration-300">Reserve Your Table</a>'
+    ]
+  },
+  {
+    id: 'event-4',
+    title: 'Chicken Sh*t Bingo',
+    date: 'Every Sunday',
+    flyerImage: '/images/events/chicken.jpg',
+    details: [
+      'Get Sh*t On!',
+      '$5 & $10 Squares',
+      'Starts 5PM',
+      'Food & Drink Specials',
+      'Guest DJs',
+      'Rules explained when bingo starts',
+      '<a href="/book" class="inline-block px-4 py-2 mt-2 bg-blvd-green text-blvd-white rounded-md hover:bg-blvd-dark-green transition-colors duration-300">Reserve Your Table</a>'
+    ]
+  }
+];
+---
+
+<section id="events" class="py-16 bg-blvd-green text-blvd-white">
+  <div class="max-w-screen-xl mx-auto px-4">
+    <h2 class="text-3xl md:text-4xl font-bold mb-12 text-center">BLVD Events</h2>
+    
+    <EventAccordion events={events} />
+  </div>
+</section>

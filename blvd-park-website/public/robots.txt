@@ -1,0 +1,9 @@
+# robots.txt for BLVD Park
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://blvdpark.com/sitemap-index.xml
+
+# Block admin pages
+Disallow: /admin/

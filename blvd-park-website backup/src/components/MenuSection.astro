@@ -1,0 +1,44 @@
+---
+// src/components/MenuSection.astro
+import GalleryGrid from './GalleryGrid.astro';
+import CTAButton from './CTAButton.astro';
+
+// Menu gallery images from your provided paths
+const menuGalleryImages = [
+  { src: "/images/food/_DSC4199.JPG", alt: "BLVD Park food dish" },
+  { src: "/images/drinks/_DSC6648.JPG", alt: "BLVD Park signature cocktail" },
+  { src: "/images/food/_DSC4209.JPG", alt: "BLVD Park appetizer" },
+  { src: "/images/drinks/_DSC6636.JPG", alt: "BLVD Park craft drink" },
+  { src: "/images/food/_DSC4217.JPG", alt: "BLVD Park main course" },
+  { src: "/images/drinks/_DSC6633.JPG", alt: "BLVD Park beverage" },
+  { src: "/images/food/_DSC4189.JPG", alt: "BLVD Park gourmet plate" },
+  { src: "/images/food/_DSC4201.JPG", alt: "BLVD Park chef special" },
+  { src: "/images/food/_DSC4208.JPG", alt: "BLVD Park food specialty" },
+  { src: "/images/food/_DSC4176.JPG", alt: "BLVD Park menu item" },
+  { src: "/images/food/_DSC4157.JPG", alt: "BLVD Park popular dish" },
+  { src: "/images/food/_DSC4158.JPG", alt: "BLVD Park entree" },
+  { src: "/images/food/_DSC4229.JPG", alt: "BLVD Park food selection" },
+  { src: "/images/food/_DSC4233.JPG", alt: "BLVD Park culinary creation" },
+  { src: "/images/food/_DSC4138.JPG", alt: "BLVD Park delicacy" },
+];
+
+// Note: Our updated GalleryGrid component will automatically handle the layout balancing
+---
+
+<section id="menu" class="py-16 bg-blvd-light-green">
+  <div class="max-w-screen-xl mx-auto px-4">
+    <h2 class="text-3xl md:text-4xl font-bold mb-8 text-center text-blvd-green">Eat at BLVD</h2>
+    
+    <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
+      <CTAButton href="/menu" color="green" className="w-full sm:w-auto max-w-[250px]">MAIN MENU</CTAButton>
+      <CTAButton href="/menu/lunch" color="white" className="w-full sm:w-auto max-w-[250px]">LUNCH MENU</CTAButton>
+    </div>
+    <div class="flex justify-center">
+      <GalleryGrid
+        images={menuGalleryImages}
+        columns={3}
+        gap="gap-4"
+      />
+    </div>
+  </div>
+</section>

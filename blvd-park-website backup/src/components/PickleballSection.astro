@@ -1,0 +1,30 @@
+---
+// src/components/PickleballSection.astro
+import CTAButton from './CTAButton.astro';
+---
+
+<section class="py-16 bg-circle-pattern bg-blvd-light-green">
+  <div class="max-w-screen-xl mx-auto px-4">
+    <div class="bg-blvd-white rounded-lg shadow-lg overflow-hidden">
+      <div class="flex flex-col md:flex-row">
+        <div class="md:w-1/2">
+          <img 
+            src="/images/pickleballhome.jpg" 
+            alt="BLVD Park Pickleball Courts" 
+            class="w-full h-full object-cover"
+          />
+        </div>
+        <div class="md:w-1/2 p-8 md:p-12 flex flex-col items-center text-center">
+          <h2 class="text-3xl font-bold mb-6 text-blvd-green">Pickleball in the Heights Just Got a Pulse</h2>
+          <p class="mb-6">
+            At BLVD PARK, the game is only half the story. Our blue-and-green courts are open daily and always free — no reservations, no memberships, no gatekeeping. Play covered or open-air, paddle in one hand, drink in the other. Whether you're rallying with friends or just out to vibe, the music's up, the cocktails flow, and the energy rolls from court to cabana without skipping a beat. This is how Houston does pickleball — casually competitive, socially charged, and right in the heart of the Heights.
+          </p>
+          <p class="font-bold mb-4">
+            Open daily: Sun-Thu 12PM-12AM | Fri 12PM-2AM | Sat 11AM-2AM
+          </p>
+          <CTAButton href="/#location" color="green">Get to BLVD</CTAButton>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

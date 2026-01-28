@@ -1,0 +1,160 @@
+---
+// src/components/EventAccordion.astro - Interactive accordion for events
+// Creates an expandable/collapsible list of events with details
+
+// Define the props interface for type checking
+export interface Props {
+  events: {             // Array of event objects
+    id: string;         // Unique ID for the event (used for accordion targeting)
+    title: string;      // Event title
+    date: string;       // Display date/time
+    flyerImage: string | string[]; // Path to event flyer image(s) - can be single or array for stacked
+    stackedFlyers?: boolean; // Optional flag for stacked flyer layout
+    featured?: boolean; // Optional flag to mark featured events (expanded by default)
+    hidden?: boolean; // Optional flag to hide event in the accordion
+    details: string[];  // Array of strings for event details (supports HTML)
+  }[];
+}
+
+// Extract events from props
+const { events } = Astro.props;
+---
+
+<!-- Accordion container -->
+<div class="space-y-6">
+  {events.map((event) => (
+    <div class={`bg-blvd-accent border ${event.featured ? 'border-blvd-green border-2' : 'border-blvd-green/30'} ${event.hidden ? 'hidden' : ''} rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.2)] mb-6 backdrop-blur-sm transition-all duration-300 hover:shadow-[0_8px_30px_rgba(15,91,46,0.25)]`}>
+      <h3>
+        <!-- Accordion button that toggles content visibility -->
+        <button
+          type="button"
+          class="flex flex-col md:flex-row items-center md:justify-between w-full p-5 font-medium text-blvd-dark-green bg-gradient-to-r from-blvd-accent via-blvd-light-accent to-blvd-accent hover:from-blvd-light-accent hover:to-blvd-light-accent transition-all duration-300 ease-in-out"
+          data-accordion-target={`#${event.id}`}
+          aria-expanded={event.featured ? "true" : "false"}
+          aria-controls={event.id}
+        >
+          <span class="flex flex-col items-center md:flex-row md:items-center text-center md:text-left">
+            <span class="md:mr-4 text-2xl font-bold text-blvd-dark-green drop-shadow-md">{event.title}</span>
+            <span class="text-lg text-blvd-green/90">{event.date}</span>
+            {event.featured && <span class="mt-2 md:mt-0 md:ml-2 px-2 py-1 bg-blvd-green text-blvd-white text-xs font-bold rounded-full">Featured Event</span>}
+          </span>
+          <!-- Down/up arrow icon that rotates when expanded/collapsed -->
+          <svg class="w-5 h-5 mt-3 md:mt-0 shrink-0 text-blvd-dark-green transition-transform duration-300" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+          </svg>
+        </button>
+      </h3>
+      <!-- Accordion content (initially hidden unless featured) -->
+      <div id={event.id} class={`${event.featured ? '' : 'hidden'} bg-gradient-to-br from-blvd-white to-blvd-light-green/30 p-6 shadow-[inset_0_2px_10px_rgba(0,0,0,0.1)] border-t border-blvd-green/20`} aria-labelledby={`${event.id}-heading`}>
+        <div class="flex flex-col md:flex-row gap-8 items-start md:items-start">
+          <!-- Event flyer image(s) -->
+          <div class="w-full md:w-[500px] flex-shrink-0 md:mx-0">
+            {event.stackedFlyers && Array.isArray(event.flyerImage) ? (
+              <div class="flex flex-col gap-4">
+                {event.flyerImage.map((img, index) => (
+                  <img
+                    src={img}
+                    alt={`${event.title} flyer ${index + 1}`}
+                    width="500"
+                    height="750"
+                    loading={event.featured && index === 0 ? "eager" : "lazy"}
+                    class="w-full h-auto rounded-lg shadow-[0_10px_25px_-5px_rgba(0,0,0,0.3)] hover:shadow-[0_20px_25px_-5px_rgba(0,0,0,0.4)] transition-all duration-300"
+                  />
+                ))}
+              </div>
+            ) : (
+              <img
+                src={typeof event.flyerImage === 'string' ? event.flyerImage : event.flyerImage[0]}
+                alt={`${event.title} flyer`}
+                width="500"
+                height="750"
+                loading={event.featured ? "eager" : "lazy"}
+                class="w-full h-auto rounded-lg shadow-[0_10px_25px_-5px_rgba(0,0,0,0.3)] hover:shadow-[0_20px_25px_-5px_rgba(0,0,0,0.4)] transition-all duration-300"
+              />
+            )}
+          </div>
+          <!-- Event details -->
+          <div class="flex-1 text-blvd-dark-green space-y-3 flex flex-col justify-start items-center text-center md:text-left md:items-start w-full">
+            {event.details.map(detail => <p class="text-sm md:text-base leading-relaxed font-medium w-full" set:html={detail}></p>)}
+          </div>
+        </div>
+      </div>
+    </div>
+  ))}
+</div>
+
+<script>
+  // Initialize accordions when the DOM is loaded
+  document.addEventListener('DOMContentLoaded', () => {
+    const accordionButtons = document.querySelectorAll('[data-accordion-target]');
+    
+    // Initialize featured event with expanded state
+    accordionButtons.forEach(button => {
+      const isExpanded = button.getAttribute('aria-expanded') === 'true';
+      if (isExpanded) {
+        const accordionItem = button.closest('div.bg-blvd-accent');
+        if (accordionItem) {
+          accordionItem.classList.add('ring-2', 'ring-blvd-green/50');
+        }
+        
+        // Rotate the arrow icon for expanded items
+        const arrow = button.querySelector('svg');
+        if (arrow) {
+          arrow.classList.add('rotate-180');
+        }
+      }
+    });
+    
+    // Add click event listeners to all accordion buttons
+    accordionButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const target = button.getAttribute('data-accordion-target');
+        const content = target ? document.querySelector(target) : null;
+        const accordionItem = button.closest('div.bg-blvd-accent');
+        
+        // Toggle aria-expanded attribute
+        const isExpanded = button.getAttribute('aria-expanded') === 'true';
+        button.setAttribute('aria-expanded', (!isExpanded).toString());
+        
+        // Toggle content visibility with smooth animation
+        if (content) {
+          if (content.classList.contains('hidden')) {
+            content.classList.remove('hidden');
+            content.classList.add('animate-fadeIn');
+            
+            // Add active state styling to the accordion item
+            if (accordionItem) {
+              accordionItem.classList.add('ring-2', 'ring-blvd-green/50');
+            }
+          } else {
+            content.classList.add('hidden');
+            content.classList.remove('animate-fadeIn');
+            
+            // Remove active state styling
+            if (accordionItem) {
+              accordionItem.classList.remove('ring-2', 'ring-blvd-green/50');
+            }
+          }
+        }
+        
+        // Rotate the arrow icon with smooth transition
+        const arrow = button.querySelector('svg');
+        if (arrow) {
+          arrow.classList.toggle('rotate-180');
+        }
+      });
+    });
+  });
+</script>
+
+<style>
+  /* Animation for fading in accordion content */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .animate-fadeIn {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+</style>

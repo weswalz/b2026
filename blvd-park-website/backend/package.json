@@ -1,0 +1,19 @@
+{
+  "name": "blvd-gallery-backend",
+  "version": "1.0.0",
+  "description": "Gallery API for BLVD Park website",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "init-db": "node init-db.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.7.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.1",
+    "uuid": "^11.0.4"
+  }
+}

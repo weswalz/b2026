@@ -1,0 +1,27 @@
+---
+// src/components/AboutSection.astro
+import CTAButton from './CTAButton.astro';
+---
+
+<section id="blvd-park" class="py-16 px-4 bg-blvd-white bg-circle-pattern">
+  <div class="max-w-4xl mx-auto text-center">
+    <h2 class="text-3xl md:text-4xl font-bold mb-6 text-blvd-green">The Heights' New Playground</h2>
+    <p class="text-lg mb-8 leading-relaxed">
+      Located in Houston's vibrant Heights area. Our vintage, two-story sports bar offers an old-school lodge feel, 
+      complete with charming decor and a large stuffed bear. Enjoy free pickleball, volleyball, and our spacious patio. 
+      Sip on crafted cocktails and savor delicious food in our expansive indoor and outdoor spaces. 
+      Kid-friendly until 9 PM, BLVD PARK is the perfect spot for families and friends. 
+      Experience sports, leisure, and vintage charm all in one place!
+    </p>
+    
+    <div class="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+      <CTAButton href="/#menu" color="green">View Our Menu</CTAButton>
+      <CTAButton href="/book" color="white">Book VIP Table</CTAButton>
+    </div>
+    
+    <div class="mt-8 text-center">
+      <p class="text-xl font-semibold mb-2">(326) 600-4246</p>
+      <p class="text-lg">1119 W 20th St., Houston, TX</p>
+    </div>
+  </div>
+</section>

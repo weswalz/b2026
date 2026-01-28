@@ -1,0 +1,21 @@
+---
+// src/components/CTAButton.astro
+export interface Props {
+  href: string;
+  color: 'green' | 'white' | 'accent';
+  className?: string;
+}
+
+const { href, color, className = '' } = Astro.props;
+
+const baseClasses = "font-bold py-3 px-6 rounded-lg transition-colors text-center";
+const colorClasses = {
+  green: "bg-blvd-green hover:bg-blvd-accent hover:text-blvd-green text-blvd-white",
+  white: "bg-blvd-white hover:bg-blvd-light-green text-blvd-green border border-blvd-green",
+  accent: "bg-blvd-accent hover:bg-blvd-light-accent text-blvd-green border border-blvd-green"
+};
+---
+
+<a href={href} class={`${baseClasses} ${colorClasses[color]} ${className}`}>
+  <slot />
+</a>

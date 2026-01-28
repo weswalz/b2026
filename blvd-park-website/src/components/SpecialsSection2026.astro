@@ -1,0 +1,231 @@
+---
+// src/components/SpecialsSection2026.astro
+// 2026 Refresh - Daily specials with premium glass card aesthetic
+const specials = [
+  {
+    day: "Monday",
+    tag: "Happy Hour",
+    icon: "beer",
+    items: ["1/2 off apps all day", "$5 domestics"],
+  },
+  {
+    day: "Tuesday",
+    tag: "Burger Night",
+    icon: "burger",
+    items: ["$10 cheeseburger with fries and domestic beer"],
+  },
+  {
+    day: "Wednesday",
+    tag: "Wing Wednesday",
+    icon: "wings",
+    items: ["$1 wings", "$5 shots"],
+  },
+  {
+    day: "Thursday",
+    tag: "Burger & Tequila",
+    icon: "tequila",
+    items: ["$12 burgers and sandwiches", "$6 tequila shots"],
+  },
+  {
+    day: "Friday",
+    tag: "TGIF Deals",
+    icon: "martini",
+    items: ["1/2 off wraps", "1/2 off espresso martinis"],
+  },
+  {
+    day: "Weekend",
+    tag: "Saturday & Sunday",
+    icon: "party",
+    items: [
+      "$1 boneless wings",
+      "$20 domestic buckets",
+      "$25 import buckets",
+      "$30 seltzer buckets",
+      "$5 shots",
+    ],
+    featured: true,
+  },
+];
+---
+
+<section id="specials" class="specials-2026 relative overflow-hidden bg-blvd-cream section-padding">
+  <!-- Ambient effects -->
+  <div class="absolute inset-0 pointer-events-none">
+    <div class="absolute -top-24 right-[-10%] w-[500px] h-[500px] rounded-full opacity-30 blur-3xl bg-blvd-green-bright"></div>
+    <div class="absolute -bottom-32 left-[-15%] w-[400px] h-[400px] rounded-full opacity-25 blur-3xl bg-blvd-gold"></div>
+  </div>
+
+  <div class="container mx-auto px-5 sm:px-6 relative z-10">
+    <!-- Header -->
+    <div class="specials-header max-w-3xl mb-12 opacity-0">
+      <span class="eyebrow inline-flex items-center gap-3 mb-5 text-blvd-green">
+        <span class="w-8 h-px bg-blvd-green/30"></span>
+        Daily Specials
+      </span>
+      <h2 class="font-display font-bold text-4xl sm:text-5xl text-blvd-charcoal mb-4 leading-[0.98] tracking-tight">
+        The week plays differently<br class="hidden sm:block"/> at BLVD Park.
+      </h2>
+      <p class="text-blvd-charcoal/60 text-base sm:text-lg font-body max-w-xl">
+        Apps, burgers, wings, and buckets stacked from Monday through Sunday. Pick your day, grab your crew.
+      </p>
+    </div>
+
+    <!-- Cards Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+      {specials.map((special, index) => (
+        <article
+          class={`special-card group relative overflow-hidden rounded-2xl transition-all duration-500 ${
+            special.featured ? "sm:col-span-2 lg:col-span-3" : ""
+          }`}
+          data-index={index}
+        >
+          <div class={`relative h-full p-6 md:p-7 ${
+            special.featured ? "md:flex md:items-center md:gap-8" : ""
+          }`}>
+            <!-- Icon + Day Header -->
+            <div class={`flex items-start gap-4 ${special.featured ? "md:min-w-[200px]" : "mb-5"}`}>
+              <div class="icon-box w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-300 group-hover:scale-110 bg-blvd-green text-white">
+                {special.icon === 'beer' && (
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 8h1a4 4 0 110 8h-1M5 8h12v9a4 4 0 01-4 4H9a4 4 0 01-4-4V8zM5 8a4 4 0 014-4h4a4 4 0 014 4"/>
+                  </svg>
+                )}
+                {special.icon === 'burger' && (
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                  </svg>
+                )}
+                {special.icon === 'wings' && (
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                )}
+                {special.icon === 'tequila' && (
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                )}
+                {special.icon === 'martini' && (
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                  </svg>
+                )}
+                {special.icon === 'party' && (
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+                  </svg>
+                )}
+              </div>
+              <div>
+                <span class="inline-block px-2.5 py-1 rounded-full text-[10px] font-mono uppercase tracking-[0.15em] mb-2 bg-blvd-green/10 text-blvd-green border border-blvd-green/20">
+                  {special.tag}
+                </span>
+                <h3 class="font-display text-xl md:text-2xl font-bold text-blvd-charcoal transition-colors duration-300 group-hover:text-blvd-green">
+                  {special.day}
+                </h3>
+              </div>
+            </div>
+
+            <!-- Items List -->
+            <ul class={`space-y-2.5 ${special.featured ? "mt-0 md:flex-1 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-2.5 md:space-y-0" : "mt-5"}`}>
+              {special.items.map((item) => (
+                <li class="flex items-start gap-3 text-sm md:text-base text-blvd-charcoal/70">
+                  <span class="mt-2 h-1.5 w-1.5 rounded-full flex-shrink-0 bg-blvd-green-bright"></span>
+                  <span class="font-body">{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <!-- Hover gradient overlay -->
+          <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-gradient-to-br from-blvd-green/[0.03] to-blvd-gold/[0.05]"></div>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .special-card {
+    background: #ffffff;
+    border: 1px solid rgba(26, 95, 54, 0.12);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .special-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(26, 95, 54, 0.1);
+    border-color: rgba(26, 95, 54, 0.15);
+  }
+
+  .special-card.animate-in {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .special-card.animate-in:hover {
+    transform: translateY(-4px);
+  }
+
+  .specials-header {
+    transform: translateY(20px);
+    transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .specials-header.animate-in {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Staggered animation */
+  .special-card[data-index="0"] { transition-delay: 0.1s; }
+  .special-card[data-index="1"] { transition-delay: 0.15s; }
+  .special-card[data-index="2"] { transition-delay: 0.2s; }
+  .special-card[data-index="3"] { transition-delay: 0.25s; }
+  .special-card[data-index="4"] { transition-delay: 0.3s; }
+  .special-card[data-index="5"] { transition-delay: 0.35s; }
+
+  /* Featured card accent */
+  .special-card[data-index="5"] {
+    background: linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(201,169,98,0.08) 100%);
+    border-color: rgba(201, 169, 98, 0.2);
+  }
+
+  .special-card[data-index="5"]:hover {
+    border-color: rgba(201, 169, 98, 0.35);
+    box-shadow: 0 12px 40px rgba(201, 169, 98, 0.15);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .special-card,
+    .specials-header {
+      transition: none;
+      opacity: 1;
+      transform: none;
+    }
+  }
+</style>
+
+<script>
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.querySelectorAll('.specials-header, .special-card').forEach(el => {
+            el.classList.add('animate-in');
+          });
+          observer.unobserve(entry.target);
+        }
+      });
+    },
+    { threshold: 0.15 }
+  );
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const section = document.querySelector('.specials-2026');
+    if (section) observer.observe(section);
+  });
+</script>

@@ -1,0 +1,162 @@
+---
+// src/components/Hero.astro - Hero section with GSAP effects
+// This component creates the hero section at the top of the homepage
+---
+
+<!--
+  Hero section container
+  - Negative margin top to account for the navbar height
+  - z-index 0 to ensure it stays below the navbar
+-->
+<section id="home" class="hero-section relative -mt-[127px] pt-[127px] z-0">
+  <!-- Background container with high resolution images -->
+  <div id="hero-bg" class="hero-background absolute inset-0 w-full h-full will-change-transform"></div>
+
+  <!-- SEO H1 - visually hidden but crawlable -->
+  <h1 class="sr-only">BLVD Park - Sports Bar & Free Pickleball in the Heights, Houston</h1>
+</section>
+
+<style>
+  /* Base hero section styles - Mobile first */
+  .hero-section {
+    /* Mobile height */
+    height: 50vh;
+    min-height: 400px;
+    /* NO gap - perfect alignment */
+    margin-top: -127px;
+    padding-top: 127px;
+    /* Ensure no overflow creates gaps */
+    position: relative;
+    z-index: 0;
+  }
+  
+  /* Hero background container - Mobile by default */
+  .hero-background {
+    background-image: url('/images/venue/venue-building.webp');
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    /* Remove fixed attachment - causes issues */
+    background-attachment: scroll;
+    /* Perfect scaling for high resolution */
+    transform: scale(1.0);
+    transform-origin: center center;
+    /* Enable hardware acceleration */
+    will-change: transform;
+    backface-visibility: hidden;
+    /* Crisp image rendering */
+    -webkit-backface-visibility: hidden;
+    -webkit-perspective: 1000px;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    /* Ensure full coverage */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+  
+  /* Tablet styles */
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .hero-section {
+      /* Keep 50vh for tablet */
+      height: 50vh;
+      min-height: 400px;
+      /* Perfect alignment */
+      margin-top: -127px;
+      padding-top: 127px;
+    }
+    
+    .hero-background {
+      background-image: url('/images/venue/venue-features-medium.webp');
+    }
+  }
+  
+  /* Desktop styles */
+  @media (min-width: 1025px) {
+    .hero-section {
+      /* Full height for desktop */
+      height: 85vh;
+      min-height: 600px;
+      /* Perfect alignment */
+      margin-top: -127px;
+      padding-top: 127px;
+    }
+    
+    .hero-background {
+      /* Desktop high resolution image */
+      background-image: url('/images/venue/venue-hero-tall.webp');
+    }
+  }
+  
+  /* FORCE eliminate ALL gaps after hero */
+  .hero-section {
+    margin-bottom: 0 !important;
+  }
+  
+  .hero-section + * {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+  
+  #blvd-park {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+</style>
+
+<!-- GSAP CDN with proper module loading -->
+<script type="module">
+  // Import GSAP as ES modules to avoid readonly property issues
+  import { gsap } from "https://cdn.skypack.dev/gsap@3.12.2";
+  import { ScrollTrigger } from "https://cdn.skypack.dev/gsap@3.12.2/ScrollTrigger";
+  
+  // Register plugin
+  gsap.registerPlugin(ScrollTrigger);
+  
+  // Wait for DOM
+  document.addEventListener('DOMContentLoaded', function() {
+    const heroBg = document.getElementById('hero-bg');
+    const heroSection = document.querySelector('.hero-section');
+    
+    if (heroBg && heroSection) {
+      // Initial state - subtle scale and fade
+      gsap.set(heroBg, {
+        scale: 1.05,
+        opacity: 0.9
+      });
+      
+      // Hero entrance animation - smooth and professional
+      gsap.to(heroBg, {
+        scale: 1.0,
+        opacity: 1,
+        duration: 2,
+        ease: "power2.out"
+      });
+      
+      // NO parallax - it's creating the gap
+      // gsap.to(heroBg, {
+      //   yPercent: -15,
+      //   ease: "none",
+      //   scrollTrigger: {
+      //     trigger: heroSection,
+      //     start: "top bottom",
+      //     end: "bottom top",
+      //     scrub: 1,
+      //     invalidateOnRefresh: true
+      //   }
+      // });
+      
+      // Refresh on resize
+      let resizeTimer;
+      window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          ScrollTrigger.refresh();
+        }, 250);
+      });
+    }
+  });
+</script>
+

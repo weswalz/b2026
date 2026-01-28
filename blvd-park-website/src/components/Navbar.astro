@@ -1,0 +1,270 @@
+---
+// src/components/Navbar.astro - Pure Astro navbar component
+// Converted from React to reduce JavaScript bundle size
+
+// Navigation links configuration
+const navLinks = [
+  { name: 'Home', path: '/' },
+  { name: 'About Us', path: '/#blvd-park' },
+  { name: 'Menu', path: '/#menu' },
+  { name: 'Events', path: '/#events' },
+  { name: 'Hours & Location', path: '/#hours-location' },
+];
+---
+
+<!-- Top Green Bar -->
+<div id="top-bar" class="fixed top-0 left-0 right-0 py-[3px] h-7 md:h-7 bg-blvd-green z-50 flex items-center transition-all duration-300">
+  <div class="absolute inset-0 opacity-20" style="background-image: url('data:image/svg+xml,%3Csvg width=%2230%22 height=%2230%22 viewBox=%220 0 30 30%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath d=%22M15 0C6.716 0 0 6.716 0 15c0 8.284 6.716 15 15 15 8.284 0 15-6.716 15-15 0-8.284-6.716-15-15-15zm0 5c5.514 0 10 4.486 10 10s-4.486 10-10 10S5 20.514 5 15 9.486 5 15 5z%22 fill=%22%23ffffff%22 fill-opacity=%220.3%22/%3E%3C/svg%3E'); background-size: 12px 12px;"></div>
+  
+  <div class="container mx-auto px-2 md:px-4 flex justify-end items-center">
+    <div class="flex items-center space-x-4 md:space-x-6 text-white text-xs md:text-sm">
+      <div class="flex items-center space-x-3">
+        <a href="https://instagram.com/blvdparkhtx" target="_blank" rel="noopener noreferrer" class="text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+          </svg>
+        </a>
+        <a href="https://facebook.com/blvdparkhtx" target="_blank" rel="noopener noreferrer" class="text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Navigation Bar -->
+<header id="main-nav" class="fixed left-0 right-0 z-[60] transition-all duration-300 top-7 md:top-7 bg-white/85 backdrop-blur-lg py-5 shadow-md">
+  <div class="container mx-auto px-4">
+    <div class="flex items-center justify-between">
+      <a href="/" class="relative block group flex items-center my-auto">
+        <img 
+          src="/images/logos/blvd-park-logo.png" 
+          alt="BLVD Park Logo" 
+          width="180"
+          height="60"
+          class="h-auto w-auto transition-all duration-500 max-w-[150px] md:max-w-[165px] lg:max-w-[180px]"
+          loading="eager"
+          fetchpriority="high"
+        />
+      </a>
+      
+      <!-- Desktop Navigation -->
+      <nav class="hidden xl:flex items-center space-x-8">
+        {navLinks.map((link) => (
+          <a 
+            href={link.path} 
+            class="font-medium text-base text-gray-800 relative transition-all duration-500 hover:text-blvd-green group"
+          >
+            {link.name}
+            <span class="absolute bottom-[-4px] left-0 w-0 h-[2px] bg-blvd-green transition-all duration-300 group-hover:w-full"></span>
+          </a>
+        ))}
+        <a 
+          href="/book" 
+          class="bg-blvd-green text-white font-medium rounded-md shadow-lg transition-all duration-500 text-sm py-2 px-4 hover:bg-blvd-dark-green hover:transform hover:-translate-y-1 hover:shadow-xl"
+        >
+          <span class="relative z-10">Book at BLVD</span>
+        </a>
+      </nav>
+      
+      <!-- Mobile Menu Button -->
+      <button 
+        id="mobile-menu-btn"
+        class="xl:hidden p-2 relative z-50 group flex items-center justify-center my-auto"
+        aria-label="Open menu"
+        aria-expanded="false"
+      >
+        <svg id="menu-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-7 w-7 text-blvd-dark group-hover:text-blvd-green transition-colors duration-300 flex-shrink-0">
+          <line x1="4" x2="20" y1="12" y2="12"></line>
+          <line x1="4" x2="20" y1="6" y2="6"></line>
+          <line x1="4" x2="20" y1="18" y2="18"></line>
+        </svg>
+        <svg id="close-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-7 w-7 text-blvd-dark group-hover:text-blvd-green transition-colors duration-300 flex-shrink-0 hidden">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- Mobile Menu -->
+<div id="mobile-menu" class="fixed inset-0 bg-blvd-light-green z-[100] flex items-start pt-8 overflow-y-auto transition-all duration-300 opacity-0 translate-x-full pointer-events-none" style="background-image: url('data:image/svg+xml,%3Csvg width=%2230%22 height=%2230%22 viewBox=%220 0 30 30%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath d=%22M15 0C6.716 0 0 6.716 0 15c0 8.284 6.716 15 15 15 8.284 0 15-6.716 15-15 0-8.284-6.716-15-15-15zm0 5c5.514 0 10 4.486 10 10s-4.486 10-10 10S5 20.514 5 15 9.486 5 15 5z%22 fill=%22%23ffffff%22 fill-opacity=%220.3%22/%3E%3C/svg%3E');">
+  <div class="bg-white/70 backdrop-blur-sm rounded-lg p-[15px] mx-8 w-[calc(100%-4rem)] max-w-2xl">
+    <div class="flex flex-col items-center h-full py-4">
+    <!-- Close button in top right -->
+    <button 
+      class="mobile-menu-close self-end mb-4 p-2 rounded-full hover:bg-gray-100/50 transition-colors"
+      aria-label="Close menu"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-8 w-8 text-blvd-dark">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+    
+    <div class="mb-8">
+      <img
+        src="/images/logos/blvd-park-logo.png"
+        alt="BLVD Park Logo"
+        width="220"
+        height="73"
+        class="h-auto max-w-[220px]"
+        loading="lazy"
+      />
+    </div>
+    
+    <nav class="flex flex-col items-center justify-center space-y-6 w-full text-2xl">
+      {navLinks.map((link) => (
+        <a
+          href={link.path}
+          class="font-semibold text-blvd-dark relative inline-block py-2 group mobile-nav-link hover:text-blvd-green transition-colors"
+        >
+          {link.name}
+          <span class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 h-[3px] bg-blvd-green transition-all duration-300 group-hover:w-full"></span>
+        </a>
+      ))}
+      
+      <a
+        href="/book"
+        class="bg-blvd-green text-white font-bold rounded-lg w-full max-w-[350px] text-center py-4 px-8 mt-6 text-xl transition-all duration-300 hover:bg-blvd-dark-green hover:shadow-lg mobile-nav-link"
+      >
+        Book at BLVD
+      </a>
+      
+      <!-- Social Media Icons -->
+      <div class="flex items-center space-x-8 mt-8">
+        <a href="https://instagram.com/blvdparkhtx" target="_blank" rel="noopener noreferrer" class="text-blvd-green hover:text-blvd-accent transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-8 w-8">
+            <rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect>
+            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+            <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line>
+          </svg>
+        </a>
+        <a href="https://facebook.com/blvdparkhtx" target="_blank" rel="noopener noreferrer" class="text-blvd-green hover:text-blvd-accent transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-8 w-8">
+            <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
+          </svg>
+        </a>
+      </div>
+      
+      <!-- Contact Info -->
+      <div class="flex flex-col items-center space-y-2 mt-6 text-lg text-gray-700">
+        <p>1119 W 20th St., Houston, TX</p>
+      </div>
+    </nav>
+    </div>
+  </div>
+</div>
+
+<!-- Spacer -->
+<div id="nav-spacer" class="h-[127px] transition-all duration-300"></div>
+
+<script>
+  // Minimal vanilla JS for navbar functionality
+  const topBar = document.getElementById('top-bar');
+  const mainNav = document.getElementById('main-nav');
+  const navSpacer = document.getElementById('nav-spacer');
+  const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+  const mobileMenu = document.getElementById('mobile-menu');
+  const menuIcon = document.getElementById('menu-icon');
+  const closeIcon = document.getElementById('close-icon');
+  const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
+  
+  let isScrolled = false;
+  let isMobileMenuOpen = false;
+  
+  // Scroll detection with mobile optimization
+  let scrollTimeout: ReturnType<typeof setTimeout> | undefined;
+  const handleScroll = () => {
+    // Debounce scroll on mobile for better performance
+    if (window.innerWidth <= 768) {
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        updateNavbarState();
+      }, 50);
+    } else {
+      updateNavbarState();
+    }
+  };
+  
+  const updateNavbarState = () => {
+    if (!topBar || !mainNav || !navSpacer) return;
+    
+    const scrollY = window.scrollY;
+    const shouldBeScrolled = scrollY > 10;
+    
+    if (shouldBeScrolled !== isScrolled) {
+      isScrolled = shouldBeScrolled;
+      
+      if (isScrolled) {
+        topBar.style.opacity = '0';
+        topBar.style.transform = 'translateY(-100%)';
+        mainNav.style.top = '0';
+        mainNav.className = mainNav.className.replace('bg-white/85 backdrop-blur-lg py-5 shadow-md', 'bg-white/90 backdrop-blur-md shadow-lg py-3');
+        navSpacer.style.height = '80px';
+      } else {
+        topBar.style.opacity = '1';
+        topBar.style.transform = 'translateY(0)';
+        mainNav.style.top = '1.75rem';
+        mainNav.className = mainNav.className.replace('bg-white/90 backdrop-blur-md shadow-lg py-3', 'bg-white/85 backdrop-blur-lg py-5 shadow-md');
+        navSpacer.style.height = '127px';
+      }
+    }
+  };
+  
+  // Mobile menu toggle
+  const toggleMobileMenu = () => {
+    if (!mobileMenu || !menuIcon || !closeIcon || !mobileMenuBtn) return;
+    
+    isMobileMenuOpen = !isMobileMenuOpen;
+    
+    if (isMobileMenuOpen) {
+      mobileMenu.style.opacity = '1';
+      mobileMenu.style.transform = 'translateX(0)';
+      mobileMenu.style.pointerEvents = 'auto';
+      menuIcon.style.display = 'none';
+      closeIcon.style.display = 'block';
+      mobileMenuBtn.setAttribute('aria-expanded', 'true');
+      mobileMenuBtn.setAttribute('aria-label', 'Close menu');
+    } else {
+      mobileMenu.style.opacity = '0';
+      mobileMenu.style.transform = 'translateX(100%)';
+      mobileMenu.style.pointerEvents = 'none';
+      menuIcon.style.display = 'block';
+      closeIcon.style.display = 'none';
+      mobileMenuBtn.setAttribute('aria-expanded', 'false');
+      mobileMenuBtn.setAttribute('aria-label', 'Open menu');
+    }
+  };
+  
+  // Event listeners
+  window.addEventListener('scroll', handleScroll, { passive: true });
+  if (mobileMenuBtn) {
+    mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+  }
+  
+  // Close mobile menu when clicking navigation links
+  mobileNavLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      if (isMobileMenuOpen) {
+        toggleMobileMenu();
+      }
+    });
+  });
+  
+  // Close mobile menu when clicking close button
+  const closeButtons = document.querySelectorAll('.mobile-menu-close');
+  closeButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (isMobileMenuOpen) {
+        toggleMobileMenu();
+      }
+    });
+  });
+  
+  // Initial check
+  handleScroll();
+</script>

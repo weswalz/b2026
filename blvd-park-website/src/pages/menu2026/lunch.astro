@@ -1,0 +1,234 @@
+---
+// src/pages/menu2026/lunch.astro - 2026 Lunch Menu Page
+import Layout2026 from '@layouts/Layout2026.astro';
+
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
+const menuMode = 'lunch';
+---
+
+<Layout2026 title="Lunch Menu | BLVD Park" description="Lunch specials at BLVD Park. Available Monday-Friday, 11am-3pm.">
+
+  <!-- Hero -->
+  <section class="relative pt-32 pb-20 overflow-hidden" style="background: linear-gradient(180deg, #0F3D22 0%, #1a1a1a 100%);">
+    <div class="absolute inset-0 opacity-[0.03]" style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27noise%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.65%27 numOctaves=%273%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23noise)%27/%3E%3C/svg%3E');"></div>
+
+    <div class="container mx-auto px-6 relative z-10">
+      <div class="max-w-3xl">
+        <a href="/2026" class="inline-flex items-center gap-2 text-white/50 hover:text-white transition-colors mb-8 text-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+          Back to Home
+        </a>
+
+        <span class="inline-block font-mono text-xs tracking-[0.3em] uppercase mb-4" style="color: #C9A962;">
+          Mon-Fri • 11am-3pm
+        </span>
+        <h1 class="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6" style="font-family: 'Clash Display', sans-serif; letter-spacing: -0.02em;">
+          Lunch Menu
+        </h1>
+        <p class="text-xl text-white/60 max-w-xl" style="font-family: 'Satoshi', sans-serif;">
+          Weekday lunch specials. Same quality, friendlier prices.
+        </p>
+      </div>
+
+      <!-- Menu Type Toggle -->
+      <div class="flex gap-4 mt-12">
+        <a href="/menu2026" class="px-6 py-3 rounded-full font-semibold text-sm transition-all hover:bg-white/10" style="background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.1);">
+          Main Menu
+        </a>
+        <a href="/menu2026/lunch" class="px-6 py-3 rounded-full font-semibold text-sm transition-all" style="background: white; color: #0F3D22;">
+          Lunch Menu
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Menu Content -->
+  <section class="py-20" style="background: #0d0d0d;">
+    <div class="container mx-auto px-6">
+      <div class="max-w-4xl mx-auto">
+
+        <div id="menu-sections" class="text-center text-white/50">
+          Loading menu...
+        </div>
+
+        <!-- Disclaimer -->
+        <p class="text-xs text-center mt-16" style="color: rgba(255,255,255,0.3);">
+          *Raw or uncooked meats, poultry, seafood or eggs may increase your risk of food-borne illnesses.
+        </p>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="py-20" style="background: linear-gradient(180deg, #0d0d0d 0%, #0F3D22 100%);">
+    <div class="container mx-auto px-6 text-center">
+      <h2 class="text-3xl md:text-4xl font-bold text-white mb-6" style="font-family: 'Clash Display', sans-serif;">
+        Ready to Join Us?
+      </h2>
+      <p class="text-lg text-white/60 mb-8 max-w-md mx-auto">
+        Walk in anytime or reserve a table for your group.
+      </p>
+      <div class="flex flex-wrap justify-center gap-4">
+        <a href="/book2026" class="px-8 py-4 rounded-full font-semibold transition-all duration-300 hover:scale-105" style="background: white; color: #0F3D22;">
+          Reserve a Table
+        </a>
+      </div>
+    </div>
+  </section>
+
+</Layout2026>
+
+<script define:vars={{ apiUrl, menuMode }}>
+  const menuContainer = document.getElementById('menu-sections');
+  if (menuContainer) {
+    const categoryOrder = [
+      'Shareables',
+      'Street Tacos',
+      'Wings',
+      'Burgers & Sandwiches',
+      'The Skinny',
+      'Steak Frites'
+    ];
+
+    const categoryNotes = {
+      'Street Tacos': 'Served with three tacos',
+      'Wings': 'Six for ten • Parmesan ranch or bleu cheese, celery + carrots',
+      'Burgers & Sandwiches': 'Served with skin-on crispy fries',
+      'The Skinny': 'Salad, wrap, or rice bowl • Add protein: Beef/Shrimp $6, Chicken $5',
+      'Steak Frites': 'With garlic parmesan fries',
+    };
+
+    const escapeHtml = (value) => {
+      if (!value) return '';
+      return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    };
+
+    const formatTitle = (value) => value
+      .replace(/[-_]/g, ' ')
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+
+    const formatPrice = (value) => {
+      const price = Number(value);
+      if (Number.isNaN(price)) return '';
+      return Number.isInteger(price) ? `${price}` : price.toFixed(2);
+    };
+
+    const buildSections = (items) => {
+      const grouped = items.reduce((acc, item) => {
+        const key = item.category || 'Menu';
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(item);
+        return acc;
+      }, {});
+
+      const categories = Object.keys(grouped).sort((a, b) => {
+        const indexA = categoryOrder.indexOf(a);
+        const indexB = categoryOrder.indexOf(b);
+        const orderA = indexA === -1 ? Number.MAX_SAFE_INTEGER : indexA;
+        const orderB = indexB === -1 ? Number.MAX_SAFE_INTEGER : indexB;
+        if (orderA !== orderB) return orderA - orderB;
+        return a.localeCompare(b);
+      });
+
+      return categories.map((category, index) => `
+        <div class="menu-section mb-16" data-index="${index}">
+          <div class="flex items-center gap-4 mb-8">
+            <h2 class="text-2xl md:text-3xl font-bold text-white" style="font-family: 'Clash Display', sans-serif;">
+              ${escapeHtml(formatTitle(category))}
+            </h2>
+            <div class="flex-1 h-px" style="background: linear-gradient(to right, rgba(201, 169, 98, 0.3), transparent);"></div>
+          </div>
+          ${categoryNotes[category] ? `
+            <p class="text-sm mb-6" style="color: rgba(255,255,255,0.4); font-family: 'JetBrains Mono', monospace;">
+              ${escapeHtml(categoryNotes[category])}
+            </p>
+          ` : ''}
+          <div class="space-y-6">
+            ${grouped[category].map((item) => `
+              <div class="menu-item group p-4 -mx-4 rounded-xl transition-all duration-300 hover:bg-white/[0.02]">
+                <div class="flex justify-between items-start gap-4">
+                  <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-white group-hover:text-[#22C55E] transition-colors" style="font-family: 'Clash Display', sans-serif;">
+                      ${escapeHtml(item.name)}
+                    </h3>
+                    ${item.description ? `
+                      <p class="text-sm mt-1" style="color: rgba(255,255,255,0.5);">
+                        ${escapeHtml(item.description)}
+                      </p>
+                    ` : ''}
+                    ${item.subcategory ? `
+                      <p class="text-xs mt-2 uppercase tracking-[0.12em]" style="color: rgba(255,255,255,0.35);">
+                        ${escapeHtml(item.subcategory)}
+                      </p>
+                    ` : ''}
+                  </div>
+                  ${item.price > 0 ? `
+                    <span class="text-lg font-bold flex-shrink-0" style="color: #C9A962; font-family: 'Clash Display', sans-serif;">
+                      ${formatPrice(item.price)}
+                    </span>
+                  ` : ''}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+    };
+
+    const loadMenu = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/api/menu?lunchOnly=true`);
+        if (!res.ok) throw new Error('Failed to fetch menu');
+        const items = await res.json();
+        if (!Array.isArray(items) || items.length === 0) {
+          menuContainer.innerHTML = '<p class="text-white/50 text-center">Menu coming soon.</p>';
+          return;
+        }
+        const filtered = menuMode === 'lunch'
+          ? items.filter((item) => item.isLunchOnly)
+          : items.filter((item) => !item.isLunchOnly);
+        if (filtered.length === 0) {
+          menuContainer.innerHTML = '<p class="text-white/50 text-center">Menu coming soon.</p>';
+          return;
+        }
+        menuContainer.innerHTML = buildSections(filtered);
+      } catch (_error) {
+        menuContainer.innerHTML = '<p class="text-white/50 text-center">Menu unavailable.</p>';
+      }
+    };
+
+    loadMenu();
+  }
+</script>
+
+<style>
+  .menu-section {
+    animation: fadeInUp 0.6s cubic-bezier(0.19, 1, 0.22, 1) backwards;
+  }
+
+  .menu-section[data-index="0"] { animation-delay: 0.1s; }
+  .menu-section[data-index="1"] { animation-delay: 0.15s; }
+  .menu-section[data-index="2"] { animation-delay: 0.2s; }
+  .menu-section[data-index="3"] { animation-delay: 0.25s; }
+  .menu-section[data-index="4"] { animation-delay: 0.3s; }
+  .menu-section[data-index="5"] { animation-delay: 0.35s; }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>

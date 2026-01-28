@@ -1,0 +1,309 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Lunch Menu">
+  <div class="bg-blvd-light-green py-16">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <!-- Navigation -->
+      <div class="flex justify-between items-center mb-8">
+        <a href="/menu" class="bg-blvd-white hover:bg-blvd-light-green text-blvd-green font-medium py-2 px-4 rounded-lg shadow-sm border border-blvd-green/20 transition-colors flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+          </svg>
+          Main Menu
+        </a>
+        <a href="/" class="bg-blvd-white hover:bg-blvd-light-green text-blvd-green font-medium py-2 px-4 rounded-lg shadow-sm border border-blvd-green/20 transition-colors flex items-center">
+          Return to Home
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+          </svg>
+        </a>
+      </div>
+
+      <!-- Menu Header -->
+      <div class="text-center mb-12">
+        <h1 class="text-4xl md:text-5xl font-bold text-blvd-green mb-4">LUNCH MENU</h1>
+        <p class="text-blvd-dark-green text-lg">Available Monday - Friday, 11 AM - 3 PM</p>
+      </div>
+
+      <!-- Menu Content -->
+      <div class="bg-blvd-white rounded-lg shadow-lg p-6 md:p-8 mb-12">
+        <!-- Shareables Section -->
+        <div class="mb-12">
+          <h2 class="text-2xl font-bold text-blvd-green border-b-2 border-blvd-accent pb-2 mb-6">SHAREABLES</h2>
+          
+          <div class="grid gap-6">
+            <div>
+              <div class="flex justify-between items-baseline">
+                <h3 class="text-xl font-bold text-blvd-dark-green">CHILE CON QUESO</h3>
+                <span class="text-lg font-semibold text-blvd-green">8</span>
+              </div>
+              <p class="text-gray-700">Tomato, onion, cilantro, roasted house-made salsa, tortilla chips</p>
+            </div>
+            
+            <div>
+              <div class="flex justify-between items-baseline">
+                <h3 class="text-xl font-bold text-blvd-dark-green">CHEESE FRIES</h3>
+                <span class="text-lg font-semibold text-blvd-green">9</span>
+              </div>
+              <p class="text-gray-700">Crispy fries, chile con queso, house cheese blend, green onion, Mexican and serrano crema</p>
+            </div>
+            
+            <div>
+              <div class="flex justify-between items-baseline">
+                <h3 class="text-xl font-bold text-blvd-dark-green">PRETZEL STICKS</h3>
+                <span class="text-lg font-semibold text-blvd-green">10</span>
+              </div>
+              <p class="text-gray-700">Fresh baked pretzel sticks, chile con queso, cinnamon butter</p>
+            </div>
+            
+            <div>
+              <div class="flex justify-between items-baseline">
+                <h3 class="text-xl font-bold text-blvd-dark-green">SOUTHWEST EGGROLLS</h3>
+                <span class="text-lg font-semibold text-blvd-green">10</span>
+              </div>
+              <p class="text-gray-700">Chicken, black beans, corn, peppers, serrano ranch</p>
+            </div>
+            
+            <div>
+              <div class="flex justify-between items-baseline">
+                <h3 class="text-xl font-bold text-blvd-dark-green">HUMMUS + VEGETABLES</h3>
+                <span class="text-lg font-semibold text-blvd-green">8</span>
+              </div>
+              <p class="text-gray-700">Fresh carrots, celery, cucumber & bell pepper, house-made hummus, roasted red pepper, feta, fresh herbs</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Street Tacos Section -->
+        <div class="mb-12">
+          <h2 class="text-2xl font-bold text-blvd-green border-b-2 border-blvd-accent pb-2 mb-6">STREET TACOS*</h2>
+          
+          <div class="grid gap-6">
+            <div>
+              <div class="flex justify-between items-baseline">
+                <h3 class="text-xl font-bold text-blvd-dark-green">STEAK</h3>
+                <span class="text-lg font-semibold text-blvd-green">15</span>
+              </div>
+              <p class="text-gray-700">Pressure marinated steak, avocado, pickled red onion, serrano crema, cotija</p>
+            </div>
+            
+            <div>
+              <div class="flex justify-between items-baseline">
+                <h3 class="text-xl font-bold text-blvd-dark-green">HATCH CHICKEN</h3>
+                <span class="text-lg font-semibold text-blvd-green">15</span>
+              </div>
+              <p class="text-gray-700">Hatch chile chicken, avocado, lime cured red onion, Mexican crema</p>
+            </div>
+            
+            <div>
+              <div class="flex justify-between items-baseline">
+                <h3 class="text-xl font-bold text-blvd-dark-green">BIRRIA</h3>
+                <span class="text-lg font-semibold text-blvd-green">15</span>
+              </div>
+              <p class="text-gray-700">Slow roasted short rib and chuck, guijillo, ancho, cascabel peppers, cheese blend, chili infused demi glace</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Kids Section -->
+        <div class="mb-12">
+          <h2 class="text-2xl font-bold text-blvd-green border-b-2 border-blvd-accent pb-2 mb-6">KIDS</h2>
+          <p class="text-gray-700 mb-4">Twelve and under</p>
+          
+          <div class="grid gap-6">
+            <div>
+              <div class="flex justify-between items-baseline">
+                <h3 class="text-xl font-bold text-blvd-dark-green">BEEF SLIDERS</h3>
+                <span class="text-lg font-semibold text-blvd-green">9</span>
+              </div>
+            </div>
+            
+            <div>
+              <div class="flex justify-between items-baseline">
+                <h3 class="text-xl font-bold text-blvd-dark-green">CHICKEN TENDERS</h3>
+                <span class="text-lg font-semibold text-blvd-green">9</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- The Skinny Choice Section -->
+        <div class="mb-12">
+          <h2 class="text-2xl font-bold text-blvd-green border-b-2 border-blvd-accent pb-2 mb-6">THE SKINNY</h2>
+          <p class="text-gray-700 mb-4">Salad, wrap, or rice bowl</p>
+          <p class="text-gray-700 mb-6">WRAP: Chile lime, spinach or plain wrap</p>
+          
+          <h3 class="text-xl font-bold text-blvd-dark-green mb-4">SALAD PROTEINS</h3>
+          <p class="text-gray-700 mb-6">Fajita beef or marinated shrimp | 6<br>Fajita chicken, crispy chicken, or harissa chicken | 5</p>
+          
+          <div class="grid gap-6">
+            <div>
+              <div class="flex justify-between items-baseline">
+                <h3 class="text-xl font-bold text-blvd-dark-green">VIETNAMESE SALAD</h3>
+                <span class="text-lg font-semibold text-blvd-green">12</span>
+              </div>
+              <p class="text-gray-700">Romaine, kale, cabbage, cucumber, carrots, tomatoes, bean sprouts, roasted peanuts, cilantro, mint, green onions, peanut lime vinaigrette</p>
+            </div>
+            
+            <div>
+              <div class="flex justify-between items-baseline">
+                <h3 class="text-xl font-bold text-blvd-dark-green">HARISSA SALAD</h3>
+                <span class="text-lg font-semibold text-blvd-green">12</span>
+              </div>
+              <p class="text-gray-700">Harissa marinated chicken, seasonal greens, avocado, feta, marinated tomatoes and cucumber, hummus, harissa vinaigrette</p>
+            </div>
+            
+            <div>
+              <div class="flex justify-between items-baseline">
+                <h3 class="text-xl font-bold text-blvd-dark-green">CITRUS AVOCADO CHOP</h3>
+                <span class="text-lg font-semibold text-blvd-green">12</span>
+              </div>
+              <p class="text-gray-700">Chopped mixed greens, mandarin oranges, tomatoes, roasted corn, pickled red onions, avocado, toasted pepitas, cotija cheese, poblano ranch</p>
+            </div>
+            
+            <div>
+              <div class="flex justify-between items-baseline">
+                <h3 class="text-xl font-bold text-blvd-dark-green">KALE CAESAR</h3>
+                <span class="text-lg font-semibold text-blvd-green">10</span>
+              </div>
+              <p class="text-gray-700">Kale blend, romaine, croutons, parmesan, lemon caesar dressing</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Wings Section -->
+        <div class="mb-12">
+          <h2 class="text-2xl font-bold text-blvd-green border-b-2 border-blvd-accent pb-2 mb-6">WINGS</h2>
+          <p class="text-gray-700 mb-4">Six for ten</p>
+          <p class="text-gray-700 mb-6">Parmesan ranch or bleu cheese, celery + carrots</p>
+          
+          <h3 class="text-xl font-bold text-blvd-dark-green mb-4">FLAVORS</h3>
+          <ul class="text-gray-700 list-disc pl-5 space-y-1">
+            <li>Buffalo ghost pepper</li>
+            <li>Honey habanero</li>
+            <li>Thai sesame teriyaki</li>
+            <li>Garlic parmesan</li>
+            <li>Hatch citrus pepper</li>
+          </ul>
+        </div>
+        
+        <!-- Burgers & Sandwiches Section -->
+        <div class="mb-12">
+          <h2 class="text-2xl font-bold text-blvd-green border-b-2 border-blvd-accent pb-2 mb-6">BURGERS & SANDWICHES*</h2>
+          
+          <div class="grid gap-6">
+            <div>
+              <div class="flex justify-between items-baseline">
+                <h3 class="text-xl font-bold text-blvd-dark-green">BOURSIN MUSHROOM BURGER</h3>
+                <span class="text-lg font-semibold text-blvd-green">15</span>
+              </div>
+              <p class="text-gray-700">Seasonal mushrooms, boursin cheese, marinated tomato, truffle parmesan aioli</p>
+            </div>
+            
+            <div>
+              <div class="flex justify-between items-baseline">
+                <h3 class="text-xl font-bold text-blvd-dark-green">AVOCADO CHEESEBURGER</h3>
+                <span class="text-lg font-semibold text-blvd-green">15</span>
+              </div>
+              <p class="text-gray-700">Crisp and fresh avocado, tillamook pepper jack cheese, tomato, bacon jam, charred jalapeno aioli</p>
+            </div>
+            
+            <div>
+              <div class="flex justify-between items-baseline">
+                <h3 class="text-xl font-bold text-blvd-dark-green">GREEN CHILE CHEESEBURGER</h3>
+                <span class="text-lg font-semibold text-blvd-green">15</span>
+              </div>
+              <p class="text-gray-700">Roasted poblano, chile con queso, marinated tomato, pickled red onion, charred jalapeño aioli</p>
+            </div>
+            
+            <div>
+              <div class="flex justify-between items-baseline">
+                <h3 class="text-xl font-bold text-blvd-dark-green">BLVD CLASSIC BURGER</h3>
+                <span class="text-lg font-semibold text-blvd-green">14</span>
+              </div>
+              <p class="text-gray-700">Tillamook sharp cheddar, marinated tomato, pickles, red onion, lettuce, aioli | pecan smoked bacon + 3</p>
+            </div>
+            
+            <div>
+              <div class="flex justify-between items-baseline">
+                <h3 class="text-xl font-bold text-blvd-dark-green">HOT BIRD</h3>
+                <span class="text-lg font-semibold text-blvd-green">15</span>
+              </div>
+              <p class="text-gray-700">Crispy chicken breast, honey habanero, kale slaw, tomato, pickles, aioi</p>
+            </div>
+            
+            <div>
+              <div class="flex justify-between items-baseline">
+                <h3 class="text-xl font-bold text-blvd-dark-green">SMOKED TURKEY AVOCADO</h3>
+                <span class="text-lg font-semibold text-blvd-green">16</span>
+              </div>
+              <p class="text-gray-700">Smoked turkey, pecan smoked bacon, boursin, peppadew peppers, dried cherries, lettuce, tomato, dijon horseradish aioli</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Steak Frites Section -->
+        <div class="mb-12">
+          <h2 class="text-2xl font-bold text-blvd-green border-b-2 border-blvd-accent pb-2 mb-6">STEAK FRITES*</h2>
+          <p class="text-gray-700 mb-6">With garlic parmesan fries</p>
+          
+          <div class="grid gap-6">
+            <div>
+              <div class="flex justify-between items-baseline">
+                <h3 class="text-xl font-bold text-blvd-dark-green">16OZ SEARED RIBEYE</h3>
+                <span class="text-lg font-semibold text-blvd-green">35</span>
+              </div>
+            </div>
+            
+            <div>
+              <div class="flex justify-between items-baseline">
+                <h3 class="text-xl font-bold text-blvd-dark-green">12OZ SEARED NY STRIP</h3>
+                <span class="text-lg font-semibold text-blvd-green">30</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Fries + More Section -->
+        <div class="mb-6">
+          <h2 class="text-2xl font-bold text-blvd-green border-b-2 border-blvd-accent pb-2 mb-6">FRIES + MORE</h2>
+          
+          <div class="grid gap-6">
+            <div>
+              <div class="flex justify-between items-baseline">
+                <h3 class="text-xl font-bold text-blvd-dark-green">SKIN ON CRISPY FRIES</h3>
+                <span class="text-lg font-semibold text-blvd-green">4</span>
+              </div>
+            </div>
+            
+            <div>
+              <div class="flex justify-between items-baseline">
+                <h3 class="text-xl font-bold text-blvd-dark-green">GARLIC PARMESAN FRIES</h3>
+                <span class="text-lg font-semibold text-blvd-green">5</span>
+              </div>
+            </div>
+            
+            <div>
+              <div class="flex justify-between items-baseline">
+                <h3 class="text-xl font-bold text-blvd-dark-green">ONION RINGS</h3>
+                <span class="text-lg font-semibold text-blvd-green">6</span>
+              </div>
+            </div>
+            
+            <div>
+              <div class="flex justify-between items-baseline">
+                <h3 class="text-xl font-bold text-blvd-dark-green">SIDE KALE CAESAR</h3>
+                <span class="text-lg font-semibold text-blvd-green">6</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Disclaimer -->
+        <p class="text-sm text-gray-500 italic mt-12">*Raw or uncooked meats, poultry, seafood or eggs may increase your risk of food-borne illnesses. Please consume at your own discretion</p>
+      </div>
+    </div>
+  </div>
+</Layout>

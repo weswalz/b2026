@@ -1,0 +1,9 @@
+---
+// Admin Reservations Management
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import AdminPage from '../../components/admin/AdminPage';
+---
+
+<AdminLayout title="Reservations">
+  <AdminPage client:only="react" currentPath={Astro.url.pathname} page="reservations" />
+</AdminLayout>

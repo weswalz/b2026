@@ -1,0 +1,118 @@
+---
+// Admin Login Page - BLVD Park branded
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <title>Admin Login | BLVD Park</title>
+
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #0d0d0d;
+      color: #fff;
+      min-height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem;">
+    <div style="width: 100%; max-width: 400px;">
+      <!-- Logo -->
+      <div style="text-align: center; margin-bottom: 2.5rem;">
+        <div style="width: 64px; height: 64px; background: #1A5F36; border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+          <span style="color: white; font-weight: 700; font-size: 1.75rem;">B</span>
+        </div>
+        <h1 style="color: white; font-size: 1.5rem; font-weight: 600; margin: 0 0 0.25rem 0;">BLVD Park</h1>
+        <p style="color: #C9A962; font-size: 0.75rem; font-weight: 500; letter-spacing: 0.2em; margin: 0;">ADMIN PANEL</p>
+      </div>
+
+      <!-- Login Form -->
+      <div style="background: #1C1C1C; padding: 2rem; border-radius: 1rem; border: 1px solid rgba(255,255,255,0.1);">
+        <form id="login-form">
+          <label style="display: block; margin-bottom: 1.5rem;">
+            <span style="display: block; color: rgba(255,255,255,0.7); font-size: 0.875rem; margin-bottom: 0.5rem;">Admin Key</span>
+            <input
+              type="password"
+              id="api-key"
+              placeholder="Enter your admin key"
+              style="width: 100%; padding: 0.875rem 1rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 0.5rem; color: #fff; font-size: 1rem; outline: none; transition: border-color 0.2s;"
+              onfocus="this.style.borderColor='#C9A962'"
+              onblur="this.style.borderColor='rgba(255,255,255,0.15)'"
+            />
+          </label>
+
+          <button
+            type="submit"
+            style="width: 100%; padding: 0.875rem; background: #1A5F36; color: #fff; border: none; border-radius: 0.5rem; font-size: 1rem; font-weight: 500; cursor: pointer; transition: background 0.2s;"
+            onmouseover="this.style.background='#22C55E'"
+            onmouseout="this.style.background='#1A5F36'"
+          >
+            Sign In
+          </button>
+
+          <p id="error" style="color: #ef4444; font-size: 0.875rem; text-align: center; margin-top: 1rem; display: none;">
+            Invalid admin key
+          </p>
+        </form>
+      </div>
+
+      <!-- Back to site -->
+      <p style="text-align: center; margin-top: 1.5rem;">
+        <a href="/" style="color: rgba(255,255,255,0.4); font-size: 0.875rem; text-decoration: none; transition: color 0.2s;"
+           onmouseover="this.style.color='rgba(255,255,255,0.7)'"
+           onmouseout="this.style.color='rgba(255,255,255,0.4)'">
+          ← Back to BLVD Park
+        </a>
+      </p>
+    </div>
+  </div>
+
+  <script is:inline>
+    // Check if already logged in
+    const existingToken = localStorage.getItem('blvd-auth-token');
+    if (existingToken) {
+      window.location.href = '/admin';
+    }
+
+    const form = document.getElementById('login-form');
+    const input = document.getElementById('api-key');
+    const error = document.getElementById('error');
+    const API_URL = 'http://localhost:3001';
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const key = input.value.trim();
+      if (!key) return;
+
+      error.style.display = 'none';
+
+      try {
+        const res = await fetch(`${API_URL}/api/health`, {
+          headers: { 'x-auth-key': key }
+        });
+
+        if (res.ok) {
+          localStorage.setItem('blvd-auth-token', key);
+          window.location.href = '/admin';
+        } else {
+          error.style.display = 'block';
+        }
+      } catch (_err) {
+        error.textContent = 'Cannot connect to server. Make sure the backend is running.';
+        error.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>

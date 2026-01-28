@@ -1,0 +1,62 @@
+---
+// src/components/FeaturedEventSection.astro - Featured event showcase
+// Split column layout with event flyer and details
+---
+
+<section id="featured-event" class="py-8 sm:py-10 lg:py-12 bg-blvd-light-green">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex flex-col lg:flex-row items-center gap-8">
+      <!-- Left Column - Event Flyer -->
+      <div class="flex-shrink-0 order-2 lg:order-1">
+        <img
+          src="/images/uglysweater25.jpg"
+          alt="Ugly Xmas Sweater Surfside Couples Olympics at BLVD Park"
+          class="w-full h-auto max-w-[500px] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.35)] mx-auto"
+          loading="lazy"
+        />
+      </div>
+
+      <!-- Right Column - Event Details -->
+      <div class="order-1 lg:order-2 flex-1 flex flex-col justify-center space-y-4">
+        <div class="space-y-3 text-center lg:text-left">
+          <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#1E3A5F] leading-tight">
+            Ugly Xmas Sweater<br />Surfside Couples Olympics
+          </h2>
+          <p class="text-xl sm:text-2xl lg:text-3xl font-bold text-[#C41E3A]">
+            Sunday December 21st
+          </p>
+        </div>
+
+        <div class="text-[#1E3A5F] space-y-4 text-center lg:text-left">
+          <p class="text-lg font-semibold">
+            Check-in 4:30PM • Starts 5PM
+          </p>
+
+          <div class="text-sm space-y-1">
+            <p class="font-medium text-[#2E8B57]">Games:</p>
+            <p>Flip Cup • Surfside Can Bowling • Quarters<br/>Basketball Pong • Bottle Ring Toss • Beer Pong</p>
+          </div>
+
+          <div class="text-sm space-y-1">
+            <p><span class="font-semibold">$25 entry</span> per couple • Must wear ugly Xmas sweaters</p>
+            <p><span class="font-semibold text-[#2E8B57]">1st Place:</span> $250 Cash • <span class="font-semibold text-[#2E8B57]">2nd Place:</span> $75 Bar Tab</p>
+          </div>
+
+          <p class="text-sm text-[#1E3A5F]/70">
+            BLVD Park • 1119 W 20th St, Houston Heights
+          </p>
+        </div>
+
+        <!-- Event CTA -->
+        <div class="pt-3 text-center lg:text-left">
+          <a
+            href="sms:18326095708"
+            class="inline-block font-bold py-3 px-8 rounded-lg transition-all text-center text-base bg-blvd-green hover:bg-blvd-accent hover:text-blvd-green text-white shadow-lg hover:shadow-xl transform hover:scale-105"
+          >
+            Text to Sign Up
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

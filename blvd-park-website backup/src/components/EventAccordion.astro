@@ -1,0 +1,128 @@
+---
+// src/components/EventAccordion.astro
+export interface Props {
+  events: {
+    id: string;
+    title: string;
+    date: string;
+    flyerImage: string; // Keep flyer for potential future use or as fallback
+    featured?: boolean; // Optional featured flag
+    details: string[]; // Array of strings for event details
+  }[];
+}
+
+const { events } = Astro.props;
+---
+
+<div class="space-y-6">
+  {events.map((event) => (
+    <div class={`bg-blvd-accent border ${event.featured ? 'border-blvd-green border-2' : 'border-blvd-green/30'} rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.2)] mb-6 backdrop-blur-sm transition-all duration-300 hover:shadow-[0_8px_30px_rgba(15,91,46,0.25)]`}>
+      <h3>
+        <button
+          type="button"
+          class="flex items-center justify-between w-full p-5 font-medium text-left text-blvd-dark-green bg-gradient-to-r from-blvd-accent via-blvd-light-accent to-blvd-accent hover:from-blvd-light-accent hover:to-blvd-light-accent transition-all duration-300 ease-in-out"
+          data-accordion-target={`#${event.id}`}
+          aria-expanded={event.featured ? "true" : "false"}
+          aria-controls={event.id}
+        >
+          <span class="flex flex-col sm:flex-row sm:items-center">
+            <span class="mr-4 text-2xl font-bold text-blvd-dark-green drop-shadow-md">{event.title}</span>
+            <span class="text-lg text-blvd-green/90">{event.date}</span>
+            {event.featured && <span class="ml-2 px-2 py-1 bg-blvd-green text-blvd-white text-xs font-bold rounded-full">Featured Event</span>}
+          </span>
+          <svg class="w-5 h-5 shrink-0 text-blvd-dark-green transition-transform duration-300" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+          </svg>
+        </button>
+      </h3>
+      <div id={event.id} class={`${event.featured ? '' : 'hidden'} bg-gradient-to-br from-blvd-white to-blvd-light-green/30 p-6 shadow-[inset_0_2px_10px_rgba(0,0,0,0.1)] border-t border-blvd-green/20`} aria-labelledby={`${event.id}-heading`}>
+        <div class="flex flex-col md:flex-row gap-8 items-center">
+          <div class="md:w-1/3 flex-shrink-0 mx-auto md:mx-0">
+            <img
+              src={event.flyerImage}
+              alt={`${event.title} flyer`}
+              class="w-full h-auto rounded-lg shadow-[0_10px_25px_-5px_rgba(0,0,0,0.3)] hover:shadow-[0_20px_25px_-5px_rgba(0,0,0,0.4)] transition-all duration-300"
+            />
+          </div>
+          <div class="md:w-2/3 text-blvd-dark-green space-y-3 flex flex-col justify-center items-center text-center md:text-left md:items-start">
+            {event.details.map(detail => <p class="text-sm md:text-base leading-relaxed font-medium" set:html={detail}></p>)}
+          </div>
+        </div>
+      </div>
+    </div>
+  ))}
+</div>
+
+<script>
+  // Initialize accordions when the DOM is loaded
+  document.addEventListener('DOMContentLoaded', () => {
+    const accordionButtons = document.querySelectorAll('[data-accordion-target]');
+    
+    // Initialize featured event with expanded state
+    accordionButtons.forEach(button => {
+      const isExpanded = button.getAttribute('aria-expanded') === 'true';
+      if (isExpanded) {
+        const accordionItem = button.closest('div.bg-blvd-accent');
+        if (accordionItem) {
+          accordionItem.classList.add('ring-2', 'ring-blvd-green/50');
+        }
+        
+        // Rotate the arrow icon for expanded items
+        const arrow = button.querySelector('svg');
+        if (arrow) {
+          arrow.classList.add('rotate-180');
+        }
+      }
+    });
+    
+    accordionButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const target = button.getAttribute('data-accordion-target');
+        const content = document.querySelector(target);
+        const accordionItem = button.closest('div.bg-blvd-accent');
+        
+        // Toggle aria-expanded attribute
+        const isExpanded = button.getAttribute('aria-expanded') === 'true';
+        button.setAttribute('aria-expanded', !isExpanded);
+        
+        // Toggle content visibility with smooth animation
+        if (content) {
+          if (content.classList.contains('hidden')) {
+            content.classList.remove('hidden');
+            content.classList.add('animate-fadeIn');
+            
+            // Add active state styling to the accordion item
+            if (accordionItem) {
+              accordionItem.classList.add('ring-2', 'ring-blvd-green/50');
+            }
+          } else {
+            content.classList.add('hidden');
+            content.classList.remove('animate-fadeIn');
+            
+            // Remove active state styling
+            if (accordionItem) {
+              accordionItem.classList.remove('ring-2', 'ring-blvd-green/50');
+            }
+          }
+        }
+        
+        // Rotate the arrow icon with smooth transition
+        const arrow = button.querySelector('svg');
+        if (arrow) {
+          arrow.classList.toggle('rotate-180');
+        }
+      });
+    });
+  });
+</script>
+
+<style>
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .animate-fadeIn {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+</style>

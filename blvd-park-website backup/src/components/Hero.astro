@@ -1,0 +1,42 @@
+---
+// src/components/Hero.astro
+---
+
+<section id="home" class="relative h-[85vh] overflow-hidden -mt-[127px] pt-[127px] z-0">
+  <div id="parallax-bg" class="absolute inset-0 w-full h-[120%] bg-cover bg-center will-change-transform" style="background-image: url('/images/venue/blvdherotallbg.jpg');"></div>
+</section>
+
+<script>
+  // Enhanced smooth parallax effect with requestAnimationFrame
+  document.addEventListener('DOMContentLoaded', function() {
+    const parallaxBg = document.getElementById('parallax-bg');
+    
+    if (parallaxBg) {
+      let ticking = false;
+      let lastScrollY = window.scrollY;
+      
+      // Function to update the parallax effect
+      const updateParallax = () => {
+        // Use a smaller multiplier for smoother effect
+        const translateY = lastScrollY * 0.25;
+        
+        // Apply transform with hardware acceleration
+        parallaxBg.style.transform = `translate3d(0, ${translateY}px, 0)`;
+        ticking = false;
+      };
+      
+      // Scroll event handler using requestAnimationFrame for smoother performance
+      window.addEventListener('scroll', function() {
+        lastScrollY = window.scrollY;
+        
+        if (!ticking) {
+          window.requestAnimationFrame(updateParallax);
+          ticking = true;
+        }
+      });
+      
+      // Initial position
+      updateParallax();
+    }
+  });
+</script>

@@ -1,0 +1,37 @@
+---
+// src/components/CTAButton.astro - Reusable call-to-action button component
+// Used throughout the site for consistent button styling
+
+// Define props interface for the CTA button
+export interface Props {
+  href: string;                          // Button link URL
+  color: 'green' | 'white' | 'accent';   // Button color theme options
+  className?: string;                    // Optional additional CSS classes
+}
+
+// Extract props with defaults
+const { href, color, className = '' } = Astro.props;
+
+// Base styling applied to all buttons
+const baseClasses = "font-bold py-3 px-6 rounded-lg transition-colors text-center";
+
+// Color-specific styling definitions
+// EDIT HERE: To modify the appearance of buttons by color
+const colorClasses = {
+  green: "bg-blvd-green hover:bg-blvd-accent hover:text-blvd-green text-blvd-white",
+  white: "bg-blvd-white hover:bg-blvd-light-green text-blvd-green border border-blvd-green",
+  accent: "bg-blvd-accent hover:bg-blvd-light-accent text-blvd-green border border-blvd-green"
+};
+---
+
+<!-- 
+  CTA Button with dynamic styling
+  - href: Where the button links to
+  - baseClasses: Common styling for all buttons
+  - colorClasses[color]: Color-specific styling based on the color prop
+  - className: Any additional custom classes
+  - <slot />: Button text comes from the component usage
+-->
+<a href={href} class={`${baseClasses} ${colorClasses[color]} ${className}`}>
+  <slot />
+</a>

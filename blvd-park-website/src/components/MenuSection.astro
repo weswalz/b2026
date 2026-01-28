@@ -1,0 +1,54 @@
+---
+// src/components/MenuSection.astro - Food and drinks section
+// Displays menu photos and links to the menu pages
+import GalleryGrid from './GalleryGrid.astro';
+import CTAButton from './CTAButton.astro';
+
+// EDIT HERE: Menu gallery images from food and drinks directories
+// To change images in the menu gallery:
+// 1. Add your new images to /public/images/food/ or /public/images/drinks/ directories
+// 2. Update the paths below to include your new images
+// 3. Provide descriptive alt text for accessibility
+// Define the menu gallery images array
+const menuGalleryImages = [
+  { src: "/images/food/food-dish-1.webp", alt: "BLVD Park food dish" },
+  { src: "/images/drinks/drinks-cocktail.webp", alt: "BLVD Park signature cocktail" },
+  { src: "/images/food/food-appetizer.webp", alt: "BLVD Park appetizer" },
+  { src: "/images/drinks/drinks-craft.webp", alt: "BLVD Park craft drink" },
+  { src: "/images/food/food-main-course.webp", alt: "BLVD Park main course" },
+  { src: "/images/drinks/drinks-beverage.webp", alt: "BLVD Park beverage" },
+  { src: "/images/food/food-gourmet.webp", alt: "BLVD Park gourmet plate" },
+  { src: "/images/food/food-chef-special.webp", alt: "BLVD Park chef special" },
+  { src: "/images/food/food-specialty.webp", alt: "BLVD Park food specialty" },
+  { src: "/images/food/food-menu-item.webp", alt: "BLVD Park menu item" },
+  { src: "/images/food/food-popular.webp", alt: "BLVD Park popular dish" },
+  { src: "/images/food/food-entree.webp", alt: "BLVD Park entree" },
+  { src: "/images/food/food-selection.webp", alt: "BLVD Park food selection" },
+  { src: "/images/food/food-creation.webp", alt: "BLVD Park culinary creation" },
+  { src: "/images/food/food-delicacy.webp", alt: "BLVD Park delicacy" },
+];
+---
+
+<!-- Menu section with BLVD Park light green background -->
+<section id="menu" class="py-16 bg-blvd-light-green">
+  <div class="max-w-screen-xl mx-auto px-4">
+    <!-- Section heading -->
+    <h2 class="text-3xl md:text-4xl font-bold mb-8 text-center text-blvd-green">Eat at BLVD</h2>
+    
+    <!-- Menu buttons to navigate to different menu pages -->
+    <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
+      <!-- EDIT HERE: Update button links if menu URLs change -->
+      <CTAButton href="/menu" color="green" className="w-full sm:w-auto max-w-[250px]">MAIN MENU</CTAButton>
+      <CTAButton href="/menu/lunch" color="white" className="w-full sm:w-auto max-w-[250px]">LUNCH MENU</CTAButton>
+    </div>
+    
+    <!-- Gallery grid of food and drink images -->
+    <div class="flex justify-center">
+      <GalleryGrid
+        images={menuGalleryImages}
+        columns={3}
+        gap="gap-4"
+      />
+    </div>
+  </div>
+</section>

@@ -1,0 +1,45 @@
+---
+// src/components/BLVDGallerySection.astro
+import GalleryGrid from './GalleryGrid.astro';
+
+// Gallery images from your provided paths
+const galleryImages = [
+  { src: "/images/venue/_DSC1665-Edit-Edit.jpg", alt: "BLVD Park venue interior" },
+  { src: "/images/crowd/_DSC3135.JPG", alt: "BLVD Park crowd enjoying the atmosphere" },
+  { src: "/images/venue/_DSC4106.JPG", alt: "BLVD Park venue space" },
+  { src: "/images/crowd/_DSC3263.JPG", alt: "People having fun at BLVD Park" },
+  { src: "/images/venue/_DSC4091.JPG", alt: "BLVD Park bar area" },
+  { src: "/images/crowd/_DSC3206.JPG", alt: "Friends gathering at BLVD Park" },
+  { src: "/images/venue/_DSC6620.JPG", alt: "BLVD Park pickleball courts" },
+  { src: "/images/crowd/_DSC3093.JPG", alt: "Customers enjoying drinks at BLVD Park" },
+  { src: "/images/venue/_DSC4114-Edit.JPG", alt: "BLVD Park interior design" },
+  { src: "/images/crowd/_DSC3164.JPG", alt: "Social atmosphere at BLVD Park" },
+  { src: "/images/venue/_DSC4126-Edit.JPG", alt: "BLVD Park seating area" },
+  { src: "/images/crowd/_DSC3297.JPG", alt: "Group of friends at BLVD Park" },
+  { src: "/images/venue/_DSC6613-Edit.JPG", alt: "BLVD Park outdoor space" },
+  { src: "/images/crowd/_DSC3219.JPG", alt: "People playing games at BLVD Park" },
+  { src: "/images/venue/_DSC4034.JPG", alt: "BLVD Park architectural details" },
+  { src: "/images/crowd/_DSC3288.JPG", alt: "Happy customers at BLVD Park" },
+  { src: "/images/venue/_DSC4072.JPG", alt: "BLVD Park event space" },
+  { src: "/images/crowd/_DSC3119.JPG", alt: "Crowd enjoying the BLVD Park experience" },
+  { src: "/images/venue/_DSC4099-Edit-Edit.JPG", alt: "BLVD Park unique features" },
+  { src: "/images/crowd/_DSC3185.JPG", alt: "Social gathering at BLVD Park" },
+  { src: "/images/venue/_DSC4123.JPG", alt: "BLVD Park decor elements" },
+  { src: "/images/crowd/_DSC3294.JPG", alt: "Weekend atmosphere at BLVD Park" },
+  { src: "/images/venue/_DSC6627.JPG", alt: "BLVD Park facilities" },
+  { src: "/images/crowd/_DSC3132.JPG", alt: "Vibrant crowd at BLVD Park" },
+];
+---
+
+<section class="py-16 bg-blvd-green text-blvd-white">
+  <div class="max-w-screen-xl mx-auto px-4">
+    <h2 class="text-3xl md:text-4xl font-bold mb-12 text-center">This is BLVD Park</h2>
+    <div class="mx-auto">
+      <GalleryGrid
+        images={galleryImages}
+        columns={4}
+        gap="gap-2"
+      />
+    </div>
+  </div>
+</section>

@@ -1,0 +1,171 @@
+---
+import Layout from '@layouts/Layout.astro';
+---
+
+<Layout title="Book at BLVD">
+  <div class="relative min-h-screen bg-fixed bg-center bg-cover" style="background-image: url('/images/bookbackground.jpg');">
+    <div class="absolute inset-0 bg-black bg-opacity-30 backdrop-blur-sm"></div>
+    <div class="relative z-10 max-w-screen-2xl mx-auto pt-[111.189px] pb-16 px-4">
+      <div class="bg-white bg-opacity-70 backdrop-blur-md shadow-xl rounded-lg p-6 md:p-12">
+        <h1 class="text-3xl md:text-4xl font-bold text-center text-blvd-green mb-4">HOST YOUR PRIVATE EVENT AT BLVD PARK</h1>
+        <p class="text-center mb-2">BLVD PARK blends indoor-outdoor vibes with built-in entertainment — think pickleball, volleyball, and space to roam. Whether it’s a private celebration or a company event, we’ve got the room, the energy, and the setup to make it smooth.</p>
+        <p class="text-center font-semibold mb-6">Planning a corporate happy hour or team outing?<br/>Our venue makes it easy to mix business with fun. Submit the form below and we’ll handle the rest.</p>
+
+        <!-- Tabs -->
+        <div>
+          <ul class="flex flex-wrap justify-center mb-6 text-sm font-medium text-center border-b border-gray-200" id="bookTabs" role="tablist">
+            <li class="mr-2">
+              <button class="inline-block px-4 py-2 rounded-t-lg border-b-2 border-transparent hover:text-blvd-green hover:border-blvd-green active text-blvd-white bg-blvd-green"
+                id="vip-tab" data-tabs-target="#vip" type="button" role="tab" aria-controls="vip" aria-selected="true">
+                VIP Table Booking
+              </button>
+            </li>
+            <li class="mr-2">
+              <button class="inline-block px-4 py-2 rounded-t-lg border-b-2 border-transparent hover:text-blvd-green hover:border-blvd-green"
+                id="private-tab" data-tabs-target="#private" type="button" role="tab" aria-controls="private" aria-selected="false">
+                Private/Corporate Events
+              </button>
+            </li>
+          </ul>
+          <div id="bookTabsContent">
+            <!-- VIP Booking Tab -->
+            <div class="p-4 rounded-lg" id="vip" role="tabpanel" aria-labelledby="vip-tab">
+              <h2 class="text-2xl font-bold text-center text-blvd-green mb-4">Reserve a VIP Table</h2>
+              <p class="text-center mb-6">Get the best seat in the house w/ VIP bottle service at BLVD!</p>
+              <form action="https://n8n.weswalz.com/webhook/6784877f-df6b-4973-872f-e09bc0db9996" method="POST" class="space-y-4 max-w-3xl mx-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <input type="text" name="firstName" placeholder="First name" required
+                      class="bg-white bg-opacity-80 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blvd-green focus:border-blvd-green block w-full p-2.5" />
+                  </div>
+                  <div>
+                    <input type="text" name="lastName" placeholder="Last name" required
+                      class="bg-white bg-opacity-80 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blvd-green focus:border-blvd-green block w-full p-2.5" />
+                  </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <input type="email" name="email" placeholder="your.email@example.com" required
+                      class="bg-white bg-opacity-80 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blvd-green focus:border-blvd-green block w-full p-2.5" />
+                  </div>
+                  <div>
+                    <input type="tel" name="phone" placeholder="(555) 123-4567" required
+                      class="bg-white bg-opacity-80 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blvd-green focus:border-blvd-green block w-full p-2.5" />
+                  </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <input type="date" name="date" required
+                      class="bg-white bg-opacity-80 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blvd-green focus:border-blvd-green block w-full p-2.5" />
+                  </div>
+                  <div>
+                    <select name="time" required
+                      class="bg-white bg-opacity-80 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blvd-green focus:border-blvd-green block w-full p-2.5">
+                      <option value="" disabled selected>Select time</option>
+                      <option>12:00 PM</option>
+                      <option>1:00 PM</option>
+                      <option>2:00 PM</option>
+                      <option>3:00 PM</option>
+                      <option>4:00 PM</option>
+                      <option>5:00 PM</option>
+                      <option>6:00 PM</option>
+                      <option>7:00 PM</option>
+                      <option>8:00 PM</option>
+                      <option>9:00 PM</option>
+                      <option>10:00 PM</option>
+                    </select>
+                  </div>
+                  <div>
+                    <select name="guests" required
+                      class="bg-white bg-opacity-80 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blvd-green focus:border-blvd-green block w-full p-2.5">
+                      <option value="" disabled selected>Select guests</option>
+                      <option>1-4</option>
+                      <option>5-8</option>
+                      <option>9-12</option>
+                      <option>13-20</option>
+                      <option>20+</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <textarea name="message" rows="4" placeholder="Additional Information"
+                    class="bg-white bg-opacity-80 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blvd-green focus:border-blvd-green block w-full p-2.5"></textarea>
+                </div>
+                <div class="text-center">
+                  <button type="submit"
+                    class="text-white bg-blvd-green hover:bg-blvd-accent hover:text-blvd-green focus:ring-4 focus:ring-blvd-light-green font-medium rounded-lg text-sm px-5 py-2.5">
+                    Submit Booking Request
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Private/Corporate Events Tab -->
+            <div class="hidden p-4 rounded-lg" id="private" role="tabpanel" aria-labelledby="private-tab">
+              <h2 class="text-2xl font-bold text-center text-blvd-green mb-4">Private & Corporate Events</h2>
+              <p class="text-center mb-6">Our team is ready to help you plan the perfect private event at BLVD Park.</p>
+              <div class="max-w-3xl mx-auto bg-white bg-opacity-80 rounded-lg p-8 shadow-md text-center">
+                <div class="space-y-6">
+                  <div class="space-y-2">
+                    <h3 class="text-xl font-semibold text-blvd-green">Ready to Plan Your Event?</h3>
+                    <p class="text-gray-700">Whether you're planning a corporate gathering, birthday celebration, or special occasion, our venue offers the perfect blend of indoor-outdoor space with built-in entertainment.</p>
+                  </div>
+                  
+                  <div class="flex flex-col items-center justify-center space-y-4">
+                    <a href="https://theclegroupllc.tripleseat.com/party_request/42255" target="_blank" rel="noopener noreferrer"
+                      class="inline-flex items-center justify-center space-x-2 bg-blvd-green hover:bg-blvd-dark-green text-white font-medium rounded-md shadow-lg transition-all duration-300 py-3 px-6 text-lg hover:transform hover:-translate-y-1 hover:shadow-xl">
+                      <span>Submit Your Event Request</span>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
+                        <path d="M7 17l9.2-9.2M17 17V7H7"></path>
+                      </svg>
+                    </a>
+                    <p class="text-sm text-gray-600">You'll be redirected to our secure event booking system</p>
+                  </div>
+                  
+                  <div class="pt-4 border-t border-gray-200">
+                    <p class="text-gray-700 font-medium">Have questions? Contact our events team:</p>
+                    <p class="text-blvd-green font-semibold">(326) 600-4246 or events@blvdparkhtx.com</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    /* Tabs active state override */
+    #bookTabs button.active {
+      background-color: #14532d; /* blvd-green */
+      color: white;
+      border-color: #14532d;
+    }
+    /* Tabs active state override */
+    #bookTabs button.active {
+      background-color: #14532d; /* blvd-green */
+      color: white;
+      border-color: #14532d;
+    }
+  </style>
+
+  <script>
+    // Simple tab switcher
+    document.addEventListener('DOMContentLoaded', function () {
+      const tabs = document.querySelectorAll('#bookTabs button');
+      const tabContents = document.querySelectorAll('#bookTabsContent > div');
+
+      tabs.forEach((tab) => {
+        tab.addEventListener('click', () => {
+          tabs.forEach(t => t.classList.remove('active', 'text-blvd-white', 'bg-blvd-green'));
+          tab.classList.add('active', 'text-blvd-white', 'bg-blvd-green');
+
+          tabContents.forEach(c => c.classList.add('hidden'));
+          const target = document.querySelector(tab.dataset.tabsTarget);
+          target.classList.remove('hidden');
+        });
+      });
+    });
+  </script>
+</Layout>

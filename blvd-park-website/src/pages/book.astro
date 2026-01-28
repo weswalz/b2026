@@ -1,0 +1,353 @@
+---
+// src/pages/book.astro - Booking page for VIP tables and private events
+// This page lets users request VIP table reservations or link to the event booking system
+import Layout from '@layouts/Layout.astro';
+---
+
+<Layout title="Book at BLVD">
+  <!-- Booking section with light green background and circle pattern -->
+  <section class="py-16 px-4 relative bg-[#def2f1] bg-circle-pattern">
+    <div class="max-w-6xl mx-auto relative z-10">
+      <h2 class="text-3xl md:text-4xl font-bold mb-8 text-center text-blvd-green">Book at BLVD</h2>
+      
+      <!-- Tabbed interface with VIP Tables and Private Events tabs -->
+      <!-- Mobile tabs for small screens (visible on mobile only) -->
+      <div class="sm:hidden mb-6 grid grid-cols-2 gap-2">
+        <button id="mobile-vip-tab" class="py-3 px-4 text-white bg-blvd-green rounded-lg font-semibold shadow-md active">VIP Tables</button>
+        <button id="mobile-event-tab" class="py-3 px-4 text-blvd-green bg-white rounded-lg font-semibold shadow-md">Private Events</button>
+      </div>
+      
+      <!-- Desktop tabs (visible on tablet and desktop) -->
+      <ul class="hidden text-sm font-medium text-center text-gray-500 sm:flex rounded-t-lg shadow-sm dark:divide-gray-700 dark:text-gray-400 mb-0 tab-container">
+        <li class="w-full focus-within:z-10">
+          <a href="#vip-content" id="vip-tab" class="inline-block w-full p-4 text-white bg-blvd-green border-r border-gray-200 dark:border-gray-700 rounded-t-lg focus:ring-4 focus:ring-green-300 active focus:outline-none tab-button active" aria-current="page">VIP Tables</a>
+        </li>
+        <li class="w-full focus-within:z-10">
+          <a href="#event-content" id="event-tab" class="inline-block w-full p-4 bg-white border-r border-gray-200 dark:border-gray-700 hover:text-gray-700 hover:bg-gray-50 focus:ring-4 focus:ring-green-300 focus:outline-none rounded-t-lg text-blvd-green tab-button" aria-current="page">Private Events</a>
+        </li>
+      </ul>
+      
+      <!-- Tab content container with white background -->
+      <div class="bg-white rounded-b-lg shadow-xl p-6 md:p-8">
+        <div id="tab-contents">
+          <!-- VIP Tables content tab -->
+          <div id="vip-content" class="tab-content active">
+            <h3 class="text-2xl font-bold text-center text-blvd-green mb-6">VIP Tables</h3>
+            
+            <div class="text-center mb-8">
+              <p class="text-lg">Get the best seat in the house and reserve your VIP table today!
+              <br><strong>Please complete the form and a BLVD representative will be in contact ASAP!</strong></p>
+            </div>
+            
+            <!-- 
+              EDIT HERE: VIP Table Booking Form
+              To change form fields or behavior, modify the form below
+              The form submits to an external webhook that processes reservations
+            -->
+            <form id="vip-booking-form" class="max-w-3xl mx-auto text-center">
+              <input type="hidden" name="cors_mode" value="no-cors" />
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <input type="text" name="firstName" placeholder="First Name" required
+                  class="w-full p-3 border border-gray-300 rounded-lg focus:border-blvd-green focus:ring-1 focus:ring-blvd-green text-center placeholder:text-center" />
+                <input type="text" name="lastName" placeholder="Last Name" required
+                  class="w-full p-3 border border-gray-300 rounded-lg focus:border-blvd-green focus:ring-1 focus:ring-blvd-green text-center placeholder:text-center" />
+              </div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <input type="email" name="email" placeholder="Your.Email@Example.com" required
+                  class="w-full p-3 border border-gray-300 rounded-lg focus:border-blvd-green focus:ring-1 focus:ring-blvd-green text-center placeholder:text-center" />
+                <input type="tel" name="phone" placeholder="(555) 123-4567" required
+                  class="w-full p-3 border border-gray-300 rounded-lg focus:border-blvd-green focus:ring-1 focus:ring-blvd-green text-center placeholder:text-center" />
+              </div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <input type="date" name="date" required
+                  class="w-full p-3 border border-gray-300 rounded-lg focus:border-blvd-green focus:ring-1 focus:ring-blvd-green text-center" />
+                <select name="time" required
+                  class="appearance-none w-full p-3 border border-gray-300 rounded-lg focus:border-blvd-green focus:ring-1 focus:ring-blvd-green text-center">
+                  <option value="" disabled selected>Select Time</option>
+                  <option>12:00 PM</option>
+                  <option>1:00 PM</option>
+                  <option>2:00 PM</option>
+                  <option>3:00 PM</option>
+                  <option>4:00 PM</option>
+                  <option>5:00 PM</option>
+                  <option>6:00 PM</option>
+                  <option>7:00 PM</option>
+                  <option>8:00 PM</option>
+                  <option>9:00 PM</option>
+                  <option>10:00 PM</option>
+                  <option>11:00 PM</option>
+                  <option>12:00 AM</option>
+                  <option>1:00 AM</option>
+                </select>
+                <select name="guests" required class="appearance-none w-full p-3 border border-gray-300 rounded-lg focus:border-blvd-green focus:ring-1 focus:ring-blvd-green text-center">
+                  <option value="" disabled selected>Select Guests</option>
+                  <option>1-4</option>
+                  <option>5-8</option>
+                  <option>9-12</option>
+                  <option>13-20</option>
+                  <option>20+</option>
+                </select>
+              </div>
+              
+              <div class="mb-6">
+                <textarea name="message" rows="4" placeholder="Additional Information"
+                  class="w-full p-3 border border-gray-300 rounded-lg focus:border-blvd-green focus:ring-1 focus:ring-blvd-green text-center placeholder:text-center"></textarea>
+              </div>
+              
+              <div class="text-center">
+                <button type="submit"
+                  class="bg-blvd-green text-white font-bold py-3 px-8 rounded-lg text-lg hover:bg-opacity-90 transition-all">
+                  Submit Booking Request
+                </button>
+              </div>
+              <div id="form-message" class="mt-4 text-center font-semibold"></div>
+            </form>
+          </div>
+          
+          <!-- Private Events content tab -->
+          <div id="event-content" class="tab-content hidden">
+            <h3 class="text-2xl font-bold text-center text-blvd-green mb-6">Host Your Private Event at BLVD Park</h3>
+            
+            <!-- EDIT HERE: Private events description text -->
+            <div class="text-center mb-8 max-w-2xl mx-auto">
+              <p>BLVD PARK blends indoor-outdoor vibes with built-in entertainment — think pickleball, volleyball, and space to roam. Whether it's a private celebration or a company event, we've got the room, the energy, and the setup to make it smooth.</p>
+            </div>
+            
+            <!-- Private events booking CTA -->
+            <div class="max-w-3xl mx-auto bg-gray-50 rounded-lg p-8 shadow-md">
+              <h4 class="text-xl font-bold text-center text-blvd-green mb-4">Ready to Plan Your Event?</h4>
+              <div class="text-center mb-6">
+                <!-- EDIT HERE: Update the Tripleseat URL if needed -->
+                <a href="https://theclegroupllc.tripleseat.com/party_request/42255" target="_blank" rel="noopener noreferrer"
+                  class="inline-flex items-center justify-center bg-blvd-green text-white font-bold py-3 px-8 rounded-lg text-lg hover:bg-opacity-90 transition-all">
+                  Submit Your Event Request
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                  </svg>
+                </a>
+                <p class="mt-2 text-sm text-gray-600">You'll be redirected to our secure event booking system</p>
+                <p class="mt-4 text-gray-800"><strong>Complete the request form and our events team will be in touch</strong></p>
+                <p class="text-gray-800"><strong>to plan your perfect event as soon as possible</strong></p>
+              </div>
+            </div>
+            
+            <div class="text-center mt-6">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <style>
+    /* Center dropdown options */
+    select, select option {
+      text-align: center !important;
+      text-align-last: center !important;
+      -moz-text-align-last: center !important;
+      -webkit-text-align-last: center !important;
+    }
+    /* Background pattern for pickleball */
+    .bg-circle-pattern {
+      background-image: url('data:image/svg+xml,%3Csvg width=%2230%22 height=%2230%22 viewBox=%220 0 30 30%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath d=%22M15 0C6.716 0 0 6.716 0 15c0 8.284 6.716 15 15 15 8.284 0 15-6.716 15-15 0-8.284-6.716-15-15-15zm0 5c5.514 0 10 4.486 10 10s-4.486 10-10 10S5 20.514 5 15 9.486 5 15 5z%22 fill=%22%23ffffff%22 fill-opacity=%220.3%22/%3E%3C/svg%3E');
+    }
+    
+    /* Tab container styling */
+    .tab-container {
+      position: relative;
+      max-width: 100%;
+    }
+    
+    /* Tab button styling with bottom shadows */
+    .tab-button {
+      position: relative;
+      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+    
+    /* Active tab effect with shadow */
+    .tab-button.active {
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      position: relative;
+      z-index: 20;
+    }
+    
+    /* Inactive tab effect with subtle shadow */
+    .tab-button:not(.active) {
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    }
+    
+    /* Tab content animation */
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+<script>
+  // Tab switching functionality for booking page
+  document.addEventListener('DOMContentLoaded', function () {
+    // Get tab elements
+    const vipTab = document.getElementById('vip-tab') as HTMLElement | null;
+    const eventTab = document.getElementById('event-tab') as HTMLElement | null;
+    const vipContent = document.getElementById('vip-content') as HTMLElement | null;
+    const eventContent = document.getElementById('event-content') as HTMLElement | null;
+    const mobileVipTab = document.getElementById('mobile-vip-tab') as HTMLElement | null;
+    const mobileEventTab = document.getElementById('mobile-event-tab') as HTMLElement | null;
+
+    // Function to switch between tabs
+    function switchTab(tabId: string) {
+      if (!vipTab || !eventTab || !vipContent || !eventContent) return;
+      
+      if (tabId === 'vip') {
+        // Activate VIP tab
+        vipTab.classList.add('active', 'text-white', 'bg-blvd-green');
+        vipTab.classList.remove('bg-white', 'text-blvd-green');
+
+        // Deactivate Event tab
+        eventTab.classList.remove('active', 'text-white', 'bg-blvd-green');
+        eventTab.classList.add('bg-white', 'text-blvd-green');
+
+        // Show VIP content, hide Event content
+        vipContent.classList.add('active');
+        vipContent.classList.remove('hidden');
+        eventContent.classList.remove('active');
+        eventContent.classList.add('hidden');
+      } else {
+        // Activate Event tab
+        eventTab.classList.add('active', 'text-white', 'bg-blvd-green');
+        eventTab.classList.remove('bg-white', 'text-blvd-green');
+
+        // Deactivate VIP tab
+        vipTab.classList.remove('active', 'text-white', 'bg-blvd-green');
+        vipTab.classList.add('bg-white', 'text-blvd-green');
+
+        // Show Event content, hide VIP content
+        eventContent.classList.add('active');
+        eventContent.classList.remove('hidden');
+        vipContent.classList.remove('active');
+        vipContent.classList.add('hidden');
+      }
+    }
+
+    // Add click event listeners to desktop tabs
+    vipTab?.addEventListener('click', function (e) {
+      e.preventDefault();
+      switchTab('vip');
+    });
+
+    eventTab?.addEventListener('click', function (e) {
+      e.preventDefault();
+      switchTab('event');
+    });
+
+    // Add click event listeners to mobile tabs if they exist
+    if (mobileVipTab && mobileEventTab) {
+      mobileVipTab.addEventListener('click', function () {
+        switchTab('vip');
+        mobileVipTab.classList.add('bg-blvd-green', 'text-white');
+        mobileVipTab.classList.remove('bg-white', 'text-blvd-green');
+        mobileEventTab.classList.add('bg-white', 'text-blvd-green');
+        mobileEventTab.classList.remove('bg-blvd-green', 'text-white');
+      });
+
+      mobileEventTab.addEventListener('click', function () {
+        switchTab('event');
+        mobileEventTab.classList.add('bg-blvd-green', 'text-white');
+        mobileEventTab.classList.remove('bg-white', 'text-blvd-green');
+        mobileVipTab.classList.add('bg-white', 'text-blvd-green');
+        mobileVipTab.classList.remove('bg-blvd-green', 'text-white');
+      });
+    }
+
+    // VIP Booking form submission handling
+    const vipForm = document.getElementById('vip-booking-form') as HTMLFormElement | null;
+    // EDIT HERE: Update webhook URL if needed
+    const webhookUrl = 'https://n8n.weswalz.com/webhook/6784877f-df6b-4973-872f-e09bc0db9996';
+
+    if (vipForm) {
+      vipForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        // Show submission status message
+        const formMessage = document.getElementById('form-message') as HTMLElement | null;
+        if (formMessage) {
+          formMessage.innerHTML = '<p class="text-green-600">Sending your request...</p>';
+        }
+
+        // Collect form data
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const formData: Record<string, string> = {};
+        formData.formType = "VIP Table Request";
+        formData.deviceType = isMobile ? "mobile" : "desktop";
+
+        const inputs = vipForm.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+          const element = input as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+          if (element.name) {
+            formData[element.name] = element.value;
+          }
+        });
+
+        const formDataToSend = new FormData();
+        for (const key in formData) {
+          formDataToSend.append(key, formData[key]);
+        }
+        formDataToSend.append('formDataJson', JSON.stringify(formData));
+
+
+        // Mobile-specific handling for better UX on mobile devices
+        if (isMobile) {
+          if (formMessage) {
+            formMessage.innerHTML = '<p class="text-green-600">Request sent successfully! We\'ll contact you soon.</p>';
+          }
+          vipForm.reset();
+          fetch(webhookUrl, {
+            method: 'POST',
+            body: formDataToSend,
+            mode: 'no-cors',
+            credentials: 'omit',
+            cache: 'no-cache'
+          }).catch(_error => {
+            // Background submission error - silently ignore
+          });
+        } else {
+          // Desktop handling
+          fetch(webhookUrl, {
+            method: 'POST',
+            body: formDataToSend,
+            mode: 'no-cors',
+            credentials: 'omit',
+            cache: 'no-cache'
+          }).then(() => {
+            if (formMessage) {
+              formMessage.innerHTML = '<p class="text-green-600">Request sent successfully! We\'ll contact you soon.</p>';
+            }
+            vipForm.reset();
+          }).catch(_error => {
+            if (formMessage) {
+              formMessage.innerHTML = '<p class="text-red-600">An error occurred. Please try again.</p>';
+            }
+          });
+        }
+      });
+    }
+  });
+</script>
+  </Layout>

@@ -1,0 +1,115 @@
+---
+// src/components/SpecialsSection.astro - Weekly specials near the top of the homepage
+const specials = [
+  {
+    day: "Monday",
+    tag: "All day",
+    items: ["1/2 off apps all day", "$5 domestics"],
+  },
+  {
+    day: "Tuesday",
+    tag: "Tuesday",
+    items: ["$10 cheeseburger with fries and domestic beer"],
+  },
+  {
+    day: "Wednesday",
+    tag: "Wing Wednesday",
+    items: ["$1 wings", "$5 shots"],
+  },
+  {
+    day: "Thursday",
+    tag: "Thursday",
+    items: ["$12 burgers and sandwiches", "$6 tequila shots"],
+  },
+  {
+    day: "Friday",
+    tag: "Friday",
+    items: ["1/2 off wraps", "1/2 off espresso martinis"],
+  },
+  {
+    day: "Saturday and Sunday",
+    tag: "Day",
+    items: [
+      "$1 boneless wings",
+      "$20 domestic buckets",
+      "$25 import buckets",
+      "$30 seltzer buckets",
+      "$5 shots",
+    ],
+    featured: true,
+  },
+];
+---
+
+<section
+  id="specials"
+  class="relative overflow-hidden bg-gradient-to-b from-blvd-white via-blvd-light-green to-blvd-white"
+>
+  <div class="absolute inset-0 bg-circle-pattern opacity-10"></div>
+  <div class="absolute -top-24 -left-24 h-64 w-64 rounded-full bg-blvd-accent/20 blur-3xl"></div>
+  <div class="absolute bottom-0 right-0 h-72 w-72 rounded-full bg-blvd-green/10 blur-3xl"></div>
+
+  <div class="relative max-w-screen-xl mx-auto px-4 pt-12 pb-16">
+    <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between mb-12">
+      <div class="max-w-2xl">
+        <span class="inline-flex items-center rounded-full bg-blvd-green/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.3em] text-blvd-green">
+          Daily specials
+        </span>
+        <h2 class="mt-4 text-3xl md:text-4xl font-bold text-blvd-green">
+          Every day gets a little louder.
+        </h2>
+        <p class="mt-3 text-base md:text-lg text-gray-700">
+          Apps, burgers, wings, and buckets lined up from Monday through Sunday.
+        </p>
+      </div>
+      <div class="flex flex-wrap gap-3 text-sm text-gray-700">
+        <span class="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 shadow-sm">
+          <span class="h-2 w-2 rounded-full bg-blvd-green"></span>
+          Food + drink deals
+        </span>
+        <span class="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 shadow-sm">
+          <span class="h-2 w-2 rounded-full bg-blvd-green"></span>
+          All week long
+        </span>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      {specials.map((special) => (
+        <article
+          class={`group relative overflow-hidden rounded-2xl border border-blvd-green/10 bg-white shadow-elevated transition-transform duration-300 hover:-translate-y-1 ${
+            special.featured ? "md:col-span-2 xl:col-span-3" : ""
+          }`}
+        >
+          <div class="absolute right-0 top-0 h-24 w-24 rounded-bl-[80px] bg-blvd-light-green/80"></div>
+          <div
+            class={`relative flex h-full flex-col gap-4 p-6 ${
+              special.featured ? "md:flex-row md:items-start md:gap-8 md:p-8" : ""
+            }`}
+          >
+            <div class={`min-w-[170px] ${special.featured ? "md:max-w-[220px]" : ""}`}>
+              <span class="inline-flex items-center rounded-full bg-blvd-green/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-blvd-green">
+                {special.tag}
+              </span>
+              <h3 class="mt-3 text-2xl font-bold text-blvd-green">{special.day}</h3>
+            </div>
+            <ul
+              class={`text-base text-gray-800 ${
+                special.featured
+                  ? "grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2"
+                  : "space-y-2"
+              }`}
+            >
+              {special.items.map((item) => (
+                <li class="flex items-start gap-3">
+                  <span class="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-blvd-green"></span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>

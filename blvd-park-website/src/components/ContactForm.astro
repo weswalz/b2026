@@ -1,0 +1,152 @@
+---
+// src/components/ContactForm.astro
+---
+
+<form class="space-y-6 p-6 bg-white rounded-lg shadow-md border border-blvd-light-green text-center" id="contactForm" method="POST" action="https://n8n.weswalz.com/webhook/a5dafd13-4e62-4338-bde7-397acf72a3e4">
+  
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <label for="first-name" class="block mb-2 text-sm font-medium text-blvd-green text-center">First Name</label>
+      <input
+        type="text"
+        id="first-name"
+        name="first-name"
+        class="bg-blvd-white border border-blvd-light-green text-blvd-green text-sm rounded-lg focus:ring-blvd-green focus:border-blvd-green block w-full p-3 text-center"
+        placeholder="Your first name"
+        required
+      >
+    </div>
+    
+    <div>
+      <label for="last-name" class="block mb-2 text-sm font-medium text-blvd-green text-center">Last Name</label>
+      <input
+        type="text"
+        id="last-name"
+        name="last-name"
+        class="bg-blvd-white border border-blvd-light-green text-blvd-green text-sm rounded-lg focus:ring-blvd-green focus:border-blvd-green block w-full p-3 text-center"
+        placeholder="Your last name"
+        required
+      >
+    </div>
+  </div>
+  
+  <div>
+    <label for="email" class="block mb-2 text-sm font-medium text-blvd-green text-center">Email</label>
+    <input
+      type="email"
+      id="email"
+      name="email"
+      class="bg-blvd-white border border-blvd-light-green text-blvd-green text-sm rounded-lg focus:ring-blvd-green focus:border-blvd-green block w-full p-3 text-center"
+      placeholder="your.email@example.com"
+      required
+    >
+  </div>
+  
+  <div>
+    <label for="phone" class="block mb-2 text-sm font-medium text-blvd-green text-center">Mobile Phone</label>
+    <input
+      type="tel"
+      id="phone"
+      name="phone"
+      class="bg-blvd-white border border-blvd-light-green text-blvd-green text-sm rounded-lg focus:ring-blvd-green focus:border-blvd-green block w-full p-3 text-center"
+      placeholder="(123) 456-7890"
+      required
+    >
+  </div>
+  
+  <div>
+    <label for="message" class="block mb-2 text-sm font-medium text-blvd-green text-center">Message</label>
+    <textarea
+      id="message"
+      name="message"
+      rows="4"
+      class="bg-blvd-white border border-blvd-light-green text-blvd-green text-sm rounded-lg focus:ring-blvd-green focus:border-blvd-green block w-full p-3 text-center"
+      placeholder="Your message here..."
+      required
+    ></textarea>
+  </div>
+  
+  <div class="bg-blvd-light-green/20 p-4 rounded-lg">
+    <label for="captcha" class="block mb-2 text-sm font-medium text-blvd-green text-center">You're not a bot are you? What's ten minus 7?</label>
+    <input
+      type="text"
+      id="captcha"
+      name="captcha"
+      class="bg-blvd-white border border-blvd-light-green text-blvd-green text-sm rounded-lg focus:ring-blvd-green focus:border-blvd-green block w-full p-3 text-center"
+      required
+    >
+  </div>
+  
+  
+  <button
+    type="submit"
+    class="w-full text-blvd-white bg-blvd-green hover:bg-blvd-accent hover:text-blvd-green focus:ring-4 focus:ring-blvd-light-green font-medium rounded-lg text-sm px-5 py-3 text-center transition-colors"
+  >
+    Submit
+  </button>
+</form>
+
+<p id="submissionMessage" class="mt-4 text-center text-sm font-medium text-blvd-green"></p>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('contactForm') as HTMLFormElement;
+    const submissionMessageElement = document.getElementById('submissionMessage') as HTMLParagraphElement;
+    const captchaInput = document.getElementById('captcha') as HTMLInputElement;
+
+    if (form && submissionMessageElement && captchaInput) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        // Basic captcha validation
+        const captchaValue = captchaInput.value.trim().toLowerCase();
+        if (captchaValue !== '3' && captchaValue !== 'three') {
+          submissionMessageElement.textContent = 'Invalid captcha. Please answer the captcha question correctly (3 or three).';
+          submissionMessageElement.style.color = 'red'; // Optional: style for error
+          return;
+        }
+
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+
+        // Remove captcha from data sent to webhook
+        delete data.captcha;
+
+        const webhookUrl = 'https://n8n.weswalz.com/webhook/a5dafd13-4e62-4338-bde7-397acf72a3e4';
+        
+        // Check if running in local development
+        const isLocalDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        
+        if (isLocalDevelopment) {
+          // In local development, show a message instead of attempting to submit
+          submissionMessageElement.textContent = 'Form submission is disabled in local development due to CORS restrictions. This form will work in production.';
+          submissionMessageElement.style.color = 'blue';
+          form.reset();
+          return;
+        }
+        
+        try {
+          const response = await fetch(webhookUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+          });
+
+          if (response.ok) {
+            submissionMessageElement.textContent = 'Thank you for your message! We will get back to you soon.';
+            submissionMessageElement.style.color = 'green'; // Optional: style for success
+            form.reset();
+          } else {
+            submissionMessageElement.textContent = 'There was an error submitting your message. Please try again.';
+            submissionMessageElement.style.color = 'red'; // Optional: style for error
+          }
+        } catch (_error) {
+          submissionMessageElement.textContent = 'An error occurred while submitting the form.';
+          submissionMessageElement.style.color = 'red'; // Optional: style for error
+        }
+      });
+    }
+  });
+</script>

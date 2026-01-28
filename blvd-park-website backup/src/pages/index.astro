@@ -1,0 +1,23 @@
+---
+// src/pages/index.astro
+import Layout from '@layouts/Layout.astro';
+import Hero from '@components/Hero.astro';
+import AboutSection from '@components/AboutSection.astro';
+import BLVDGallerySection from '@components/BLVDGallerySection.astro';
+import MenuSection from '@components/MenuSection.astro';
+import PickleballSection from '@components/PickleballSection.astro';
+import EventsSection from '@components/EventsSection.astro';
+import LocationSection from '@components/LocationSection.astro';
+import SocialEmbed from '@components/SocialEmbed.astro';
+---
+
+<Layout title="Home">
+  <Hero />
+  <AboutSection />
+  <BLVDGallerySection />
+  <MenuSection />
+  <PickleballSection />
+  <EventsSection />
+  <LocationSection />
+  <SocialEmbed type="instagram" url="https://www.instagram.com/p/CzNxLZJuRnp/" />
+</Layout>

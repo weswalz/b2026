@@ -1,0 +1,9 @@
+---
+// Admin Menu Management
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import AdminPage from '../../components/admin/AdminPage';
+---
+
+<AdminLayout title="Menu">
+  <AdminPage client:only="react" currentPath={Astro.url.pathname} page="menu" />
+</AdminLayout>

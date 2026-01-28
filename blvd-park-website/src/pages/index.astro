@@ -1,0 +1,152 @@
+---
+// src/pages/index.astro - Main homepage of the website
+// This file imports all the components that make up the homepage
+
+// Import the main site layout
+import Layout from '@layouts/Layout.astro';
+
+// Import all homepage sections as components
+import Hero from '@components/Hero.astro';                 // Hero image
+import SpecialsSection from '@components/SpecialsSection.astro'; // Weekly specials
+import AboutSection from '@components/AboutSection.astro'; // About BLVD Park section
+import BLVDGallerySection from '@components/BLVDGallerySection.astro'; // Gallery grid
+import MenuSection from '@components/MenuSection.astro';   // Food & drink menu section
+import PickleballSection from '@components/PickleballSection.astro'; // Pickleball info
+import EventsSection from '@components/EventsSection.astro'; // Events showcase
+import LocationSection from '@components/LocationSection.astro'; // Hours and location
+import SocialEmbed from '@components/SocialEmbed.astro';  // Instagram embed
+
+// Define canonical URL and meta information for SEO
+const canonicalURL = new URL('https://blvdpark.com/').toString();
+const title = "BLVD Park - Sports Bar & Free Pickleball in the Heights, Houston";
+const description = "A two-story sports bar in Houston's Heights with free pickleball courts, craft cocktails, and a huge patio. Watch the game, play a match, grab a drink. Kid-friendly until 9 PM.";
+// EDIT HERE: Update Open Graph image when available
+const image = "https://blvdpark.com/images/blvd-park-og.webp";
+---
+
+<!-- Structured data for SEO and rich results in search engines -->
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": ["BarOrPub", "SportsActivityLocation", "Restaurant"],
+    "name": "BLVD Park",
+    "alternateName": "BLVD Park Sports Bar",
+    "description": "A two-story sports bar in Houston's Heights neighborhood with free pickleball courts, craft cocktails, great food, and a huge outdoor patio. Kid-friendly until 9 PM.",
+    "image": [
+      "https://blvdpark.com/images/blvd-park-og.webp",
+      "https://blvdpark.com/images/venue/venue-building.webp"
+    ],
+    "url": "https://blvdpark.com",
+    "telephone": "+1-713-804-7553",
+    "priceRange": "$$",
+    "servesCuisine": ["American", "Bar Food", "Craft Cocktails"],
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "1119 W 20th St",
+      "addressLocality": "Houston",
+      "addressRegion": "TX",
+      "postalCode": "77008",
+      "addressCountry": "US",
+      "areaServed": {
+        "@type": "City",
+        "name": "Houston",
+        "containedInPlace": {
+          "@type": "State",
+          "name": "Texas"
+        }
+      }
+    },
+    "geo": {
+      "@type": "GeoCoordinates",
+      "latitude": 29.8033,
+      "longitude": -95.4100
+    },
+    "hasMap": "https://maps.google.com/?q=1119+W+20th+St+Houston+TX+77008",
+    "openingHoursSpecification": [
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday", "Tuesday"],
+        "opens": "16:00",
+        "closes": "00:00"
+      },
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Wednesday", "Thursday"],
+        "opens": "12:00",
+        "closes": "00:00"
+      },
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": "Friday",
+        "opens": "12:00",
+        "closes": "02:00"
+      },
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": "Saturday",
+        "opens": "11:00",
+        "closes": "02:00"
+      },
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": "Sunday",
+        "opens": "12:00",
+        "closes": "00:00"
+      }
+    ],
+    "amenityFeature": [
+      {
+        "@type": "LocationFeatureSpecification",
+        "name": "Sports Bar",
+        "value": true
+      },
+      {
+        "@type": "LocationFeatureSpecification",
+        "name": "Free Pickleball Courts",
+        "value": true
+      },
+      {
+        "@type": "LocationFeatureSpecification",
+        "name": "Outdoor Patio",
+        "value": true
+      },
+      {
+        "@type": "LocationFeatureSpecification",
+        "name": "Big Screen TVs",
+        "value": true
+      },
+      {
+        "@type": "LocationFeatureSpecification",
+        "name": "Kid Friendly",
+        "value": true
+      }
+    ],
+    "sameAs": [
+      "https://www.instagram.com/blvdparkhtx/",
+      "https://www.facebook.com/blvdparkhtx"
+    ]
+  }
+</script>
+
+<!-- Apply the Layout to the page and pass SEO metadata -->
+<Layout 
+  title={title}
+  description={description}
+  image={image}
+  canonicalURL={canonicalURL}
+>
+  <!-- IMPORTANT: This section defines the order of components on the homepage -->
+  <!-- To reorder sections, simply rearrange these component tags -->
+  <Hero />
+  <SpecialsSection />
+  <AboutSection />
+  <BLVDGallerySection />
+  <MenuSection />
+  <PickleballSection />
+  <EventsSection />
+  <LocationSection />
+
+  <!-- Instagram profile embed -->
+  <SocialEmbed type="instagram" />
+
+</Layout>

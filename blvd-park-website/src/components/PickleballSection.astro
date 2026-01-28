@@ -1,0 +1,64 @@
+---
+// src/components/PickleballSection.astro - Pickleball information section
+// Highlights the pickleball courts and their availability
+import CTAButton from './CTAButton.astro';
+---
+
+<!-- 
+  Pickleball section with light green background and circle pattern
+  The background pattern is defined in the global CSS as 'bg-circle-pattern'
+-->
+<section class="py-16 bg-circle-pattern bg-blvd-light-green">
+  <div class="max-w-screen-xl mx-auto px-4">
+    <!-- Card container with white background and shadow -->
+    <div class="bg-blvd-white rounded-lg shadow-lg overflow-hidden">
+      <!-- Two-column layout (stacked on mobile, side-by-side on desktop) -->
+      <div class="flex flex-col md:flex-row">
+        <!-- Left column: Pickleball image -->
+        <div class="md:w-1/2">
+          <!-- 
+            EDIT HERE: To change the pickleball image:
+            1. Add your new image to /public/images/ directory
+            2. Update the 'src' attribute below to point to your new image
+            3. Use an image with similar dimensions to maintain layout
+          -->
+          <img 
+            src="/images/pickleball-hero.webp" 
+            alt="BLVD Park Pickleball Courts" 
+            width="800"
+            height="600"
+            loading="lazy"
+            class="w-full h-full object-cover"
+          />
+        </div>
+        
+        <!-- Right column: Pickleball information -->
+        <div class="md:w-1/2 p-8 md:p-12 flex flex-col items-center text-center">
+          <!-- Section heading -->
+          <div class="mb-6">
+            <h2 class="text-3xl font-bold text-blvd-green">Pickleball in the Heights</h2>
+            <h2 class="text-3xl font-bold text-blvd-green">Just Got a Pulse</h2>
+          </div>
+          
+          <!-- EDIT HERE: Main description text -->
+          <p class="mb-6">
+            At BLVD PARK, the game is only half the story. Our blue-and-green courts are open daily and always free — no reservations, no memberships, no gatekeeping. Play covered or open-air, paddle in one hand, drink in the other. Whether you're rallying with friends or just out to vibe, the music's up, the cocktails flow, and the energy rolls from court to cabana without skipping a beat. This is how Houston does pickleball — casually competitive, socially charged, and right in the heart of the Heights.
+          </p>
+          
+          <!-- EDIT HERE: Operating hours information -->
+          <div class="font-bold mb-4">
+            <p class="mb-2">Open daily:</p>
+            <p class="mb-1">Mon-Tue: 4PM-12AM</p>
+            <p class="mb-1">Wed-Thu: 12PM-12AM</p>
+            <p class="mb-1">Sun: 12PM-12AM</p>
+            <p class="mb-1">Fri: 12PM-2AM</p>
+            <p>Sat: 11AM-2AM</p>
+          </div>
+          
+          <!-- CTA button linking to location section -->
+          <CTAButton href="/#location" color="green">Get to BLVD</CTAButton>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
