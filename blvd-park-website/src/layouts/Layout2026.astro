@@ -2,8 +2,8 @@
 // src/layouts/Layout2026.astro - 2026 Redesign Layout
 // Premium typography, refined colors, modern structure
 
-import Navbar2026 from '@components/Navbar2026.astro';
-import Footer2026 from '@components/Footer2026.astro';
+import Navbar2026 from "@components/Navbar2026.astro";
+import Footer2026 from "@components/Footer2026.astro";
 
 export interface Props {
   title: string;
@@ -12,297 +12,327 @@ export interface Props {
   canonicalURL?: string;
 }
 
-const { 
+const {
   title,
   description = "The Heights' premier sports bar with free pickleball courts. Craft cocktails, game day vibes, and a vibrant atmosphere at Houston's favorite playground.",
   image = "/images/hero-background.webp",
-  canonicalURL
+  canonicalURL,
 } = Astro.props;
 ---
 
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" class="scroll-smooth">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <meta name="generator" content={Astro.generator} />
-  
-  <title>{title}</title>
-  <meta name="description" content={description} />
-  
-  <!-- Open Graph -->
-  <meta property="og:title" content={title} />
-  <meta property="og:description" content={description} />
-  <meta property="og:image" content={image} />
-  <meta property="og:type" content="website" />
-  {canonicalURL && <meta property="og:url" content={canonicalURL} />}
-  
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content={title} />
-  <meta name="twitter:description" content={description} />
-  <meta name="twitter:image" content={image} />
-  
-  <!-- Preconnect -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="preconnect" href="https://api.fontshare.com" />
-  
-  <!-- 2026 Typography: Clash Display + Satoshi from Fontshare -->
-  <link href="https://api.fontshare.com/v2/css?f[]=clash-display@200,300,400,500,600,700&f[]=satoshi@300,400,500,700&display=swap" rel="stylesheet" />
-  
-  <!-- JetBrains Mono for monospace elements -->
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-  
-  <!-- Critical CSS -->
-  <style is:global>
-    /* CSS Reset & Base Styles */
-    *, *::before, *::after {
-      box-sizing: border-box;
-    }
-    
-    html {
-      scroll-behavior: smooth;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      width: 100%;
-      max-width: 100%;
-      overflow-x: clip;
-    }
-    
-    body {
-      margin: 0;
-      font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background-color: #F8F6F1; /* blvd-cream */
-      color: #1C1C1C; /* blvd-charcoal */
-      line-height: 1.6;
-      width: 100%;
-      max-width: 100%;
-      overflow-x: clip;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
 
-    main {
-      width: 100%;
-      max-width: 100%;
-    }
-    
-    /* 2026 Font Classes */
-    .font-display {
-      font-family: 'Clash Display', 'SF Pro Display', system-ui, sans-serif;
-    }
-    
-    .font-body {
-      font-family: 'Satoshi', 'Inter', system-ui, sans-serif;
-    }
-    
-    .font-mono {
-      font-family: 'JetBrains Mono', 'SF Mono', monospace;
-    }
-    
-    /* 2026 Color Variables */
-    :root {
-      /* Brand Colors */
-      --blvd-green: #1A5F36;
-      --blvd-green-bright: #22C55E;
-      --blvd-green-dark: #0F3D22;
-      --blvd-cream: #F8F6F1;
-      --blvd-cream-dark: #EDE9E0;
-      --blvd-charcoal: #1C1C1C;
-      --blvd-gold: #C9A962;
+    <title>{title}</title>
+    <meta name="description" content={description} />
 
-      /* Dark Section Backgrounds - standardized */
-      --blvd-dark-base: #0d0d0d;
-      --blvd-dark-elevated: #121212;
-      --blvd-dark-surface: #1a1a1a;
-      --blvd-dark-green: #0F3D22;
+    <!-- Open Graph -->
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={image} />
+    <meta property="og:type" content="website" />
+    {canonicalURL && <meta property="og:url" content={canonicalURL} />}
 
-      /* Text Opacities on Dark */
-      --text-primary: rgba(255,255,255,1);
-      --text-secondary: rgba(255,255,255,0.7);
-      --text-muted: rgba(255,255,255,0.5);
-      --text-subtle: rgba(255,255,255,0.4);
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={image} />
 
-      /* Glass Effects */
-      --glass-bg: rgba(255,255,255,0.03);
-      --glass-border: rgba(255,255,255,0.08);
-      --glass-hover: rgba(255,255,255,0.06);
-    }
-    
-    /* Smooth transitions */
-    a, button {
-      transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
-    }
-    
-    /* Selection color */
-    ::selection {
-      background-color: var(--blvd-green);
-      color: white;
-    }
-    
-    /* Custom scrollbar */
-    ::-webkit-scrollbar {
-      width: 8px;
-    }
-    
-    ::-webkit-scrollbar-track {
-      background: var(--blvd-cream-dark);
-    }
-    
-    ::-webkit-scrollbar-thumb {
-      background: var(--blvd-green);
-      border-radius: 4px;
-    }
-    
-    ::-webkit-scrollbar-thumb:hover {
-      background: var(--blvd-green-dark);
-    }
-    
-    /* Fluid typography scale */
-    .text-display-xl {
-      font-size: clamp(3rem, 8vw, 7rem);
-      line-height: 0.95;
-      letter-spacing: -0.02em;
-    }
-    
-    .text-display-lg {
-      font-size: clamp(2.5rem, 6vw, 5rem);
-      line-height: 1;
-      letter-spacing: -0.02em;
-    }
-    
-    .text-display-md {
-      font-size: clamp(2rem, 4vw, 3.5rem);
-      line-height: 1.1;
-      letter-spacing: -0.01em;
-    }
-    
-    .text-display-sm {
-      font-size: clamp(1.5rem, 3vw, 2.5rem);
-      line-height: 1.2;
-      letter-spacing: -0.01em;
-    }
-    
-    /* Animation utilities */
-    .ease-out-expo {
-      transition-timing-function: cubic-bezier(0.19, 1, 0.22, 1);
-    }
-    
-    /* Noise texture */
-    .bg-noise {
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-    }
-    
-    /* Elevated shadows */
-    .shadow-elevated {
-      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.1), 0 2px 8px -2px rgba(0, 0, 0, 0.06);
-    }
-    
-    .shadow-elevated-lg {
-      box-shadow: 0 8px 40px -4px rgba(0, 0, 0, 0.12), 0 4px 16px -4px rgba(0, 0, 0, 0.08);
-    }
+    <!-- Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://api.fontshare.com" />
 
-    /* Section background utilities */
-    .bg-dark-base {
-      background: var(--blvd-dark-base);
-    }
+    <!-- 2026 Typography: Clash Display + Satoshi from Fontshare -->
+    <link
+      href="https://api.fontshare.com/v2/css?f[]=clash-display@200,300,400,500,600,700&f[]=satoshi@300,400,500,700&display=swap"
+      rel="stylesheet"
+    />
 
-    .bg-dark-gradient {
-      background: linear-gradient(180deg, var(--blvd-dark-surface) 0%, var(--blvd-dark-base) 100%);
-    }
+    <!-- JetBrains Mono for monospace elements -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
 
-    .bg-dark-green {
-      background: var(--blvd-dark-green);
-    }
+    <!-- Critical CSS -->
+    <style is:global>
+      /* CSS Reset & Base Styles */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
 
-    /* Glass card utility */
-    .glass-card {
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-    }
+      html {
+        scroll-behavior: smooth;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: clip;
+      }
 
-    .glass-card:hover {
-      background: var(--glass-hover);
-      border-color: rgba(255,255,255,0.12);
-    }
+      body {
+        margin: 0;
+        font-family:
+          "Satoshi",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        background-color: #f8f6f1; /* blvd-cream */
+        color: #1c1c1c; /* blvd-charcoal */
+        line-height: 1.6;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: clip;
+      }
 
-    /* Eyebrow text - standardized */
-    .eyebrow {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.75rem;
-      font-weight: 500;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--blvd-gold);
-    }
+      main {
+        width: 100%;
+        max-width: 100%;
+      }
 
-    /* Section spacing - standardized */
-    .section-padding {
-      padding-top: 5rem;
-      padding-bottom: 5rem;
-    }
+      /* 2026 Font Classes */
+      .font-display {
+        font-family: "Clash Display", "SF Pro Display", system-ui, sans-serif;
+      }
 
-    @media (min-width: 768px) {
+      .font-body {
+        font-family: "Satoshi", "Inter", system-ui, sans-serif;
+      }
+
+      .font-mono {
+        font-family: "JetBrains Mono", "SF Mono", monospace;
+      }
+
+      /* 2026 Color Variables */
+      :root {
+        /* Brand Colors */
+        --blvd-green: #1a5f36;
+        --blvd-green-bright: #22c55e;
+        --blvd-green-dark: #0f3d22;
+        --blvd-cream: #f8f6f1;
+        --blvd-cream-dark: #ede9e0;
+        --blvd-charcoal: #1c1c1c;
+        --blvd-gold: #c9a962;
+
+        /* Dark Section Backgrounds - standardized */
+        --blvd-dark-base: #0d0d0d;
+        --blvd-dark-elevated: #121212;
+        --blvd-dark-surface: #1a1a1a;
+        --blvd-dark-green: #0f3d22;
+
+        /* Text Opacities on Dark */
+        --text-primary: rgba(255, 255, 255, 1);
+        --text-secondary: rgba(255, 255, 255, 0.7);
+        --text-muted: rgba(255, 255, 255, 0.5);
+        --text-subtle: rgba(255, 255, 255, 0.4);
+
+        /* Glass Effects */
+        --glass-bg: rgba(255, 255, 255, 0.03);
+        --glass-border: rgba(255, 255, 255, 0.08);
+        --glass-hover: rgba(255, 255, 255, 0.06);
+      }
+
+      /* Smooth transitions */
+      a,
+      button {
+        transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+      }
+
+      /* Selection color */
+      ::selection {
+        background-color: var(--blvd-green);
+        color: white;
+      }
+
+      /* Custom scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: var(--blvd-cream-dark);
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: var(--blvd-green);
+        border-radius: 4px;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--blvd-green-dark);
+      }
+
+      /* Fluid typography scale */
+      .text-display-xl {
+        font-size: clamp(3rem, 8vw, 7rem);
+        line-height: 0.95;
+        letter-spacing: -0.02em;
+      }
+
+      .text-display-lg {
+        font-size: clamp(2.5rem, 6vw, 5rem);
+        line-height: 1;
+        letter-spacing: -0.02em;
+      }
+
+      .text-display-md {
+        font-size: clamp(2rem, 4vw, 3.5rem);
+        line-height: 1.1;
+        letter-spacing: -0.01em;
+      }
+
+      .text-display-sm {
+        font-size: clamp(1.5rem, 3vw, 2.5rem);
+        line-height: 1.2;
+        letter-spacing: -0.01em;
+      }
+
+      /* Animation utilities */
+      .ease-out-expo {
+        transition-timing-function: cubic-bezier(0.19, 1, 0.22, 1);
+      }
+
+      /* Noise texture */
+      .bg-noise {
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      }
+
+      /* Elevated shadows */
+      .shadow-elevated {
+        box-shadow:
+          0 4px 20px -2px rgba(0, 0, 0, 0.1),
+          0 2px 8px -2px rgba(0, 0, 0, 0.06);
+      }
+
+      .shadow-elevated-lg {
+        box-shadow:
+          0 8px 40px -4px rgba(0, 0, 0, 0.12),
+          0 4px 16px -4px rgba(0, 0, 0, 0.08);
+      }
+
+      /* Section background utilities */
+      .bg-dark-base {
+        background: var(--blvd-dark-base);
+      }
+
+      .bg-dark-gradient {
+        background: linear-gradient(
+          180deg,
+          var(--blvd-dark-surface) 0%,
+          var(--blvd-dark-base) 100%
+        );
+      }
+
+      .bg-dark-green {
+        background: var(--blvd-dark-green);
+      }
+
+      /* Glass card utility */
+      .glass-card {
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+      }
+
+      .glass-card:hover {
+        background: var(--glass-hover);
+        border-color: rgba(255, 255, 255, 0.12);
+      }
+
+      /* Eyebrow text - standardized */
+      .eyebrow {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.75rem;
+        font-weight: 500;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--blvd-gold);
+      }
+
+      /* Section spacing - standardized */
       .section-padding {
-        padding-top: 7rem;
-        padding-bottom: 7rem;
+        padding-top: 5rem;
+        padding-bottom: 5rem;
       }
-    }
 
-    @media (min-width: 1024px) {
-      .section-padding {
-        padding-top: 8rem;
-        padding-bottom: 8rem;
+      @media (min-width: 768px) {
+        .section-padding {
+          padding-top: 7rem;
+          padding-bottom: 7rem;
+        }
       }
-    }
 
-    /* Reduced motion support */
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
+      @media (min-width: 1024px) {
+        .section-padding {
+          padding-top: 8rem;
+          padding-bottom: 8rem;
+        }
       }
-    }
-  </style>
-</head>
-<body>
-  <Navbar2026 />
 
-  <main>
-    <slot />
-  </main>
-  
-  <Footer2026 />
-  
-  <!-- Deferred scripts -->
-  <script is:inline>
-    // Load analytics on user interaction
-    let analyticsLoaded = false;
-    function loadAnalytics() {
-      if (analyticsLoaded) return;
-      analyticsLoaded = true;
-      
-      const gtagScript = document.createElement('script');
-      gtagScript.async = true;
-      gtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-B4GJ1LQ1Q1';
-      document.head.appendChild(gtagScript);
-      
-      gtagScript.onload = function() {
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-B4GJ1LQ1Q1');
-      };
-    }
-    
-    ['click', 'scroll', 'touchstart'].forEach(event => {
-      document.addEventListener(event, loadAnalytics, { once: true, passive: true });
-    });
-    
-    setTimeout(loadAnalytics, 10000);
-  </script>
-</body>
+      /* Reduced motion support */
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <Navbar2026 />
+
+    <main>
+      <slot />
+    </main>
+
+    <Footer2026 />
+
+    <!-- Deferred scripts -->
+    <script is:inline>
+      // Load analytics on user interaction
+      let analyticsLoaded = false;
+      function loadAnalytics() {
+        if (analyticsLoaded) return;
+        analyticsLoaded = true;
+
+        const gtagScript = document.createElement("script");
+        gtagScript.async = true;
+        gtagScript.src =
+          "https://www.googletagmanager.com/gtag/js?id=G-B4GJ1LQ1Q1";
+        document.head.appendChild(gtagScript);
+
+        gtagScript.onload = function () {
+          window.dataLayer = window.dataLayer || [];
+          function gtag() {
+            dataLayer.push(arguments);
+          }
+          gtag("js", new Date());
+          gtag("config", "G-B4GJ1LQ1Q1");
+        };
+      }
+
+      ["click", "scroll", "touchstart"].forEach((event) => {
+        document.addEventListener(event, loadAnalytics, {
+          once: true,
+          passive: true,
+        });
+      });
+
+      setTimeout(loadAnalytics, 5000);
+    </script>
+  </body>
 </html>

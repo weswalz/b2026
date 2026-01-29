@@ -1,80 +1,119 @@
 ---
 // src/components/LocationSection.astro
-import MapEmbed from './MapEmbed.astro';
-import ContactForm from './ContactForm.astro';
+import MapEmbed from "./MapEmbed.astro";
+import ContactForm from "./ContactForm.astro";
 ---
 
 <section id="hours-location" class="py-16 bg-blvd-light-green">
   <div class="max-w-screen-xl mx-auto px-4">
-    <h2 class="text-3xl md:text-4xl font-bold mb-12 text-center text-blvd-green">Hours & Location</h2>
-    
+    <h2
+      class="text-3xl md:text-4xl font-bold mb-12 text-center text-blvd-green"
+    >
+      Hours & Location
+    </h2>
+
     <!-- Hours and Location cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
       <!-- Hours Card -->
       <div class="bg-blvd-white rounded-lg shadow-md p-8">
-        <h3 class="text-2xl font-bold mb-6 text-center text-blvd-green">Hours of Operation</h3>
-        
+        <h3 class="text-2xl font-bold mb-6 text-center text-blvd-green">
+          Hours of Operation
+        </h3>
+
         <div class="flex justify-center mb-8">
-          <div class="w-12 h-12 rounded-full flex items-center justify-center text-blvd-accent">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <div
+            class="w-12 h-12 rounded-full flex items-center justify-center text-blvd-accent"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-8 h-8"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
           </div>
         </div>
-        
+
         <div class="space-y-6 text-center">
           <div>
             <h4 class="text-xl font-semibold">Monday – Tuesday</h4>
             <p class="text-lg">4 PM – 12 AM</p>
           </div>
-          
+
           <div>
             <h4 class="text-xl font-semibold">Wednesday – Thursday</h4>
             <p class="text-lg">12 PM – 12 AM</p>
           </div>
-          
+
           <div>
             <h4 class="text-xl font-semibold">Sunday</h4>
             <p class="text-lg">12 PM – 12 AM</p>
           </div>
-          
+
           <div>
             <h4 class="text-xl font-semibold">Friday</h4>
             <p class="text-lg">12 PM – 2 AM</p>
           </div>
-          
+
           <div>
             <h4 class="text-xl font-semibold">Saturday</h4>
             <p class="text-lg">11 AM – 2 AM</p>
           </div>
         </div>
       </div>
-      
+
       <!-- Location Card -->
       <div class="bg-blvd-white rounded-lg shadow-md p-8">
-        <h3 class="text-2xl font-bold mb-6 text-center text-blvd-green">Location</h3>
-        
+        <h3 class="text-2xl font-bold mb-6 text-center text-blvd-green">
+          Location
+        </h3>
+
         <div class="flex justify-center mb-8">
-          <div class="w-12 h-12 rounded-full flex items-center justify-center text-blvd-accent">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          <div
+            class="w-12 h-12 rounded-full flex items-center justify-center text-blvd-accent"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-8 h-8"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+              ></path>
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
             </svg>
           </div>
         </div>
-        
+
         <div class="text-center mb-8">
           <h4 class="text-xl font-semibold mb-2">Address:</h4>
-          <p class="text-lg">1119 W 20th street</p>
+          <p class="text-lg">1119 W 20th St</p>
           <p class="text-lg">Houston, TX 77008</p>
         </div>
       </div>
     </div>
-    
+
     <!-- Get to BLVD Card -->
     <div class="bg-blvd-white rounded-lg shadow-md p-8 mb-8">
-      <h3 class="text-2xl font-bold mb-10 text-center text-blvd-green">Get to BLVD</h3>
-      
+      <h3 class="text-2xl font-bold mb-10 text-center text-blvd-green">
+        Get to BLVD
+      </h3>
+
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <a
           href="https://maps.apple.com/?q=BLVD+Park&address=1119%20W%2020th%20St,%20Houston,%20TX%2077008"
@@ -83,10 +122,18 @@ import ContactForm from './ContactForm.astro';
           class="flex flex-col items-center text-center p-4 rounded-lg hover:bg-gray-50 transition-colors"
           aria-label="Apple Maps to BLVD Park"
         >
-          <img src="/images/logos/applemaps.webp" alt="Apple Maps" width="40" height="40" class="h-10 w-10 mb-2 object-contain" loading="lazy" decoding="async" />
+          <img
+            src="/images/logos/applemaps.webp"
+            alt="Apple Maps"
+            width="40"
+            height="40"
+            class="h-10 w-10 mb-2 object-contain"
+            loading="lazy"
+            decoding="async"
+          />
           <span class="text-blvd-green font-medium">Apple Maps</span>
         </a>
-        
+
         <a
           href="https://www.google.com/maps/search/?api=1&query=BLVD+Park+Houston"
           target="_blank"
@@ -94,10 +141,18 @@ import ContactForm from './ContactForm.astro';
           class="flex flex-col items-center text-center p-4 rounded-lg hover:bg-gray-50 transition-colors"
           aria-label="Google Maps to BLVD Park"
         >
-          <img src="/images/logos/googlemaps.webp" alt="Google Maps" width="40" height="40" class="h-10 w-10 mb-2 object-contain" loading="lazy" decoding="async" />
+          <img
+            src="/images/logos/googlemaps.webp"
+            alt="Google Maps"
+            width="40"
+            height="40"
+            class="h-10 w-10 mb-2 object-contain"
+            loading="lazy"
+            decoding="async"
+          />
           <span class="text-blvd-green font-medium">Google Maps</span>
         </a>
-        
+
         <a
           href="https://m.uber.com/ul/?action=setPickup&dropoff[formatted_address]=BLVD+Park+1119%20W%2020th%20St%2C%20Houston%2C%20TX%2077008"
           target="_blank"
@@ -105,10 +160,18 @@ import ContactForm from './ContactForm.astro';
           class="flex flex-col items-center text-center p-4 rounded-lg hover:bg-gray-50 transition-colors"
           aria-label="Uber to BLVD Park"
         >
-          <img src="/images/logos/uberlogo.svg" alt="Uber" width="40" height="40" class="h-10 w-10 mb-2 object-contain" loading="lazy" decoding="async" />
+          <img
+            src="/images/logos/uberlogo.svg"
+            alt="Uber"
+            width="40"
+            height="40"
+            class="h-10 w-10 mb-2 object-contain"
+            loading="lazy"
+            decoding="async"
+          />
           <span class="text-blvd-green font-medium">Uber</span>
         </a>
-        
+
         <a
           href="https://ride.lyft.com/ridetype?id=lyft&q=BLVD+Park&destination[latitude]=29.803345&destination[longitude]=-95.421829"
           target="_blank"
@@ -116,20 +179,32 @@ import ContactForm from './ContactForm.astro';
           class="flex flex-col items-center text-center p-4 rounded-lg hover:bg-gray-50 transition-colors"
           aria-label="Lyft to BLVD Park"
         >
-          <img src="/images/logos/lyftlogo.webp" alt="Lyft" width="40" height="40" class="h-10 w-10 mb-2 object-contain" loading="lazy" decoding="async" />
+          <img
+            src="/images/logos/lyftlogo.webp"
+            alt="Lyft"
+            width="40"
+            height="40"
+            class="h-10 w-10 mb-2 object-contain"
+            loading="lazy"
+            decoding="async"
+          />
           <span class="text-blvd-green font-medium">Lyft</span>
         </a>
       </div>
     </div>
-    
+
     <!-- Contact and Map -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
       <!-- Contact Form -->
-      <div class="bg-circle-pattern bg-blvd-light-green rounded-lg shadow-md p-8">
-        <h3 class="text-2xl font-bold mb-6 text-center text-blvd-green">Contact Us</h3>
+      <div
+        class="bg-circle-pattern bg-blvd-light-green rounded-lg shadow-md p-8"
+      >
+        <h3 class="text-2xl font-bold mb-6 text-center text-blvd-green">
+          Contact Us
+        </h3>
         <ContactForm />
       </div>
-      
+
       <!-- Map Embed -->
       <div class="bg-blvd-white rounded-lg shadow-md p-8">
         <MapEmbed />
