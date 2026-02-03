@@ -103,14 +103,6 @@ db.exec(`
     note TEXT
   );
 
-  -- Sessions for auth
-  CREATE TABLE IF NOT EXISTS sessions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    sessionId TEXT UNIQUE NOT NULL,
-    refreshTokenHash TEXT NOT NULL,
-    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-    expiresAt DATETIME NOT NULL
-  );
 `);
 
 // Seed default hours

@@ -67,7 +67,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
     <!-- CTAs - Refined pills -->
     <div class="hero-ctas opacity-0 flex flex-col sm:flex-row items-center justify-center gap-4">
       <a 
-        href="/2026#events" 
+        href="/#events" 
         class="group relative w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#1A5F36] text-white font-display font-semibold text-base rounded-full overflow-hidden transition-all duration-500 hover:bg-[#22C55E] hover:shadow-[0_0_40px_rgba(34,197,94,0.3)]"
       >
         <span class="relative z-10">Events</span>
@@ -77,7 +77,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
       </a>
       
       <a
-        href="/menu2026"
+        href="/menu"
         class="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/5 backdrop-blur-md text-white font-display font-semibold text-base rounded-full border border-white/10 transition-all duration-500 hover:bg-white/10 hover:border-white/20"
       >
         <span>Menu</span>
@@ -175,6 +175,34 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
 </style>
 
 <script define:vars={{ apiUrl }}>
+  const parseTimeToMinutes = (value) => {
+    if (!value) return null;
+    const [hoursRaw, minutesRaw] = value.split(':');
+    if (hoursRaw === undefined || minutesRaw === undefined) return null;
+    const hours = Number(hoursRaw);
+    const minutes = Number(minutesRaw);
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+    return (hours * 60) + minutes;
+  };
+
+  const formatMinutesToTime = (totalMinutes, options = {}) => {
+    const { uppercase = false, alwaysShowMinutes = false } = options;
+    const normalized = totalMinutes === 1440 ? 0 : totalMinutes;
+    if (normalized === 0) {
+      const suffix = uppercase ? 'AM' : 'am';
+      const minuteLabel = alwaysShowMinutes ? ':00' : '';
+      return `12${minuteLabel}${suffix}`;
+    }
+    const hour24 = Math.floor(normalized / 60) % 24;
+    const minute = normalized % 60;
+    const suffix = hour24 >= 12 ? (uppercase ? 'PM' : 'pm') : (uppercase ? 'AM' : 'am');
+    let hour12 = hour24 % 12;
+    if (hour12 === 0) hour12 = 12;
+    const showMinutes = alwaysShowMinutes || minute !== 0;
+    const minuteLabel = showMinutes ? `:${minute.toString().padStart(2, '0')}` : '';
+    return `${hour12}${minuteLabel}${suffix}`;
+  };
+
   document.addEventListener('DOMContentLoaded', () => {
     // Trigger entrance animations
     const elements = [
@@ -216,24 +244,6 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
     loadSchedule().then(updateStatus);
   });
   
-  const parseTime = (value) => {
-    if (!value) return null;
-    const [hours, minutes] = value.split(':').map(Number);
-    if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
-    return (hours * 60) + minutes;
-  };
-
-  const formatTime = (totalMinutes) => {
-    if (totalMinutes === 0 || totalMinutes === 1440) return '12am';
-    const hour24 = Math.floor(totalMinutes / 60) % 24;
-    const minute = totalMinutes % 60;
-    const suffix = hour24 >= 12 ? 'pm' : 'am';
-    let hour12 = hour24 % 12;
-    if (hour12 === 0) hour12 = 12;
-    const minuteLabel = minute ? `:${minute.toString().padStart(2, '0')}` : '';
-    return `${hour12}${minuteLabel}${suffix}`;
-  };
-
   const isCrossMidnight = (entry) => entry.close < entry.open;
 
   async function loadSchedule() {
@@ -251,8 +261,8 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
       }));
 
       hours.forEach((entry) => {
-        const open = parseTime(entry.openTime);
-        const close = parseTime(entry.closeTime);
+        const open = parseTimeToMinutes(entry.openTime);
+        const close = parseTimeToMinutes(entry.closeTime);
         schedule[entry.dayOfWeek] = {
           open: open ?? 0,
           close: close ?? 0,
@@ -310,7 +320,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
     }
     
     if (isOpen) {
-      const closeTimeLabel = closeMinutes !== null ? formatTime(closeMinutes) : '';
+      const closeTimeLabel = closeMinutes !== null ? formatMinutesToTime(closeMinutes) : '';
       statusEl.innerHTML = `<span class="text-[#22C55E]">Open</span> til ${closeTimeLabel}`;
       if (pingEl) pingEl.classList.remove('hidden');
       if (dotEl) dotEl.style.backgroundColor = '#22C55E';

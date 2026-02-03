@@ -18,6 +18,8 @@ pnpm-debug.log*
 # Gallery backend
 backend/database/*.db
 public/uploads/*
+backups/
+.DS_Store
 !public/uploads/.gitkeep
 
 # macOS-specific files
@@ -31,3 +33,4 @@ public/uploads/*
 *.njsproj
 *.sln
 *.sw?
+live_site_source.html

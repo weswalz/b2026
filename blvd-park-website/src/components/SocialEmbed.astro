@@ -83,14 +83,6 @@ const { type, url } = Astro.props;
         </div>
       )}
 
-      {type === 'tiktok' && url && (
-        <div>
-          <blockquote class="tiktok-embed" cite={url}>
-            <a href={url}></a>
-          </blockquote>
-          <script async src="https://www.tiktok.com/embed.js"></script>
-        </div>
-      )}
     </div>
   </div>
 </section>

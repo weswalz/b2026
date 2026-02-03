@@ -5,7 +5,7 @@
 const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
 ---
 
-<section id="events" class="events-2026 relative section-padding overflow-hidden bg-gradient-to-b from-blvd-green-dark via-blvd-green to-blvd-green-dark">
+<section id="events" class="events-2026 relative section-padding overflow-hidden bg-gradient-to-b from-blvd-green-dark via-blvd-green to-blvd-green-dark hidden">
 
   <!-- Ambient effects -->
   <div class="absolute top-1/4 left-0 w-96 h-96 rounded-full opacity-20 blur-3xl bg-blvd-green-bright"></div>
@@ -60,7 +60,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
               Check back soon for the latest events and specials.
             </p>
             <a
-              href="/book2026"
+              href="/book"
               class="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm transition-all duration-300 hover:scale-105 self-start bg-white text-blvd-green-dark hover:shadow-lg"
             >
               Reserve Your Spot
@@ -84,7 +84,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
     <!-- View All CTA -->
     <div class="text-center mt-12">
       <a
-        href="/book2026"
+        href="/book"
         class="inline-flex items-center gap-2 px-8 py-4 rounded-full font-semibold transition-all duration-300 hover:scale-105 bg-white/10 text-white border border-white/20 hover:bg-white/15"
       >
         Book Your Event
@@ -183,7 +183,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
               ${escapeHtml(event.description)}
             </p>
             <a
-              href="/book2026"
+              href="/book"
               class="inline-flex items-center gap-2 text-sm font-medium transition-colors duration-300 text-blvd-green-bright hover:text-white"
             >
               Reserve a Table
@@ -230,16 +230,15 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    bindAccordion();
+    const section = document.getElementById('events');
 
     loadEvents().then((events) => {
-      const accordion = document.getElementById('events-accordion');
       if (!Array.isArray(events) || events.length === 0) {
-        if (accordion) {
-          accordion.innerHTML = '<div class="text-center text-white/50 py-10">No events available right now.</div>';
-        }
+        // No events - keep section hidden
         return;
       }
+      // Has events - show section and render
+      if (section) section.classList.remove('hidden');
       renderFeatured(events[0]);
       renderAccordion(events);
     });

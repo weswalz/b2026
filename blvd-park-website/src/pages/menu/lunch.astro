@@ -1,309 +1,234 @@
 ---
-import Layout from '../../layouts/Layout.astro';
+// src/pages/menu/lunch.astro - 2026 Lunch Menu Page
+import Layout2026 from '@layouts/Layout2026.astro';
+
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
+const menuMode = 'lunch';
 ---
 
-<Layout title="Lunch Menu">
-  <div class="bg-blvd-light-green py-16">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      <!-- Navigation -->
-      <div class="flex justify-between items-center mb-8">
-        <a href="/menu" class="bg-blvd-white hover:bg-blvd-light-green text-blvd-green font-medium py-2 px-4 rounded-lg shadow-sm border border-blvd-green/20 transition-colors flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+<Layout2026 title="Lunch Menu | BLVD Park" description="Lunch specials at BLVD Park. Available Monday-Friday, 11am-3pm.">
+
+  <!-- Hero -->
+  <section class="relative pt-32 pb-20 overflow-hidden" style="background: linear-gradient(180deg, #0F3D22 0%, #1a1a1a 100%);">
+    <div class="absolute inset-0 opacity-[0.03]" style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27noise%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.65%27 numOctaves=%273%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23noise)%27/%3E%3C/svg%3E');"></div>
+
+    <div class="container mx-auto px-6 relative z-10">
+      <div class="max-w-3xl">
+        <a href="/" class="inline-flex items-center gap-2 text-white/50 hover:text-white transition-colors mb-8 text-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
           </svg>
+          Back to Home
+        </a>
+
+        <span class="inline-block font-mono text-xs tracking-[0.3em] uppercase mb-4" style="color: #C9A962;">
+          Mon-Fri • 11am-3pm
+        </span>
+        <h1 class="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6" style="font-family: 'Clash Display', sans-serif; letter-spacing: -0.02em;">
+          Lunch Menu
+        </h1>
+        <p class="text-xl text-white/60 max-w-xl" style="font-family: 'Satoshi', sans-serif;">
+          Weekday lunch specials. Same quality, friendlier prices.
+        </p>
+      </div>
+
+      <!-- Menu Type Toggle -->
+      <div class="flex gap-4 mt-12">
+        <a href="/menu" class="px-6 py-3 rounded-full font-semibold text-sm transition-all hover:bg-white/10" style="background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.1);">
           Main Menu
         </a>
-        <a href="/" class="bg-blvd-white hover:bg-blvd-light-green text-blvd-green font-medium py-2 px-4 rounded-lg shadow-sm border border-blvd-green/20 transition-colors flex items-center">
-          Return to Home
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
-          </svg>
+        <a href="/menu/lunch" class="px-6 py-3 rounded-full font-semibold text-sm transition-all" style="background: white; color: #0F3D22;">
+          Lunch Menu
         </a>
       </div>
+    </div>
+  </section>
 
-      <!-- Menu Header -->
-      <div class="text-center mb-12">
-        <h1 class="text-4xl md:text-5xl font-bold text-blvd-green mb-4">LUNCH MENU</h1>
-        <p class="text-blvd-dark-green text-lg">Available Monday - Friday, 11 AM - 3 PM</p>
-      </div>
+  <!-- Menu Content -->
+  <section class="py-20" style="background: #0d0d0d;">
+    <div class="container mx-auto px-6">
+      <div class="max-w-4xl mx-auto">
 
-      <!-- Menu Content -->
-      <div class="bg-blvd-white rounded-lg shadow-lg p-6 md:p-8 mb-12">
-        <!-- Shareables Section -->
-        <div class="mb-12">
-          <h2 class="text-2xl font-bold text-blvd-green border-b-2 border-blvd-accent pb-2 mb-6">SHAREABLES</h2>
-          
-          <div class="grid gap-6">
-            <div>
-              <div class="flex justify-between items-baseline">
-                <h3 class="text-xl font-bold text-blvd-dark-green">CHILE CON QUESO</h3>
-                <span class="text-lg font-semibold text-blvd-green">8</span>
-              </div>
-              <p class="text-gray-700">Tomato, onion, cilantro, roasted house-made salsa, tortilla chips</p>
-            </div>
-            
-            <div>
-              <div class="flex justify-between items-baseline">
-                <h3 class="text-xl font-bold text-blvd-dark-green">CHEESE FRIES</h3>
-                <span class="text-lg font-semibold text-blvd-green">9</span>
-              </div>
-              <p class="text-gray-700">Crispy fries, chile con queso, house cheese blend, green onion, Mexican and serrano crema</p>
-            </div>
-            
-            <div>
-              <div class="flex justify-between items-baseline">
-                <h3 class="text-xl font-bold text-blvd-dark-green">PRETZEL STICKS</h3>
-                <span class="text-lg font-semibold text-blvd-green">10</span>
-              </div>
-              <p class="text-gray-700">Fresh baked pretzel sticks, chile con queso, cinnamon butter</p>
-            </div>
-            
-            <div>
-              <div class="flex justify-between items-baseline">
-                <h3 class="text-xl font-bold text-blvd-dark-green">SOUTHWEST EGGROLLS</h3>
-                <span class="text-lg font-semibold text-blvd-green">10</span>
-              </div>
-              <p class="text-gray-700">Chicken, black beans, corn, peppers, serrano ranch</p>
-            </div>
-            
-            <div>
-              <div class="flex justify-between items-baseline">
-                <h3 class="text-xl font-bold text-blvd-dark-green">HUMMUS + VEGETABLES</h3>
-                <span class="text-lg font-semibold text-blvd-green">8</span>
-              </div>
-              <p class="text-gray-700">Fresh carrots, celery, cucumber & bell pepper, house-made hummus, roasted red pepper, feta, fresh herbs</p>
-            </div>
-          </div>
+        <div id="menu-sections" class="text-center text-white/50">
+          Loading menu...
         </div>
-        
-        <!-- Street Tacos Section -->
-        <div class="mb-12">
-          <h2 class="text-2xl font-bold text-blvd-green border-b-2 border-blvd-accent pb-2 mb-6">STREET TACOS*</h2>
-          
-          <div class="grid gap-6">
-            <div>
-              <div class="flex justify-between items-baseline">
-                <h3 class="text-xl font-bold text-blvd-dark-green">STEAK</h3>
-                <span class="text-lg font-semibold text-blvd-green">15</span>
-              </div>
-              <p class="text-gray-700">Pressure marinated steak, avocado, pickled red onion, serrano crema, cotija</p>
-            </div>
-            
-            <div>
-              <div class="flex justify-between items-baseline">
-                <h3 class="text-xl font-bold text-blvd-dark-green">HATCH CHICKEN</h3>
-                <span class="text-lg font-semibold text-blvd-green">15</span>
-              </div>
-              <p class="text-gray-700">Hatch chile chicken, avocado, lime cured red onion, Mexican crema</p>
-            </div>
-            
-            <div>
-              <div class="flex justify-between items-baseline">
-                <h3 class="text-xl font-bold text-blvd-dark-green">BIRRIA</h3>
-                <span class="text-lg font-semibold text-blvd-green">15</span>
-              </div>
-              <p class="text-gray-700">Slow roasted short rib and chuck, guijillo, ancho, cascabel peppers, cheese blend, chili infused demi glace</p>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Kids Section -->
-        <div class="mb-12">
-          <h2 class="text-2xl font-bold text-blvd-green border-b-2 border-blvd-accent pb-2 mb-6">KIDS</h2>
-          <p class="text-gray-700 mb-4">Twelve and under</p>
-          
-          <div class="grid gap-6">
-            <div>
-              <div class="flex justify-between items-baseline">
-                <h3 class="text-xl font-bold text-blvd-dark-green">BEEF SLIDERS</h3>
-                <span class="text-lg font-semibold text-blvd-green">9</span>
-              </div>
-            </div>
-            
-            <div>
-              <div class="flex justify-between items-baseline">
-                <h3 class="text-xl font-bold text-blvd-dark-green">CHICKEN TENDERS</h3>
-                <span class="text-lg font-semibold text-blvd-green">9</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- The Skinny Choice Section -->
-        <div class="mb-12">
-          <h2 class="text-2xl font-bold text-blvd-green border-b-2 border-blvd-accent pb-2 mb-6">THE SKINNY</h2>
-          <p class="text-gray-700 mb-4">Salad, wrap, or rice bowl</p>
-          <p class="text-gray-700 mb-6">WRAP: Chile lime, spinach or plain wrap</p>
-          
-          <h3 class="text-xl font-bold text-blvd-dark-green mb-4">SALAD PROTEINS</h3>
-          <p class="text-gray-700 mb-6">Fajita beef or marinated shrimp | 6<br>Fajita chicken, crispy chicken, or harissa chicken | 5</p>
-          
-          <div class="grid gap-6">
-            <div>
-              <div class="flex justify-between items-baseline">
-                <h3 class="text-xl font-bold text-blvd-dark-green">VIETNAMESE SALAD</h3>
-                <span class="text-lg font-semibold text-blvd-green">12</span>
-              </div>
-              <p class="text-gray-700">Romaine, kale, cabbage, cucumber, carrots, tomatoes, bean sprouts, roasted peanuts, cilantro, mint, green onions, peanut lime vinaigrette</p>
-            </div>
-            
-            <div>
-              <div class="flex justify-between items-baseline">
-                <h3 class="text-xl font-bold text-blvd-dark-green">HARISSA SALAD</h3>
-                <span class="text-lg font-semibold text-blvd-green">12</span>
-              </div>
-              <p class="text-gray-700">Harissa marinated chicken, seasonal greens, avocado, feta, marinated tomatoes and cucumber, hummus, harissa vinaigrette</p>
-            </div>
-            
-            <div>
-              <div class="flex justify-between items-baseline">
-                <h3 class="text-xl font-bold text-blvd-dark-green">CITRUS AVOCADO CHOP</h3>
-                <span class="text-lg font-semibold text-blvd-green">12</span>
-              </div>
-              <p class="text-gray-700">Chopped mixed greens, mandarin oranges, tomatoes, roasted corn, pickled red onions, avocado, toasted pepitas, cotija cheese, poblano ranch</p>
-            </div>
-            
-            <div>
-              <div class="flex justify-between items-baseline">
-                <h3 class="text-xl font-bold text-blvd-dark-green">KALE CAESAR</h3>
-                <span class="text-lg font-semibold text-blvd-green">10</span>
-              </div>
-              <p class="text-gray-700">Kale blend, romaine, croutons, parmesan, lemon caesar dressing</p>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Wings Section -->
-        <div class="mb-12">
-          <h2 class="text-2xl font-bold text-blvd-green border-b-2 border-blvd-accent pb-2 mb-6">WINGS</h2>
-          <p class="text-gray-700 mb-4">Six for ten</p>
-          <p class="text-gray-700 mb-6">Parmesan ranch or bleu cheese, celery + carrots</p>
-          
-          <h3 class="text-xl font-bold text-blvd-dark-green mb-4">FLAVORS</h3>
-          <ul class="text-gray-700 list-disc pl-5 space-y-1">
-            <li>Buffalo ghost pepper</li>
-            <li>Honey habanero</li>
-            <li>Thai sesame teriyaki</li>
-            <li>Garlic parmesan</li>
-            <li>Hatch citrus pepper</li>
-          </ul>
-        </div>
-        
-        <!-- Burgers & Sandwiches Section -->
-        <div class="mb-12">
-          <h2 class="text-2xl font-bold text-blvd-green border-b-2 border-blvd-accent pb-2 mb-6">BURGERS & SANDWICHES*</h2>
-          
-          <div class="grid gap-6">
-            <div>
-              <div class="flex justify-between items-baseline">
-                <h3 class="text-xl font-bold text-blvd-dark-green">BOURSIN MUSHROOM BURGER</h3>
-                <span class="text-lg font-semibold text-blvd-green">15</span>
-              </div>
-              <p class="text-gray-700">Seasonal mushrooms, boursin cheese, marinated tomato, truffle parmesan aioli</p>
-            </div>
-            
-            <div>
-              <div class="flex justify-between items-baseline">
-                <h3 class="text-xl font-bold text-blvd-dark-green">AVOCADO CHEESEBURGER</h3>
-                <span class="text-lg font-semibold text-blvd-green">15</span>
-              </div>
-              <p class="text-gray-700">Crisp and fresh avocado, tillamook pepper jack cheese, tomato, bacon jam, charred jalapeno aioli</p>
-            </div>
-            
-            <div>
-              <div class="flex justify-between items-baseline">
-                <h3 class="text-xl font-bold text-blvd-dark-green">GREEN CHILE CHEESEBURGER</h3>
-                <span class="text-lg font-semibold text-blvd-green">15</span>
-              </div>
-              <p class="text-gray-700">Roasted poblano, chile con queso, marinated tomato, pickled red onion, charred jalapeño aioli</p>
-            </div>
-            
-            <div>
-              <div class="flex justify-between items-baseline">
-                <h3 class="text-xl font-bold text-blvd-dark-green">BLVD CLASSIC BURGER</h3>
-                <span class="text-lg font-semibold text-blvd-green">14</span>
-              </div>
-              <p class="text-gray-700">Tillamook sharp cheddar, marinated tomato, pickles, red onion, lettuce, aioli | pecan smoked bacon + 3</p>
-            </div>
-            
-            <div>
-              <div class="flex justify-between items-baseline">
-                <h3 class="text-xl font-bold text-blvd-dark-green">HOT BIRD</h3>
-                <span class="text-lg font-semibold text-blvd-green">15</span>
-              </div>
-              <p class="text-gray-700">Crispy chicken breast, honey habanero, kale slaw, tomato, pickles, aioi</p>
-            </div>
-            
-            <div>
-              <div class="flex justify-between items-baseline">
-                <h3 class="text-xl font-bold text-blvd-dark-green">SMOKED TURKEY AVOCADO</h3>
-                <span class="text-lg font-semibold text-blvd-green">16</span>
-              </div>
-              <p class="text-gray-700">Smoked turkey, pecan smoked bacon, boursin, peppadew peppers, dried cherries, lettuce, tomato, dijon horseradish aioli</p>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Steak Frites Section -->
-        <div class="mb-12">
-          <h2 class="text-2xl font-bold text-blvd-green border-b-2 border-blvd-accent pb-2 mb-6">STEAK FRITES*</h2>
-          <p class="text-gray-700 mb-6">With garlic parmesan fries</p>
-          
-          <div class="grid gap-6">
-            <div>
-              <div class="flex justify-between items-baseline">
-                <h3 class="text-xl font-bold text-blvd-dark-green">16OZ SEARED RIBEYE</h3>
-                <span class="text-lg font-semibold text-blvd-green">35</span>
-              </div>
-            </div>
-            
-            <div>
-              <div class="flex justify-between items-baseline">
-                <h3 class="text-xl font-bold text-blvd-dark-green">12OZ SEARED NY STRIP</h3>
-                <span class="text-lg font-semibold text-blvd-green">30</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Fries + More Section -->
-        <div class="mb-6">
-          <h2 class="text-2xl font-bold text-blvd-green border-b-2 border-blvd-accent pb-2 mb-6">FRIES + MORE</h2>
-          
-          <div class="grid gap-6">
-            <div>
-              <div class="flex justify-between items-baseline">
-                <h3 class="text-xl font-bold text-blvd-dark-green">SKIN ON CRISPY FRIES</h3>
-                <span class="text-lg font-semibold text-blvd-green">4</span>
-              </div>
-            </div>
-            
-            <div>
-              <div class="flex justify-between items-baseline">
-                <h3 class="text-xl font-bold text-blvd-dark-green">GARLIC PARMESAN FRIES</h3>
-                <span class="text-lg font-semibold text-blvd-green">5</span>
-              </div>
-            </div>
-            
-            <div>
-              <div class="flex justify-between items-baseline">
-                <h3 class="text-xl font-bold text-blvd-dark-green">ONION RINGS</h3>
-                <span class="text-lg font-semibold text-blvd-green">6</span>
-              </div>
-            </div>
-            
-            <div>
-              <div class="flex justify-between items-baseline">
-                <h3 class="text-xl font-bold text-blvd-dark-green">SIDE KALE CAESAR</h3>
-                <span class="text-lg font-semibold text-blvd-green">6</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        
+
         <!-- Disclaimer -->
-        <p class="text-sm text-gray-500 italic mt-12">*Raw or uncooked meats, poultry, seafood or eggs may increase your risk of food-borne illnesses. Please consume at your own discretion</p>
+        <p class="text-xs text-center mt-16" style="color: rgba(255,255,255,0.3);">
+          *Raw or uncooked meats, poultry, seafood or eggs may increase your risk of food-borne illnesses.
+        </p>
+
       </div>
     </div>
-  </div>
-</Layout>
+  </section>
+
+  <!-- CTA -->
+  <section class="py-20" style="background: linear-gradient(180deg, #0d0d0d 0%, #0F3D22 100%);">
+    <div class="container mx-auto px-6 text-center">
+      <h2 class="text-3xl md:text-4xl font-bold text-white mb-6" style="font-family: 'Clash Display', sans-serif;">
+        Ready to Join Us?
+      </h2>
+      <p class="text-lg text-white/60 mb-8 max-w-md mx-auto">
+        Walk in anytime or reserve a table for your group.
+      </p>
+      <div class="flex flex-wrap justify-center gap-4">
+        <a href="/book" class="px-8 py-4 rounded-full font-semibold transition-all duration-300 hover:scale-105" style="background: white; color: #0F3D22;">
+          Reserve a Table
+        </a>
+      </div>
+    </div>
+  </section>
+
+</Layout2026>
+
+<script define:vars={{ apiUrl, menuMode }}>
+  const menuContainer = document.getElementById('menu-sections');
+  if (menuContainer) {
+    const categoryOrder = [
+      'Shareables',
+      'Street Tacos',
+      'Wings',
+      'Burgers & Sandwiches',
+      'The Skinny',
+      'Steak Frites'
+    ];
+
+    const categoryNotes = {
+      'Street Tacos': 'Served with three tacos',
+      'Wings': 'Six for ten • Parmesan ranch or bleu cheese, celery + carrots',
+      'Burgers & Sandwiches': 'Served with skin-on crispy fries',
+      'The Skinny': 'Salad, wrap, or rice bowl • Add protein: Beef/Shrimp $6, Chicken $5',
+      'Steak Frites': 'With garlic parmesan fries',
+    };
+
+    const escapeHtml = (value) => {
+      if (!value) return '';
+      return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    };
+
+    const formatTitle = (value) => value
+      .replace(/[-_]/g, ' ')
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+
+    const formatPrice = (value) => {
+      const price = Number(value);
+      if (Number.isNaN(price)) return '';
+      return Number.isInteger(price) ? `${price}` : price.toFixed(2);
+    };
+
+    const buildSections = (items) => {
+      const grouped = items.reduce((acc, item) => {
+        const key = item.category || 'Menu';
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(item);
+        return acc;
+      }, {});
+
+      const categories = Object.keys(grouped).sort((a, b) => {
+        const indexA = categoryOrder.indexOf(a);
+        const indexB = categoryOrder.indexOf(b);
+        const orderA = indexA === -1 ? Number.MAX_SAFE_INTEGER : indexA;
+        const orderB = indexB === -1 ? Number.MAX_SAFE_INTEGER : indexB;
+        if (orderA !== orderB) return orderA - orderB;
+        return a.localeCompare(b);
+      });
+
+      return categories.map((category, index) => `
+        <div class="menu-section mb-16" data-index="${index}">
+          <div class="flex items-center gap-4 mb-8">
+            <h2 class="text-2xl md:text-3xl font-bold text-white" style="font-family: 'Clash Display', sans-serif;">
+              ${escapeHtml(formatTitle(category))}
+            </h2>
+            <div class="flex-1 h-px" style="background: linear-gradient(to right, rgba(201, 169, 98, 0.3), transparent);"></div>
+          </div>
+          ${categoryNotes[category] ? `
+            <p class="text-sm mb-6" style="color: rgba(255,255,255,0.4); font-family: 'JetBrains Mono', monospace;">
+              ${escapeHtml(categoryNotes[category])}
+            </p>
+          ` : ''}
+          <div class="space-y-6">
+            ${grouped[category].map((item) => `
+              <div class="menu-item group p-4 -mx-4 rounded-xl transition-all duration-300 hover:bg-white/[0.02]">
+                <div class="flex justify-between items-start gap-4">
+                  <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-white group-hover:text-[#22C55E] transition-colors" style="font-family: 'Clash Display', sans-serif;">
+                      ${escapeHtml(item.name)}
+                    </h3>
+                    ${item.description ? `
+                      <p class="text-sm mt-1" style="color: rgba(255,255,255,0.5);">
+                        ${escapeHtml(item.description)}
+                      </p>
+                    ` : ''}
+                    ${item.subcategory ? `
+                      <p class="text-xs mt-2 uppercase tracking-[0.12em]" style="color: rgba(255,255,255,0.35);">
+                        ${escapeHtml(item.subcategory)}
+                      </p>
+                    ` : ''}
+                  </div>
+                  ${item.price > 0 ? `
+                    <span class="text-lg font-bold flex-shrink-0" style="color: #C9A962; font-family: 'Clash Display', sans-serif;">
+                      ${formatPrice(item.price)}
+                    </span>
+                  ` : ''}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+    };
+
+    const loadMenu = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/api/menu?lunchOnly=true`);
+        if (!res.ok) throw new Error('Failed to fetch menu');
+        const items = await res.json();
+        if (!Array.isArray(items) || items.length === 0) {
+          menuContainer.innerHTML = '<p class="text-white/50 text-center">Menu coming soon.</p>';
+          return;
+        }
+        const filtered = menuMode === 'lunch'
+          ? items.filter((item) => item.isLunchOnly)
+          : items.filter((item) => !item.isLunchOnly);
+        if (filtered.length === 0) {
+          menuContainer.innerHTML = '<p class="text-white/50 text-center">Menu coming soon.</p>';
+          return;
+        }
+        menuContainer.innerHTML = buildSections(filtered);
+      } catch (_error) {
+        menuContainer.innerHTML = '<p class="text-white/50 text-center">Menu unavailable.</p>';
+      }
+    };
+
+    loadMenu();
+  }
+</script>
+
+<style>
+  .menu-section {
+    animation: fadeInUp 0.6s cubic-bezier(0.19, 1, 0.22, 1) backwards;
+  }
+
+  .menu-section[data-index="0"] { animation-delay: 0.1s; }
+  .menu-section[data-index="1"] { animation-delay: 0.15s; }
+  .menu-section[data-index="2"] { animation-delay: 0.2s; }
+  .menu-section[data-index="3"] { animation-delay: 0.25s; }
+  .menu-section[data-index="4"] { animation-delay: 0.3s; }
+  .menu-section[data-index="5"] { animation-delay: 0.35s; }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>

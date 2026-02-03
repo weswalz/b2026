@@ -1,0 +1,106 @@
+---
+// Super Bowl popup modal — shown once per session on home page
+// Colors matched to BLVD Park 2026 palette
+---
+
+<div
+  id="superbowl-modal"
+  class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Super Bowl event at BLVD Park"
+>
+  <div class="relative max-w-md w-full animate-modal-in">
+    <!-- Close button -->
+    <button
+      id="close-superbowl-modal"
+      class="absolute -top-3 -right-3 z-10 w-8 h-8 flex items-center justify-center bg-blvd-charcoal border border-blvd-gold/30 rounded-full text-blvd-gold hover:text-white hover:border-blvd-gold transition-colors"
+      aria-label="Close"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+
+    <!-- Modal card -->
+    <div class="rounded-2xl overflow-hidden border border-blvd-gold/20 shadow-2xl shadow-blvd-green/10">
+      <!-- Event image -->
+      <div class="relative">
+        <img
+          src="/images/events/superbowl16.webp"
+          alt="Super Bowl at BLVD Park - February 9, Sunday Funday in The Heights Houston"
+          class="w-full h-auto block"
+          width="500"
+          height="625"
+        />
+      </div>
+
+      <!-- CTA section -->
+      <div class="bg-blvd-charcoal p-5 text-center">
+        <a
+          href="/book"
+          id="superbowl-cta"
+          class="block w-full py-3.5 px-6 text-base font-bold uppercase tracking-wider rounded-lg bg-blvd-green text-white hover:bg-blvd-green-bright transition-all duration-300 transform hover:scale-[1.02]"
+        >
+          Reserve Your Table
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  @keyframes modal-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+  .animate-modal-in {
+    animation: modal-in 0.3s ease-out;
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('superbowl-modal');
+    const closeBtn = document.getElementById('close-superbowl-modal');
+    if (!modal || !closeBtn) return;
+
+    const STORAGE_KEY = 'superbowl-modal-dismissed';
+
+    function openModal() {
+      modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      modal.classList.add('hidden');
+      document.body.style.overflow = '';
+      sessionStorage.setItem(STORAGE_KEY, '1');
+    }
+
+    // Only show once per session
+    if (!sessionStorage.getItem(STORAGE_KEY)) {
+      setTimeout(openModal, 1200);
+    }
+
+    closeBtn.addEventListener('click', closeModal);
+
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    // Close on Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+        closeModal();
+      }
+    });
+  });
+</script>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, type BusinessHours } from '../../lib/api';
+import { formatMinutesToTime, parseTimeToMinutes } from '../../lib/time';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -44,12 +45,9 @@ export default function AdminHours() {
   };
 
   const formatTime = (time: string | null) => {
-    if (!time) return '';
-    const [hours, minutes] = time.split(':');
-    const h = parseInt(hours);
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const displayHour = h > 12 ? h - 12 : h === 0 ? 12 : h;
-    return `${displayHour}:${minutes} ${ampm}`;
+    const minutes = parseTimeToMinutes(time);
+    if (minutes === null) return '';
+    return formatMinutesToTime(minutes, { uppercase: true, alwaysShowMinutes: true }).replace(/(AM|PM)$/u, ' $1');
   };
 
   if (isLoading) {

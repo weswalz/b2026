@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { galleryApi } from './api';
+import { api } from './api';
 
 interface AuthState {
   token: string | null;
@@ -17,9 +17,9 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
 
       login: async (apiKey: string) => {
-        const isValid = await galleryApi.verifyAuth(apiKey);
+        const isValid = await api.verifyAuth(apiKey);
         if (isValid) {
-          localStorage.setItem('gallery-auth-token', apiKey);
+          localStorage.setItem('blvd-auth-token', apiKey);
           set({ token: apiKey, isAuthenticated: true });
           return true;
         }
@@ -27,12 +27,12 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
-        localStorage.removeItem('gallery-auth-token');
+        localStorage.removeItem('blvd-auth-token');
         set({ token: null, isAuthenticated: false });
       },
 
       checkAuth: () => {
-        const token = localStorage.getItem('gallery-auth-token');
+        const token = localStorage.getItem('blvd-auth-token');
         if (token) {
           set({ token, isAuthenticated: true });
           return true;
@@ -40,6 +40,6 @@ export const useAuthStore = create<AuthState>()(
         return false;
       },
     }),
-    { name: 'gallery-auth' }
+    { name: 'blvd-auth' }
   )
 );

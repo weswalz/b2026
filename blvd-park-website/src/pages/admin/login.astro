@@ -1,5 +1,6 @@
 ---
 // Admin Login Page - BLVD Park branded
+const apiUrl = import.meta.env.PUBLIC_API_URL || '';
 ---
 
 <!DOCTYPE html>
@@ -78,7 +79,9 @@
     </div>
   </div>
 
-  <script is:inline>
+  <script define:vars={{ apiUrl }}>
+    const API_URL = (apiUrl || window.location.origin).replace(/\/$/, '');
+
     // Check if already logged in
     const existingToken = localStorage.getItem('blvd-auth-token');
     if (existingToken) {
@@ -88,8 +91,6 @@
     const form = document.getElementById('login-form');
     const input = document.getElementById('api-key');
     const error = document.getElementById('error');
-    const API_URL = 'http://localhost:3001';
-
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const key = input.value.trim();
