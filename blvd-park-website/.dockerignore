@@ -1,0 +1,15 @@
+dist
+.astro
+node_modules
+backend/node_modules
+backend/database
+public/uploads
+backups
+test-results
+tests
+.env
+.env.*
+.git
+.git_disabled
+.DS_Store
+

@@ -1,0 +1,25 @@
+services:
+  blvdpark-api:
+    image: ghcr.io/weswalz/blvdpark-api:${BLVDPARK_TAG:-b2026}
+    restart: unless-stopped
+    environment:
+      PORT: "3001"
+      DB_PATH: /app/database/blvdpark.db
+      UPLOADS_DIR: /app/uploads
+      FRONTEND_URLS: https://blvdpark.com,https://www.blvdpark.com
+    volumes:
+      - blvdpark_db:/app/database
+      - blvdpark_uploads:/app/uploads
+    ports:
+      - "3006:3001"
+
+  blvdpark-frontend:
+    image: ghcr.io/weswalz/blvdpark-frontend:${BLVDPARK_TAG:-b2026}
+    restart: unless-stopped
+    ports:
+      - "3005:80"
+
+volumes:
+  blvdpark_db:
+  blvdpark_uploads:
+
