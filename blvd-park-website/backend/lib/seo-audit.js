@@ -1012,6 +1012,40 @@ function findNearDuplicateContentPairs(pages, threshold = 0.6, shingleSize = 5) 
 }
 
 // ---------------------------------------------------------------------------------------
+// SEO-0205 — query-intent/cannibalization overlap. Verbatim port, Heights
+// seo-audit.js:1095-1147. Added post-merge: this was originally omitted from the
+// deferral list at this file's own header (lines 108-119) even though it has zero
+// unmet dependency — targetQueryNotes is a real seo_resources column (confirmed in
+// backend/lib/seo-resources.js's SEO_RESOURCE_COLUMNS) and findNearDuplicateContentPairs()
+// (the only primitive it needs) already exists above. Compares every pair of
+// resources' admin-authored targetQueryNotes free-text field for overlapping stated
+// search intent — a REAL, non-fabricated signal (an admin's own typed note, not
+// invented keyword/ranking data), using the same shingle/Jaccard primitive as the
+// near-duplicate title/description/heading passes above. Resources with no
+// targetQueryNotes (the common case until an admin fills the field in) are excluded
+// up front so two blank notes are never reported as "100% identical intent."
+// ---------------------------------------------------------------------------------------
+function findQueryIntentOverlaps(resources, threshold = 0.6) {
+  const withNotes = resources
+    .filter((resource) => resource.targetQueryNotes && String(resource.targetQueryNotes).trim())
+    .map((resource) => ({
+      url: resource.path,
+      note: String(resource.targetQueryNotes).trim(),
+      normalizedText: String(resource.targetQueryNotes).trim().toLowerCase(),
+    }));
+  const noteByUrl = new Map(withNotes.map((entry) => [entry.url, entry.note]));
+  const pairs = findNearDuplicateContentPairs(withNotes, threshold, 2);
+  return pairs.map((pair) => ({
+    urlA: pair.urlA,
+    urlB: pair.urlB,
+    similarity: pair.similarity,
+    sampleOverlap: pair.sampleOverlap,
+    noteA: noteByUrl.get(pair.urlA) || '',
+    noteB: noteByUrl.get(pair.urlB) || '',
+  }));
+}
+
+// ---------------------------------------------------------------------------------------
 // SEO-0106/SEO-0406 — canonical chains and crawl depth. Verbatim port, Heights
 // seo-audit.js:1398-1444.
 // ---------------------------------------------------------------------------------------
@@ -1606,6 +1640,19 @@ async function runSeoAudit(db, actor = {}, options = {}) {
     for (const pair of findNearDuplicateContentPairs(headingsWithText, 0.6, TITLE_SHINGLE_SIZE)) {
       const clusterKey = [pair.urlA, pair.urlB].sort().join('|');
       issues.push(issue('NEAR_DUPLICATE_HEADINGS', 'content', 'warning', `cluster:${clusterKey}`, `Near-duplicate heading outlines (${Math.round(pair.similarity * 100)}% similarity)`, `${pair.urlA} and ${pair.urlB} have heading text (H1-H6, in order) sharing ${Math.round(pair.similarity * 100)}% of their 2-word phrase shingles. Sample overlapping phrases: ${pair.sampleOverlap.map((s) => `"${s}"`).join('; ') || '(none captured)'}`, 'Confirm the two pages\' heading structures reflect genuinely distinct content, not a copied outline.'));
+    }
+
+    for (const pair of findQueryIntentOverlaps(resources)) {
+      const queryClusterKey = [pair.urlA, pair.urlB].sort().join('|');
+      issues.push(issue(
+        'QUERY_INTENT_OVERLAP',
+        'content',
+        'warning',
+        `cluster:${queryClusterKey}`,
+        `Overlapping target-query intent (${Math.round(pair.similarity * 100)}% similarity)`,
+        `${pair.urlA} (target-query notes: "${pair.noteA}") and ${pair.urlB} (target-query notes: "${pair.noteB}") share ${Math.round(pair.similarity * 100)}% of their 2-word phrase shingles. Sample overlapping phrases: ${pair.sampleOverlap.map(s => `"${s}"`).join('; ') || '(none captured)'}. This compares admin-authored target-query notes only; it is not informed by real Search Console query data, which is not connected in this environment (see fetchSearchConsoleQueryData()).`,
+        'Review whether these two pages are intentionally targeting the same search intent (e.g. a hub page and a detail page) or should be differentiated/consolidated to avoid competing against each other in search results.'
+      ));
     }
 
     const knownByUrl = new Map(checks.map((check) => [new URL(check.url).pathname.replace(/\/+$/, '') || '/', check]));

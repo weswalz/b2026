@@ -17,6 +17,7 @@ const { spawn } = require('node:child_process');
 const path = require('node:path');
 const fs = require('node:fs');
 const os = require('node:os');
+const http = require('node:http');
 
 const {
   analyzeHtml,
@@ -477,22 +478,86 @@ test('POST /api/seo/crawl/sync runs a real crawl against this server\'s own loop
 });
 
 test('a second concurrent crawl is rejected with 409 while one is in flight', async () => {
-  // The fixture site is tiny (a handful of pages), so a /crawl/sync run can complete in
-  // under a millisecond — too fast to reliably race a second HTTP request against. Use
-  // the async (fire-and-forget) POST /api/seo/crawl endpoint instead: it acquires the
-  // real in-process lock synchronously before returning 202, so by the time the 202
-  // response is back, activeCrawlLock is guaranteed to be held for the immediately-following
-  // second request.
-  const start = await fetch(`${BASE}/api/seo/crawl`, { method: 'POST', headers: auth, body: JSON.stringify({ maxPages: 5, maxDurationMs: 30000 }) });
-  assert.strictEqual(start.status, 202);
-  const second = await fetch(`${BASE}/api/seo/crawl/sync`, { method: 'POST', headers: auth, body: JSON.stringify({ maxPages: 5, maxDurationMs: 30000 }) });
-  assert.strictEqual(second.status, 409);
-  // Drain the first (async) crawl before moving on so it doesn't leak into later tests.
-  for (let i = 0; i < 100; i++) {
-    const status = await fetch(`${BASE}/api/seo/crawl/status`, { headers: auth });
-    const lock = await status.json();
-    if (!lock.running) break;
-    await new Promise((r) => setTimeout(r, 50));
+  // Deterministic version of this test: instead of racing wall-clock against however
+  // long a real crawl happens to take (the fixture site is tiny — a /crawl/sync run
+  // against it can finish in under a millisecond, which made the old version of this
+  // test flaky under load), point a dedicated second backend instance's
+  // SEO_AUDIT_BASE_URL at a plain http.Server this test owns directly. That fixture
+  // server holds the crawler's one and only page fetch (GET /seed-page) open — never
+  // responding — until this test explicitly releases it. That makes it provable, not
+  // probabilistic, that runSeoAudit() is still inside its per-resource fetch loop
+  // (i.e. the in-process lock is genuinely held) at the moment the second request is
+  // fired, because the crawl physically cannot have completed yet.
+  let releaseFixtureResponse;
+  let resolveRequestReceived;
+  const fixtureRequestReceived = new Promise((resolve) => { resolveRequestReceived = resolve; });
+  const fixtureServer = http.createServer((req, res) => {
+    if (req.url === '/seed-page') {
+      releaseFixtureResponse = () => {
+        res.writeHead(200, { 'content-type': 'text/html' });
+        res.end('<html><head><title>Seed Page</title><meta name="description" content="d"></head><body>hi</body></html>');
+      };
+      resolveRequestReceived();
+      return; // Deliberately never respond until releaseFixtureResponse() is called.
+    }
+    res.writeHead(404);
+    res.end();
+  });
+  const fixturePort = await new Promise((resolve) => {
+    fixtureServer.listen(0, '127.0.0.1', () => resolve(fixtureServer.address().port));
+  });
+  const fixtureBase = `http://127.0.0.1:${fixturePort}`;
+
+  // The fixture server's port is known before spawning proc2, so proc2 can be started
+  // with SEO_AUDIT_BASE_URL already set to it — configuredAuditOrigin()
+  // (backend/lib/seo-audit.js) reads that env var fresh from process.env on every
+  // crawl, but only from the env the crawling server's own process was spawned with,
+  // so the value must be present at spawn time, not set on the parent afterward.
+  const tmp2 = fs.mkdtempSync(path.join(os.tmpdir(), 'blvd-seo-audit-concurrency-'));
+  const port2 = 40000 + Math.floor(Math.random() * 20000);
+  const base2 = `http://127.0.0.1:${port2}`;
+  const proc2 = spawn('node', [path.join(__dirname, '..', 'server.js')], {
+    env: { ...process.env, PORT: String(port2), DB_PATH: path.join(tmp2, 'test.db'), ADMIN_API_KEY: KEY, UPLOADS_DIR: path.join(tmp2, 'uploads'), SEO_AUDIT_BASE_URL: fixtureBase },
+    stdio: 'ignore',
+  });
+  try {
+    let started = false;
+    for (let i = 0; i < 50; i++) {
+      try { const r = await fetch(`${base2}/api/health`); if (r.ok) { started = true; break; } } catch (_e) {}
+      await new Promise((r) => setTimeout(r, 200));
+    }
+    if (!started) throw new Error('second server did not start');
+
+    await fetch(`${base2}/api/pages`, {
+      method: 'POST', headers: auth,
+      body: JSON.stringify({ title: 'Seed Page', slug: 'seed-page', status: 'published', robots: 'index, follow' }),
+    });
+
+    const start = await fetch(`${base2}/api/seo/crawl`, {
+      method: 'POST', headers: auth,
+      body: JSON.stringify({ maxPages: 5, maxDurationMs: 30000, scopeType: 'all' }),
+    });
+    assert.strictEqual(start.status, 202);
+
+    // Wait until the fixture server has actually received the crawler's request — this
+    // (not a timer) is the proof that runSeoAudit() is inside its await fetch() and the
+    // in-process lock is held.
+    await fixtureRequestReceived;
+
+    const second = await fetch(`${base2}/api/seo/crawl/sync`, { method: 'POST', headers: auth, body: JSON.stringify({ maxPages: 5, maxDurationMs: 30000 }) });
+    assert.strictEqual(second.status, 409);
+
+    releaseFixtureResponse();
+
+    for (let i = 0; i < 100; i++) {
+      const status = await fetch(`${base2}/api/seo/crawl/status`, { headers: auth });
+      const lock = await status.json();
+      if (!lock.running) break;
+      await new Promise((r) => setTimeout(r, 50));
+    }
+  } finally {
+    proc2.kill();
+    fixtureServer.close();
   }
 });
 
