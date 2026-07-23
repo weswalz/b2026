@@ -132,6 +132,16 @@ export default function AdminSidebar({ currentPath }: { currentPath: string }) {
         </svg>
       ),
     },
+    {
+      name: 'SEO',
+      href: '/admin/seo',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8" strokeWidth={1.5}/>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-4.35-4.35"/>
+        </svg>
+      ),
+    },
     // Users nav is super_admin only — role comes from localStorage blvd-user, set at
     // login/SSO. Hidden entirely for admin/editor rather than shown-then-403'd.
     ...(currentUser?.role === 'super_admin'

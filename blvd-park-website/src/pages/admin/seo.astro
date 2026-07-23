@@ -1,0 +1,10 @@
+---
+export const prerender = true;
+// Admin SEO Dashboard
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import AdminPage from '../../components/admin/AdminPage';
+---
+
+<AdminLayout title="SEO">
+  <AdminPage client:only="react" currentPath={Astro.url.pathname} page="seo" />
+</AdminLayout>

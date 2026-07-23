@@ -12,6 +12,9 @@ import AdminSidebar from './AdminSidebar';
 import AdminContent from './AdminContent';
 import AdminPages from './AdminPages';
 import AdminUsers from './AdminUsers';
+import AdminSeo from './AdminSeo';
+import AdminSeoRobots from './AdminSeoRobots';
+import AdminSeoTaxonomy from './AdminSeoTaxonomy';
 
 export default function AdminPage({
   currentPath,
@@ -30,7 +33,10 @@ export default function AdminPage({
     | 'pages'
     | 'activity'
     | 'redirects'
-    | 'users';
+    | 'users'
+    | 'seo'
+    | 'seo-robots'
+    | 'seo-taxonomy';
 }) {
   const pages = {
     dashboard: AdminDashboard,
@@ -45,6 +51,9 @@ export default function AdminPage({
     activity: AdminActivity,
     redirects: AdminRedirects,
     users: AdminUsers,
+    seo: AdminSeo,
+    'seo-robots': AdminSeoRobots,
+    'seo-taxonomy': AdminSeoTaxonomy,
   };
 
   const PageComponent = pages[page];

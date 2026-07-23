@@ -165,6 +165,113 @@ export interface MediaItem {
   source: 'gallery' | 'uploads';
 }
 
+// ---- SEO-ops (Wave-2) ----
+export interface SeoDashboardSummary {
+  resources: number;
+  indexable: number;
+  openIssues: number;
+  criticalIssues: number;
+  lastRun: SeoAuditRun | null;
+}
+
+export interface SeoAuditRun {
+  id: number;
+  baseUrl: string;
+  status: string;
+  triggerType: string;
+  startedAt: string;
+  completedAt: string | null;
+  totalUrls: number;
+  issueCount: number;
+  error: string | null;
+}
+
+export interface SeoIssue {
+  id: number;
+  runId: number | null;
+  category: string;
+  severity: 'critical' | 'warning' | 'info';
+  code: string;
+  url: string;
+  title: string;
+  evidence: string | null;
+  recommendation: string | null;
+  status: string;
+  owner: string | null;
+  firstSeenAt: string;
+  lastSeenAt: string;
+}
+
+export interface SeoTaxonomyTerm {
+  id: number;
+  name: string;
+  slug: string;
+  termType: 'category' | 'tag' | 'collection' | 'topic';
+  description: string | null;
+  parentTermId: number | null;
+  indexEligible: number;
+  isActive: number;
+}
+
+export interface SeoDuplicateTermPair {
+  termAId: number;
+  termAName: string;
+  termBId: number;
+  termBName: string;
+  termType: string;
+  similarity: number;
+  sharedWords: string[];
+}
+
+export interface SeoMasterEntity {
+  id: number;
+  entityTypes: string[];
+  name: string;
+  idSlug: string;
+  description: string | null;
+  properties: Record<string, unknown>;
+  sameAs: string[];
+}
+
+export interface SeoEntity {
+  id: number;
+  entityType: 'Person' | 'Organization' | 'Place' | 'Service';
+  name: string;
+  description: string | null;
+  sameAs: string | null;
+  schemaType: string | null;
+}
+
+export interface SitemapValidationRun {
+  id: number;
+  checkedAt: string;
+  checkedBy: string | null;
+  overallValid: number;
+  fileCount: number;
+  validFileCount: number;
+  files: { sitemapKey: string; url: string; httpStatus: number | null; wellFormed: number; urlCount: number; errors: string[] }[];
+}
+
+export interface RedirectImportPreviewRow {
+  index: number;
+  fromPath: string;
+  toPath: string;
+  statusCode: number;
+  matchType: string;
+  notes: string | null;
+  valid: boolean;
+  errors: string[];
+}
+
+export interface RedirectImportJob {
+  id: number;
+  status: string;
+  preview: RedirectImportPreviewRow[];
+  result: unknown;
+  createdAt: string;
+  createdBy: string | null;
+}
+
 export interface RedirectItem {
   id: number;
   fromPath: string;
@@ -634,6 +741,187 @@ export const api = {
       method: 'POST',
       headers: getAuthHeaders(),
     });
+  },
+
+  // ---- SEO-ops (Wave-2) ----
+  async getSeoSummary(): Promise<SeoDashboardSummary> {
+    const res = await fetch(`${API_URL}/api/seo/summary`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to fetch SEO summary');
+    return res.json();
+  },
+
+  async getSeoCrawlStatus(): Promise<{ running: boolean; crawlRunId: number | null }> {
+    const res = await fetch(`${API_URL}/api/seo/crawl/status`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to fetch crawl status');
+    return res.json();
+  },
+
+  async runSeoCrawl(options: { scopeType?: 'all' | 'prefix'; scopePrefix?: string } = {}): Promise<{ started: boolean }> {
+    const res = await fetch(`${API_URL}/api/seo/crawl`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(options),
+    });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to start crawl');
+    return res.json();
+  },
+
+  async cancelSeoCrawl(crawlRunId: number): Promise<void> {
+    const res = await fetch(`${API_URL}/api/seo/crawl/cancel`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ crawlRunId }),
+    });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to cancel crawl');
+  },
+
+  async getSeoAuditRuns(limit = 20): Promise<SeoAuditRun[]> {
+    const res = await fetch(`${API_URL}/api/seo/runs?limit=${limit}`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to fetch audit runs');
+    return res.json();
+  },
+
+  async getSeoIssues(status: string = 'open', limit = 250): Promise<SeoIssue[]> {
+    const res = await fetch(`${API_URL}/api/seo/issues?status=${status}&limit=${limit}`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to fetch SEO issues');
+    return res.json();
+  },
+
+  async updateSeoIssue(id: number, data: { status: string; owner?: string }): Promise<SeoIssue> {
+    const res = await fetch(`${API_URL}/api/seo/issues/${id}`, {
+      method: 'PATCH',
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to update issue');
+    return res.json();
+  },
+
+  // robots.txt
+  async getRobotsText(): Promise<string> {
+    const res = await fetch(`${API_URL}/api/seo/robots`);
+    if (!res.ok) throw apiError(res, 'Failed to fetch robots.txt');
+    return res.text();
+  },
+
+  async saveRobotsText(robotsText: string): Promise<{ success: boolean }> {
+    const res = await fetch(`${API_URL}/api/seo/robots`, {
+      method: 'PUT',
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ robotsText }),
+    });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to save robots.txt');
+    return res.json();
+  },
+
+  async testRobotsPath(robotsText: string, userAgent: string, path: string): Promise<{ allowed: boolean; matchedRule: { directive: string; value: string } | null }> {
+    const res = await fetch(`${API_URL}/api/seo/robots/test`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ robotsText, userAgent, path }),
+    });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to test robots.txt path');
+    return res.json();
+  },
+
+  // Sitemap validation
+  async getSitemapValidations(limit = 10): Promise<SitemapValidationRun[]> {
+    const res = await fetch(`${API_URL}/api/seo/sitemap/validations?limit=${limit}`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to fetch sitemap validation history');
+    return res.json();
+  },
+
+  async runSitemapValidation(): Promise<SitemapValidationRun> {
+    const res = await fetch(`${API_URL}/api/seo/sitemap/validate`, { method: 'POST', headers: getAuthHeaders() });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to validate sitemap');
+    return res.json();
+  },
+
+  // Taxonomy
+  async getTaxonomyTerms(): Promise<SeoTaxonomyTerm[]> {
+    const res = await fetch(`${API_URL}/api/seo/taxonomy/terms`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to fetch taxonomy terms');
+    return res.json();
+  },
+
+  async getTaxonomyDuplicates(): Promise<SeoDuplicateTermPair[]> {
+    const res = await fetch(`${API_URL}/api/seo/taxonomy/duplicates`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to fetch duplicate terms');
+    return res.json();
+  },
+
+  async createTaxonomyTerm(data: { name: string; termType: string; description?: string }): Promise<SeoTaxonomyTerm> {
+    const res = await fetch(`${API_URL}/api/seo/taxonomy/terms`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to create taxonomy term');
+    return res.json();
+  },
+
+  // Master entities
+  async getMasterEntities(): Promise<SeoMasterEntity[]> {
+    const res = await fetch(`${API_URL}/api/seo/master-entities`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to fetch master entities');
+    return res.json();
+  },
+
+  async createMasterEntity(data: { entityTypes: string[]; name: string; description?: string }): Promise<SeoMasterEntity> {
+    const res = await fetch(`${API_URL}/api/seo/master-entities`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to create master entity');
+    return res.json();
+  },
+
+  // Entities (content-level)
+  async getSeoEntities(): Promise<SeoEntity[]> {
+    const res = await fetch(`${API_URL}/api/seo/entities`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to fetch entities');
+    return res.json();
+  },
+
+  async createSeoEntity(data: { entityType: string; name: string; description?: string }): Promise<SeoEntity> {
+    const res = await fetch(`${API_URL}/api/seo/entities`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to create entity');
+    return res.json();
+  },
+
+  // Redirects CSV import
+  async previewRedirectImport(records: Record<string, string>[]): Promise<RedirectImportJob> {
+    const res = await fetch(`${API_URL}/api/redirects/import/preview`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ records }),
+    });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to preview redirect import');
+    return res.json();
+  },
+
+  async applyRedirectImport(id: number): Promise<RedirectImportJob> {
+    const res = await fetch(`${API_URL}/api/redirects/import/${id}/apply`, { method: 'POST', headers: getAuthHeaders() });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to apply redirect import');
+    return res.json();
+  },
+
+  // GET /api/redirects/export.csv requires requireAuth (session token or
+  // ADMIN_API_KEY), so a plain <a href> link would 401 for a session-token
+  // user (browsers don't attach the x-auth-key header to a navigation) —
+  // fetch with auth headers and hand back a Blob for the caller to turn
+  // into an object URL, matching AdminRedirects.tsx's existing
+  // handleExportCsv() client-side-blob-download pattern for the plain
+  // (non-CSV-import) redirect export it already has.
+  async exportRedirectsCsv(): Promise<Blob> {
+    const res = await fetch(`${API_URL}/api/redirects/export.csv`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to export redirects');
+    return res.blob();
   },
 };
 
