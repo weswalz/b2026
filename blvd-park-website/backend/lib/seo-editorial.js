@@ -248,7 +248,10 @@ function listSeoSignoffs(db, resourceType, resourceId, { signoffType = null, lim
     params.push(signoffType);
   }
   params.push(Math.max(1, Math.min(500, Number(limit) || 100)));
-  return db.prepare(`SELECT * FROM seo_signoffs WHERE ${clauses.join(' AND ')} ORDER BY createdAt DESC LIMIT ?`).all(...params);
+  // createdAt alone (millisecond ISO string) is not a stable "most recent first"
+  // ordering — two signoffs in the same millisecond could sort either way.
+  // rowid DESC is a free monotonic tiebreaker (fix originated at Cattlemen's port).
+  return db.prepare(`SELECT * FROM seo_signoffs WHERE ${clauses.join(' AND ')} ORDER BY createdAt DESC, rowid DESC LIMIT ?`).all(...params);
 }
 
 // Toggle for "legal/compliance approval where applicable" — not every resource
