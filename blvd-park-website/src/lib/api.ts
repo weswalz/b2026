@@ -157,6 +157,14 @@ export interface PageSection {
   body: string;
 }
 
+export interface MediaItem {
+  url: string;
+  filename: string;
+  size: number;
+  modified: string;
+  source: 'gallery' | 'uploads';
+}
+
 export interface RedirectItem {
   id: number;
   fromPath: string;
@@ -477,6 +485,13 @@ export const api = {
       headers: getAuthHeaders(),
     });
     if (!res.ok) throw apiError(res, 'Failed to delete page');
+  },
+
+  // Media
+  async getMediaList(): Promise<MediaItem[]> {
+    const res = await fetch(`${API_URL}/api/media/list`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to fetch media list');
+    return res.json();
   },
 
   // Users

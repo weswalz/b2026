@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, getImageUrl, type MenuItem } from '../../lib/api';
+import MediaPicker from './MediaPicker';
 
 export default function AdminMenu() {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [filterCategory, setFilterCategory] = useState<string>('');
+  const [showMediaPicker, setShowMediaPicker] = useState(false);
+  const [pickedImageUrl, setPickedImageUrl] = useState('');
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ['menu', 'all'],
@@ -37,6 +40,10 @@ export default function AdminMenu() {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
+    const chosenFile = formData.get('image');
+    if (pickedImageUrl && (!chosenFile || (chosenFile instanceof File && chosenFile.size === 0))) {
+      formData.set('imageUrl', pickedImageUrl);
+    }
 
     if (editingItem) {
       updateMutation.mutate({ id: editingItem.id, data: formData });
@@ -68,7 +75,7 @@ export default function AdminMenu() {
           <p className="text-white/50 mt-1">{items.length} items</p>
         </div>
         <button
-          onClick={() => { setShowForm(true); setEditingItem(null); }}
+          onClick={() => { setShowForm(true); setEditingItem(null); setPickedImageUrl(''); }}
           className="px-5 py-2.5 bg-[#1A5F36] text-white rounded-lg hover:bg-[#22C55E] transition-colors flex items-center gap-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -176,12 +183,26 @@ export default function AdminMenu() {
               </div>
               <div>
                 <label className="block text-white/70 text-sm mb-2">Image</label>
-                <input
-                  name="image"
-                  type="file"
-                  accept="image/*"
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#1A5F36] file:text-white file:cursor-pointer"
-                />
+                {(pickedImageUrl || editingItem?.image) && (
+                  <img src={getImageUrl(pickedImageUrl || editingItem!.image!)} alt="Menu item preview" className="w-24 h-24 object-cover rounded-lg mb-2" />
+                )}
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowMediaPicker(true)}
+                    className="px-4 py-2.5 text-sm bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors"
+                  >
+                    Choose from Library
+                  </button>
+                  <span className="text-white/30 text-xs">or</span>
+                  <input
+                    name="image"
+                    type="file"
+                    accept="image/*"
+                    onChange={() => setPickedImageUrl('')}
+                    className="text-white text-sm file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#1A5F36] file:text-white file:cursor-pointer"
+                  />
+                </div>
               </div>
               <div className="flex gap-4">
                 <label className="flex items-center gap-2 text-white/70">
@@ -263,7 +284,7 @@ export default function AdminMenu() {
                 </div>
                 <div className="flex gap-1">
                   <button
-                    onClick={() => setEditingItem(item)}
+                    onClick={() => { setEditingItem(item); setPickedImageUrl(''); }}
                     className="p-1.5 text-white/50 hover:text-white transition-colors"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -294,6 +315,13 @@ export default function AdminMenu() {
           <p className="text-white/40">No menu items found</p>
         </div>
       )}
+
+      <MediaPicker
+        open={showMediaPicker}
+        onOpenChange={setShowMediaPicker}
+        onSelect={(url) => setPickedImageUrl(url)}
+        selectedUrl={pickedImageUrl}
+      />
     </div>
   );
 }

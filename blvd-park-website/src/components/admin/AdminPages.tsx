@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, getImageUrl, type Page, type PageSection } from '../../lib/api';
+import MediaPicker from './MediaPicker';
 
 const ROBOTS_OPTIONS = ['noindex, nofollow', 'noindex, follow', 'index, follow', 'index, nofollow'];
 const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -37,6 +38,7 @@ export default function AdminPages() {
   const [slugTouched, setSlugTouched] = useState(false);
   const [jsonLdError, setJsonLdError] = useState('');
   const [slugError, setSlugError] = useState('');
+  const [showMediaPicker, setShowMediaPicker] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const submittingRef = useRef(false);
 
@@ -256,13 +258,23 @@ export default function AdminPages() {
                   {form.og_image && (
                     <img src={getImageUrl(form.og_image)} alt="OG preview" className="w-24 h-24 object-cover rounded-lg mb-2" />
                   )}
-                  <input
-                    ref={fileRef}
-                    name="og_image_file"
-                    type="file"
-                    accept="image/*"
-                    className={inputCls + ' file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#1A5F36] file:text-white file:cursor-pointer'}
-                  />
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowMediaPicker(true)}
+                      className="px-4 py-2.5 text-sm bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors"
+                    >
+                      Choose from Library
+                    </button>
+                    <span className="text-white/30 text-xs">or</span>
+                    <input
+                      ref={fileRef}
+                      name="og_image_file"
+                      type="file"
+                      accept="image/*"
+                      className="text-white text-sm file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#1A5F36] file:text-white file:cursor-pointer"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-white/70 text-sm mb-2">JSON-LD (structured data)</label>
@@ -404,6 +416,13 @@ export default function AdminPages() {
           </button>
         </div>
       )}
+
+      <MediaPicker
+        open={showMediaPicker}
+        onOpenChange={setShowMediaPicker}
+        onSelect={(url) => setForm((f) => ({ ...f, og_image: url }))}
+        selectedUrl={form.og_image}
+      />
     </div>
   );
 }

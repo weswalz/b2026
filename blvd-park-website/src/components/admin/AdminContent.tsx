@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Editor } from '@tinymce/tinymce-react';
 import { api, type ContentField, type ContentItem, type ContentSection } from '../../lib/api';
+import MediaPicker from './MediaPicker';
 
 type ContentMap = Record<string, string>;
 
@@ -20,6 +21,8 @@ export default function AdminContent() {
   const queryClient = useQueryClient();
   const [contentMap, setContentMap] = useState<ContentMap>({});
   const [dirty, setDirty] = useState(false);
+  // Tracks which image-type field key the picker is currently open for (null = closed).
+  const [mediaPickerFieldKey, setMediaPickerFieldKey] = useState<string | null>(null);
 
   const { data: schemaData, isLoading: schemaLoading } = useQuery({
     queryKey: ['content-schema'],
@@ -142,7 +145,7 @@ export default function AdminContent() {
                       </div>
                     )}
 
-                    {(field.type === 'text' || field.type === 'url' || field.type === 'image' || field.type === 'number') && (
+                    {(field.type === 'text' || field.type === 'url' || field.type === 'number') && (
                       <input
                         id={field.key}
                         type={field.type === 'number' ? 'number' : 'text'}
@@ -150,6 +153,28 @@ export default function AdminContent() {
                         onChange={(e) => handleFieldChange(field.key, e.target.value)}
                         className={fieldInputClass}
                       />
+                    )}
+
+                    {field.type === 'image' && (
+                      <div className="flex items-center gap-3">
+                        {value && (
+                          <img src={value} alt="" className="w-10 h-10 object-cover rounded-lg flex-shrink-0" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                        )}
+                        <input
+                          id={field.key}
+                          type="text"
+                          value={value}
+                          onChange={(e) => handleFieldChange(field.key, e.target.value)}
+                          className={fieldInputClass}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setMediaPickerFieldKey(field.key)}
+                          className="px-4 py-3 text-sm bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors flex-shrink-0 whitespace-nowrap"
+                        >
+                          Browse
+                        </button>
+                      </div>
                     )}
 
                     {isBoolean && (
@@ -167,7 +192,7 @@ export default function AdminContent() {
 
                     {field.type === 'image' && (
                       <p className="text-xs text-white/30">
-                        Tip: You can use any hosted URL or upload to the Gallery and copy the image URL.
+                        Tip: Click Browse to pick from the media library, or paste any hosted URL directly.
                       </p>
                     )}
                   </div>
@@ -177,6 +202,13 @@ export default function AdminContent() {
           </div>
         ))}
       </div>
+
+      <MediaPicker
+        open={mediaPickerFieldKey !== null}
+        onOpenChange={(open) => { if (!open) setMediaPickerFieldKey(null); }}
+        onSelect={(url) => { if (mediaPickerFieldKey) handleFieldChange(mediaPickerFieldKey, url); }}
+        selectedUrl={mediaPickerFieldKey ? contentMap[mediaPickerFieldKey] : undefined}
+      />
     </div>
   );
 }

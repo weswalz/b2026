@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, getImageUrl, type Event } from '../../lib/api';
+import MediaPicker from './MediaPicker';
 
 const slugify = (s: string) =>
   s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 120);
@@ -16,6 +17,8 @@ export default function AdminEvents() {
   const [titleValue, setTitleValue] = useState('');
   const [slugError, setSlugError] = useState('');
   const [isRecurringValue, setIsRecurringValue] = useState(false);
+  const [showMediaPicker, setShowMediaPicker] = useState(false);
+  const [pickedImageUrl, setPickedImageUrl] = useState('');
   const submittingRef = useRef(false);
 
   const { data: events = [], isLoading } = useQuery({
@@ -29,6 +32,7 @@ export default function AdminEvents() {
     setTitleValue(event?.title || '');
     setSlugError('');
     setIsRecurringValue(event?.isRecurring === 1);
+    setPickedImageUrl('');
   };
 
   const createMutation = useMutation({
@@ -75,6 +79,12 @@ export default function AdminEvents() {
     const formData = new FormData(e.currentTarget);
     formData.set('slug', slugValue);
     if (!formData.get('isRecurring')) formData.delete('isRecurring');
+    // A real file upload always wins server-side; imageUrl is only consulted when no
+    // file was chosen (see server.js image = req.file ? ... : imageUrl fallback).
+    const chosenFile = formData.get('image');
+    if (pickedImageUrl && (!chosenFile || (chosenFile instanceof File && chosenFile.size === 0))) {
+      formData.set('imageUrl', pickedImageUrl);
+    }
 
     if (editingEvent) {
       updateMutation.mutate({ id: editingEvent.id, data: formData });
@@ -233,12 +243,26 @@ export default function AdminEvents() {
               </div>
               <div>
                 <label className="block text-white/70 text-sm mb-2">Image</label>
-                <input
-                  name="image"
-                  type="file"
-                  accept="image/*"
-                  className={inputCls + ' file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#1A5F36] file:text-white file:cursor-pointer'}
-                />
+                {(pickedImageUrl || editingEvent?.image) && (
+                  <img src={getImageUrl(pickedImageUrl || editingEvent!.image!)} alt="Event preview" className="w-24 h-24 object-cover rounded-lg mb-2" />
+                )}
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowMediaPicker(true)}
+                    className="px-4 py-2.5 text-sm bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors"
+                  >
+                    Choose from Library
+                  </button>
+                  <span className="text-white/30 text-xs">or</span>
+                  <input
+                    name="image"
+                    type="file"
+                    accept="image/*"
+                    onChange={() => setPickedImageUrl('')}
+                    className="text-white text-sm file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#1A5F36] file:text-white file:cursor-pointer"
+                  />
+                </div>
               </div>
               {editingEvent && (
                 <div>
@@ -457,6 +481,13 @@ export default function AdminEvents() {
           )}
         </div>
       )}
+
+      <MediaPicker
+        open={showMediaPicker}
+        onOpenChange={setShowMediaPicker}
+        onSelect={(url) => setPickedImageUrl(url)}
+        selectedUrl={pickedImageUrl}
+      />
     </div>
   );
 }

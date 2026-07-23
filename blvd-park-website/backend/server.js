@@ -14,6 +14,7 @@ const ssoRoutes = require('./routes/sso');
 const { sendEmail, buildInviteEmail, buildPasswordResetEmail } = require('./email');
 const crypto = require('crypto');
 const argon2 = require('argon2');
+const { detectUploadMime, mimeMatches } = require('./lib/upload-verify');
 
 const app = express();
 const dbPath = process.env.DB_PATH || path.join(__dirname, 'database', 'blvdpark.db');
@@ -173,6 +174,33 @@ const upload = multer({
     }
   }
 });
+
+// Post-multer MIME verification — multer's fileFilter only checks the client-declared
+// mimetype/extension, which is trivially spoofable. This reads the just-written file's
+// actual bytes and verifies the real format matches. Runs after upload.single(...) on
+// every route that accepts a file. Unlinks + 400s on mismatch; no-ops when no file was
+// uploaded (image fields are optional on most update routes).
+const verifyUploadedFile = (req, res, next) => {
+  if (!req.file) return next();
+  try {
+    const filePath = path.join(uploadsDir, req.file.filename);
+    const buffer = fs.readFileSync(filePath);
+    const detected = detectUploadMime(buffer);
+    if (!detected || !mimeMatches(req.file.mimetype, detected)) {
+      try { fs.unlinkSync(filePath); } catch (_e) {}
+      return res.status(400).json({
+        error: 'File content does not match its declared type',
+        declared: req.file.mimetype,
+        detected: detected || 'unrecognized',
+      });
+    }
+    next();
+  } catch (err) {
+    console.error('Upload verification error:', err);
+    try { fs.unlinkSync(path.join(uploadsDir, req.file.filename)); } catch (_e) {}
+    res.status(500).json({ error: 'Failed to verify uploaded file' });
+  }
+};
 
 // Input validation helpers
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -367,7 +395,7 @@ app.get('/api/pages/:id', requireAuth, (req, res) => {
   }
 });
 
-app.post('/api/pages', requireAuth, upload.single('og_image_file'), (req, res) => {
+app.post('/api/pages', requireAuth, upload.single('og_image_file'), verifyUploadedFile, (req, res) => {
   const result = validatePagePayload(req.body || {});
   if (!result.ok) {
     if (req.file) { try { fs.unlinkSync(path.join(uploadsDir, req.file.filename)); } catch (_e) {} }
@@ -393,7 +421,7 @@ app.post('/api/pages', requireAuth, upload.single('og_image_file'), (req, res) =
   }
 });
 
-app.put('/api/pages/:id', requireAuth, upload.single('og_image_file'), (req, res) => {
+app.put('/api/pages/:id', requireAuth, upload.single('og_image_file'), verifyUploadedFile, (req, res) => {
   const existing = db.prepare('SELECT * FROM pages WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Page not found' });
   const result = validatePagePayload(req.body || {});
@@ -569,6 +597,56 @@ app.delete('/api/redirects/:id', requireAuth, requireRole('admin', 'super_admin'
   }
 });
 
+// ============== MEDIA ==============
+// Union of gallery_images rows + a scan of the uploads dir (covers images uploaded
+// through events/menu/pages that never went through the gallery table). Capped at
+// 300 combined rows; dotfiles excluded from the directory scan.
+const MEDIA_LIST_CAP = 300;
+
+app.get('/api/media/list', requireAuth, (req, res) => {
+  try {
+    const galleryRows = db.prepare('SELECT url, uploadDate FROM gallery_images ORDER BY uploadDate DESC').all();
+    const galleryUrls = new Set(galleryRows.map((r) => r.url));
+
+    const fromGallery = galleryRows.map((r) => {
+      const filename = path.basename(r.url);
+      let size = 0;
+      let modified = r.uploadDate;
+      try {
+        const stat = fs.statSync(path.join(uploadsDir, filename));
+        size = stat.size;
+        modified = stat.mtime.toISOString();
+      } catch (_e) { /* file missing from disk — still list the DB row */ }
+      return { url: r.url, filename, size, modified, source: 'gallery' };
+    });
+
+    let fromUploadsDir = [];
+    try {
+      const entries = fs.readdirSync(uploadsDir, { withFileTypes: true });
+      fromUploadsDir = entries
+        .filter((e) => e.isFile() && !e.name.startsWith('.'))
+        .map((e) => {
+          const url = `/uploads/${e.name}`;
+          if (galleryUrls.has(url)) return null; // avoid duplicating rows already covered by the gallery table
+          const stat = fs.statSync(path.join(uploadsDir, e.name));
+          return { url, filename: e.name, size: stat.size, modified: stat.mtime.toISOString(), source: 'uploads' };
+        })
+        .filter(Boolean);
+    } catch (err) {
+      console.warn('Media list uploads-dir scan failed:', err.message || err);
+    }
+
+    const combined = [...fromGallery, ...fromUploadsDir]
+      .sort((a, b) => new Date(b.modified).getTime() - new Date(a.modified).getTime())
+      .slice(0, MEDIA_LIST_CAP);
+
+    res.json(combined);
+  } catch (err) {
+    console.error('Media list error:', err);
+    res.status(500).json({ error: 'Failed to list media' });
+  }
+});
+
 // ============== USERS ==============
 const USER_SAFE_COLUMNS = 'id, email, username, role, isActive, last_login, createdAt, updatedAt';
 
@@ -724,12 +802,14 @@ app.get('/api/events/:id', (req, res) => {
   }
 });
 
-app.post('/api/events', requireAuth, upload.single('image'), (req, res) => {
+app.post('/api/events', requireAuth, upload.single('image'), verifyUploadedFile, (req, res) => {
   const {
     title, date, time, description, category, ticketUrl, isRecurring, recurringPattern, recurringEndDate,
-    slug: requestedSlug, seoTitle, seoDescription, seoKeywords, ogTitle, ogDescription, ogImage,
+    slug: requestedSlug, seoTitle, seoDescription, seoKeywords, ogTitle, ogDescription, ogImage, imageUrl,
   } = req.body;
-  const image = req.file ? `/uploads/${req.file.filename}` : null;
+  // imageUrl lets the MediaPicker select an existing /uploads/* image without a new
+  // file upload; a real uploaded file always takes priority when both are present.
+  const image = req.file ? `/uploads/${req.file.filename}` : (imageUrl && String(imageUrl).trim() ? String(imageUrl).trim() : null);
   const cleanupUpload = () => {
     if (req.file) { try { fs.unlinkSync(path.join(uploadsDir, req.file.filename)); } catch (_e) {} }
   };
@@ -791,13 +871,13 @@ app.post('/api/events', requireAuth, upload.single('image'), (req, res) => {
   }
 });
 
-app.put('/api/events/:id', requireAuth, upload.single('image'), (req, res) => {
+app.put('/api/events/:id', requireAuth, upload.single('image'), verifyUploadedFile, (req, res) => {
   const { id } = req.params;
   const {
     title, date, time, description, category, ticketUrl, status, isRecurring, recurringPattern, recurringEndDate,
-    slug: requestedSlug, seoTitle, seoDescription, seoKeywords, ogTitle, ogDescription, ogImage,
+    slug: requestedSlug, seoTitle, seoDescription, seoKeywords, ogTitle, ogDescription, ogImage, imageUrl,
   } = req.body;
-  const image = req.file ? `/uploads/${req.file.filename}` : undefined;
+  const image = req.file ? `/uploads/${req.file.filename}` : (imageUrl && String(imageUrl).trim() ? String(imageUrl).trim() : undefined);
   const cleanupUpload = () => {
     if (req.file) { try { fs.unlinkSync(path.join(uploadsDir, req.file.filename)); } catch (_e) {} }
   };
@@ -911,7 +991,7 @@ app.get('/api/gallery', (req, res) => {
   }
 });
 
-app.post('/api/gallery', requireAuth, upload.single('image'), (req, res) => {
+app.post('/api/gallery', requireAuth, upload.single('image'), verifyUploadedFile, (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
 
   const { alt = 'Gallery image', category = 'venue', galleryType = 'main' } = req.body;
@@ -1020,9 +1100,9 @@ app.get('/api/menu', (req, res) => {
   }
 });
 
-app.post('/api/menu', requireAuth, upload.single('image'), (req, res) => {
-  const { name, description, price, category, subcategory, isLunchOnly } = req.body;
-  const image = req.file ? `/uploads/${req.file.filename}` : null;
+app.post('/api/menu', requireAuth, upload.single('image'), verifyUploadedFile, (req, res) => {
+  const { name, description, price, category, subcategory, isLunchOnly, imageUrl } = req.body;
+  const image = req.file ? `/uploads/${req.file.filename}` : (imageUrl && String(imageUrl).trim() ? String(imageUrl).trim() : null);
 
   try {
     const result = db.prepare(`
@@ -1039,10 +1119,10 @@ app.post('/api/menu', requireAuth, upload.single('image'), (req, res) => {
   }
 });
 
-app.put('/api/menu/:id', requireAuth, upload.single('image'), (req, res) => {
+app.put('/api/menu/:id', requireAuth, upload.single('image'), verifyUploadedFile, (req, res) => {
   const { id } = req.params;
-  const { name, description, price, category, subcategory, isAvailable, isLunchOnly } = req.body;
-  const image = req.file ? `/uploads/${req.file.filename}` : undefined;
+  const { name, description, price, category, subcategory, isAvailable, isLunchOnly, imageUrl } = req.body;
+  const image = req.file ? `/uploads/${req.file.filename}` : (imageUrl && String(imageUrl).trim() ? String(imageUrl).trim() : undefined);
 
   try {
     db.prepare(`
