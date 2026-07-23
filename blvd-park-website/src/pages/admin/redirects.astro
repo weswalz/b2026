@@ -1,0 +1,10 @@
+---
+export const prerender = true;
+// Admin Redirects Manager
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import AdminPage from '../../components/admin/AdminPage';
+---
+
+<AdminLayout title="Redirects">
+  <AdminPage client:only="react" currentPath={Astro.url.pathname} page="redirects" />
+</AdminLayout>

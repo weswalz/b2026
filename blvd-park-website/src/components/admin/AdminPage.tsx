@@ -6,6 +6,7 @@ import AdminEvents from './AdminEvents';
 import AdminGallery from './AdminGallery';
 import AdminHours from './AdminHours';
 import AdminMenu from './AdminMenu';
+import AdminRedirects from './AdminRedirects';
 import AdminReservations from './AdminReservations';
 import AdminSidebar from './AdminSidebar';
 import AdminContent from './AdminContent';
@@ -26,7 +27,8 @@ export default function AdminPage({
     | 'hours'
     | 'content'
     | 'pages'
-    | 'activity';
+    | 'activity'
+    | 'redirects';
 }) {
   const pages = {
     dashboard: AdminDashboard,
@@ -39,6 +41,7 @@ export default function AdminPage({
     content: AdminContent,
     pages: AdminPages,
     activity: AdminActivity,
+    redirects: AdminRedirects,
   };
 
   const PageComponent = pages[page];

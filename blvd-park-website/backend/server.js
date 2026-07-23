@@ -460,6 +460,99 @@ app.get('/api/access-log', requireAuth, (req, res) => {
   }
 });
 
+// ============== REDIRECTS ==============
+const { validateRedirectPayload, getActiveRedirectForPath, recordHit } = require('./lib/redirects');
+
+// Public — cheap count so the frontend middleware can skip the per-request resolve
+// call entirely when no redirects are configured (cached client-side for 30s).
+app.get('/api/redirects/count', (req, res) => {
+  try {
+    const { count } = db.prepare('SELECT COUNT(*) as count FROM redirects WHERE isActive = 1').get();
+    res.json({ count });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to count redirects' });
+  }
+});
+
+// Public — used by the frontend middleware to resolve incoming request paths.
+app.get('/api/redirects/resolve', (req, res) => {
+  const { path: reqPath } = req.query;
+  try {
+    const match = getActiveRedirectForPath(db, reqPath);
+    if (!match) return res.status(404).json({ error: 'No redirect' });
+    recordHit(db, match.id);
+    res.json({ toPath: match.toPath, statusCode: match.statusCode });
+  } catch (err) {
+    console.error('Redirect resolve error:', err);
+    res.status(500).json({ error: 'Failed to resolve redirect' });
+  }
+});
+
+app.get('/api/redirects', requireAuth, (req, res) => {
+  try {
+    res.json(db.prepare('SELECT * FROM redirects ORDER BY createdAt DESC').all());
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch redirects' });
+  }
+});
+
+app.post('/api/redirects', requireAuth, (req, res) => {
+  try {
+    const payload = validateRedirectPayload(req.body || {}, db);
+    const info = db.prepare(`
+      INSERT INTO redirects (fromPath, toPath, statusCode, isActive, matchType, notes)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(payload.fromPath, payload.toPath, payload.statusCode, payload.isActive, payload.matchType, payload.notes);
+    const created = db.prepare('SELECT * FROM redirects WHERE id = ?').get(info.lastInsertRowid);
+    res.status(201).json(created);
+    logActivity(db, { action: 'create', resourceType: 'redirect', resourceId: created.id, req, details: { fromPath: created.fromPath, toPath: created.toPath } });
+    broadcast('redirects');
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    if (String(err.message || '').includes('UNIQUE')) {
+      return res.status(409).json({ error: 'A redirect for this fromPath already exists' });
+    }
+    console.error('Redirect create error:', err);
+    res.status(500).json({ error: 'Failed to create redirect' });
+  }
+});
+
+app.put('/api/redirects/:id', requireAuth, (req, res) => {
+  try {
+    const existing = db.prepare('SELECT * FROM redirects WHERE id = ?').get(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Redirect not found' });
+    const merged = { ...existing, ...req.body };
+    const payload = validateRedirectPayload(merged, db, Number(req.params.id));
+    db.prepare(`
+      UPDATE redirects SET fromPath = ?, toPath = ?, statusCode = ?, isActive = ?, matchType = ?, notes = ?, updatedAt = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(payload.fromPath, payload.toPath, payload.statusCode, payload.isActive, payload.matchType, payload.notes, req.params.id);
+    const updated = db.prepare('SELECT * FROM redirects WHERE id = ?').get(req.params.id);
+    res.json(updated);
+    logActivity(db, { action: 'update', resourceType: 'redirect', resourceId: req.params.id, req, details: { fromPath: updated.fromPath, isActive: updated.isActive } });
+    broadcast('redirects');
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    if (String(err.message || '').includes('UNIQUE')) {
+      return res.status(409).json({ error: 'A redirect for this fromPath already exists' });
+    }
+    console.error('Redirect update error:', err);
+    res.status(500).json({ error: 'Failed to update redirect' });
+  }
+});
+
+app.delete('/api/redirects/:id', requireAuth, (req, res) => {
+  try {
+    const existing = db.prepare('SELECT fromPath FROM redirects WHERE id = ?').get(req.params.id);
+    db.prepare('DELETE FROM redirects WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
+    logActivity(db, { action: 'delete', resourceType: 'redirect', resourceId: req.params.id, req, details: existing ? { fromPath: existing.fromPath } : undefined });
+    broadcast('redirects');
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete redirect' });
+  }
+});
+
 // ============== EVENTS ==============
 app.get('/api/events', (req, res) => {
   const { all, deleted } = req.query;

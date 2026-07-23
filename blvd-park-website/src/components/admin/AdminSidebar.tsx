@@ -123,6 +123,15 @@ export default function AdminSidebar({ currentPath }: { currentPath: string }) {
         </svg>
       ),
     },
+    {
+      name: 'Redirects',
+      href: '/admin/redirects',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 5H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-2m-4-6l4-4m0 0l4 4m-4-4v12"/>
+        </svg>
+      ),
+    },
   ];
 
   const isActive = (href: string) => {

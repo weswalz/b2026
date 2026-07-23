@@ -194,6 +194,21 @@ const initDatabase = (dbPath = defaultDbPath) => {
     userAgent TEXT,
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  -- Redirects manager
+  CREATE TABLE IF NOT EXISTS redirects (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    fromPath TEXT UNIQUE,
+    toPath TEXT,
+    statusCode INTEGER DEFAULT 301,
+    isActive INTEGER DEFAULT 1,
+    matchType TEXT DEFAULT 'exact',
+    notes TEXT,
+    hitCount INTEGER DEFAULT 0,
+    lastHitAt TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
   `);
 
   // Create indexes
@@ -207,6 +222,8 @@ const initDatabase = (dbPath = defaultDbPath) => {
     CREATE INDEX IF NOT EXISTS idx_events_deleted_at ON events(deleted_at);
     CREATE INDEX IF NOT EXISTS idx_activity_log_createdAt ON activity_log(createdAt);
     CREATE INDEX IF NOT EXISTS idx_access_log_createdAt ON access_log(createdAt);
+    CREATE INDEX IF NOT EXISTS idx_redirects_matchType ON redirects(matchType);
+    CREATE INDEX IF NOT EXISTS idx_redirects_isActive ON redirects(isActive);
   `);
 
   // Seed default hours

@@ -156,6 +156,20 @@ export interface PageSection {
   body: string;
 }
 
+export interface RedirectItem {
+  id: number;
+  fromPath: string;
+  toPath: string;
+  statusCode: number;
+  isActive: number;
+  matchType: 'exact' | 'prefix' | 'regex';
+  notes: string | null;
+  hitCount: number;
+  lastHitAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ActivityLogItem {
   id: number;
   action: string;
@@ -462,6 +476,41 @@ export const api = {
       headers: getAuthHeaders(),
     });
     if (!res.ok) throw apiError(res, 'Failed to delete page');
+  },
+
+  // Redirects
+  async getRedirects(): Promise<RedirectItem[]> {
+    const res = await fetch(`${API_URL}/api/redirects`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to fetch redirects');
+    return res.json();
+  },
+
+  async createRedirect(data: Partial<RedirectItem>): Promise<RedirectItem> {
+    const res = await fetch(`${API_URL}/api/redirects`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to create redirect');
+    return res.json();
+  },
+
+  async updateRedirect(id: number, data: Partial<RedirectItem>): Promise<RedirectItem> {
+    const res = await fetch(`${API_URL}/api/redirects/${id}`, {
+      method: 'PUT',
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to update redirect');
+    return res.json();
+  },
+
+  async deleteRedirect(id: number): Promise<void> {
+    const res = await fetch(`${API_URL}/api/redirects/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw apiError(res, 'Failed to delete redirect');
   },
 
   // Activity / access log
