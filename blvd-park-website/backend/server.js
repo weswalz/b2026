@@ -527,6 +527,10 @@ app.get('/api/access-log', requireAuth, (req, res) => {
   }
 });
 
+// ============== SEO OPS (Wave-2: crawler/audit engine) ==============
+const { buildSeoRouter } = require('./routes/seo');
+app.use('/api/seo', buildSeoRouter({ requireAuth, requireRole, logActivity, broadcast }));
+
 // ============== REDIRECTS ==============
 const { validateRedirectPayload, getActiveRedirectForPath, recordHit } = require('./lib/redirects');
 
@@ -1544,6 +1548,570 @@ app.post('/api/auth/logout', (req, res) => {
   }
 
   res.json({ success: true });
+});
+
+// ============================================================================
+// SEO-ops platform (Wave-2) — editorial signoffs, entity references, master
+// entities, taxonomy, redirect CSV import/link migration, robots.txt editor,
+// sitemap validation. Deliberately appended as one contiguous block at the end
+// of the file (not interleaved with the routes above) to avoid colliding with
+// the parallel crawler-engine port (backend/lib/seo-audit.js and its own
+// server.js routes), per this task's own collision-avoidance instruction.
+// Every route below follows this file's established conventions exactly:
+// requireAuth/requireRole gating, res.status(N).json({error}) on failure, raw
+// resource res.json(row) on success, logActivity(db, {...}) after every
+// mutation, broadcast('topic') SSE calls on writes that affect admin lists.
+// ============================================================================
+
+const seoEditorial = require('./lib/seo-editorial');
+const seoEntities = require('./lib/seo-entities');
+const seoMasterEntities = require('./lib/seo-master-entities');
+const seoTaxonomy = require('./lib/seo-taxonomy');
+const seoRobots = require('./lib/robots');
+const seoSitemapValidation = require('./lib/sitemap-validation');
+const seoDirectives = require('./lib/seo-directives');
+const seoRedirectsExt = require('./lib/redirects');
+// The coordinator's already-built core resource registry (backend/lib/seo-resources.js,
+// treated as ALREADY BUILT per this task's instructions — used here, never
+// duplicated or rewritten). syncSeoResourceInventory(db) is what actually
+// creates a seo_resources row for every real page/event; nothing else in
+// server.js calls it yet (no other SEO routes are wired in as of this port),
+// so every route below that is keyed by (resourceType, resourceId) or by the
+// raw seo_resources.id calls it first — otherwise a freshly created page would
+// have no seo_resources row for editorial/entity/taxonomy data to attach to.
+const { syncSeoResourceInventory, getSeoResource } = require('./lib/seo-resources');
+
+// ---- Editorial: checklist definitions ----
+app.get('/api/seo/checklist-definitions', requireAuth, (req, res) => {
+  try {
+    res.json(seoEditorial.listChecklistDefinitions(db, { resourceType: req.query.resourceType || null, includeInactive: req.query.includeInactive === 'true' }));
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to fetch checklist definitions' });
+  }
+});
+
+app.post('/api/seo/checklist-definitions', requireAuth, requireRole('admin', 'super_admin'), (req, res) => {
+  try {
+    const created = seoEditorial.createChecklistDefinition(db, req.body || {}, req.user);
+    res.status(201).json(created);
+    logActivity(db, { action: 'create', resourceType: 'seo-checklist-definition', resourceId: created.id, req, details: { itemKey: created.itemKey } });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to create checklist definition' });
+  }
+});
+
+app.put('/api/seo/checklist-definitions/:id', requireAuth, requireRole('admin', 'super_admin'), (req, res) => {
+  try {
+    const updated = seoEditorial.updateChecklistDefinition(db, req.params.id, req.body || {}, req.user);
+    res.json(updated);
+    logActivity(db, { action: 'update', resourceType: 'seo-checklist-definition', resourceId: req.params.id, req, details: {} });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to update checklist definition' });
+  }
+});
+
+app.delete('/api/seo/checklist-definitions/:id', requireAuth, requireRole('admin', 'super_admin'), (req, res) => {
+  try {
+    const deactivated = seoEditorial.deactivateChecklistDefinition(db, req.params.id, req.user);
+    res.json(deactivated);
+    logActivity(db, { action: 'deactivate', resourceType: 'seo-checklist-definition', resourceId: req.params.id, req, details: {} });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to deactivate checklist definition' });
+  }
+});
+
+// ---- Editorial: per-resource checklist / signoffs / summary ----
+// Every route under /api/seo/resources/:resourceType/:resourceId/* looks up a
+// seo_resources row by (resourceType, resourceId) — that row only exists once
+// syncSeoResourceInventory(db) has run at least once for the current
+// pages/events tables. This middleware runs the (idempotent, INSERT OR IGNORE)
+// sync before any handler in this family so a freshly created page/event
+// always has its seo_resources row before editorial data tries to attach to
+// it — matching backend/lib/seo-resources.js's own getSeoResource()'s internal
+// call to the same function, just applied once per request instead of
+// per-read inside that module (this module doesn't import that internal call
+// path, so it's invoked explicitly here).
+app.use('/api/seo/resources/:resourceType/:resourceId', (req, res, next) => {
+  try { syncSeoResourceInventory(db); } catch (_e) { /* best-effort — a sync failure surfaces as a normal 404 below, not a 500 here */ }
+  next();
+});
+
+app.get('/api/seo/resources/:resourceType/:resourceId/checklist', requireAuth, (req, res) => {
+  try {
+    res.json(seoEditorial.getResourceChecklist(db, req.params.resourceType, req.params.resourceId));
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to fetch checklist' });
+  }
+});
+
+app.put('/api/seo/resources/:resourceType/:resourceId/checklist/:definitionId', requireAuth, (req, res) => {
+  try {
+    const result = seoEditorial.setChecklistItemStatus(db, req.params.resourceType, req.params.resourceId, req.params.definitionId, req.body || {}, req.user);
+    res.json(result);
+    logActivity(db, { action: 'update', resourceType: 'seo-checklist-status', resourceId: `${req.params.resourceType}:${req.params.resourceId}`, req, details: { definitionId: req.params.definitionId, completed: !!req.body?.completed } });
+    broadcast('seo');
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to update checklist item' });
+  }
+});
+
+app.get('/api/seo/resources/:resourceType/:resourceId/signoffs', requireAuth, (req, res) => {
+  try {
+    res.json(seoEditorial.listSeoSignoffs(db, req.params.resourceType, req.params.resourceId, { signoffType: req.query.signoffType || null }));
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to fetch signoffs' });
+  }
+});
+
+app.post('/api/seo/resources/:resourceType/:resourceId/signoffs', requireAuth, (req, res) => {
+  try {
+    const result = seoEditorial.recordSeoSignoff(db, req.params.resourceType, req.params.resourceId, req.body || {}, req.user);
+    res.status(201).json(result);
+    logActivity(db, { action: 'signoff', resourceType: 'seo-signoff', resourceId: `${req.params.resourceType}:${req.params.resourceId}`, req, details: { signoffType: req.body?.signoffType, status: req.body?.status } });
+    broadcast('seo');
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to record signoff' });
+  }
+});
+
+app.put('/api/seo/resources/:resourceType/:resourceId/legal-required', requireAuth, (req, res) => {
+  try {
+    const result = seoEditorial.setLegalApprovalRequired(db, req.params.resourceType, req.params.resourceId, !!req.body?.required, req.user);
+    res.json(result);
+    logActivity(db, { action: 'update', resourceType: 'seo-legal-required', resourceId: `${req.params.resourceType}:${req.params.resourceId}`, req, details: { required: !!req.body?.required } });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to update legal approval requirement' });
+  }
+});
+
+app.get('/api/seo/resources/:resourceType/:resourceId/editorial-summary', requireAuth, (req, res) => {
+  try {
+    const summary = seoEditorial.getEditorialCompletenessSummary(db, req.params.resourceType, req.params.resourceId);
+    if (!summary) return res.status(404).json({ error: 'SEO resource was not found.' });
+    res.json(summary);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to fetch editorial summary' });
+  }
+});
+
+// ---- Entities (content-level references) ----
+app.get('/api/seo/entities', requireAuth, (req, res) => {
+  try {
+    res.json(seoEntities.listSeoEntities(db));
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to fetch entities' });
+  }
+});
+
+app.post('/api/seo/entities', requireAuth, (req, res) => {
+  try {
+    const created = seoEntities.createSeoEntity(db, req.body || {}, req.user);
+    res.status(201).json(created);
+    logActivity(db, { action: 'create', resourceType: 'seo-entity', resourceId: created.id, req, details: { name: created.name } });
+    broadcast('seo');
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to create entity' });
+  }
+});
+
+app.put('/api/seo/entities/:id', requireAuth, (req, res) => {
+  try {
+    const updated = seoEntities.saveSeoEntity(db, req.params.id, req.body || {}, req.user);
+    res.json(updated);
+    logActivity(db, { action: 'update', resourceType: 'seo-entity', resourceId: req.params.id, req, details: {} });
+    broadcast('seo');
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to update entity' });
+  }
+});
+
+app.delete('/api/seo/entities/:id', requireAuth, requireRole('admin', 'super_admin'), (req, res) => {
+  try {
+    seoEntities.deleteSeoEntity(db, req.params.id, req.user);
+    res.json({ success: true });
+    logActivity(db, { action: 'delete', resourceType: 'seo-entity', resourceId: req.params.id, req, details: {} });
+    broadcast('seo');
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to delete entity' });
+  }
+});
+
+app.get('/api/seo/resources/:seoResourceId/entity-references', requireAuth, (req, res) => {
+  try {
+    res.json(seoEntities.listEntityReferencesForResource(db, req.params.seoResourceId));
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to fetch entity references' });
+  }
+});
+
+app.post('/api/seo/entity-references', requireAuth, (req, res) => {
+  try {
+    const created = seoEntities.createEntityReference(db, req.body || {}, req.user);
+    res.status(201).json(created);
+    logActivity(db, { action: 'create', resourceType: 'seo-entity-reference', resourceId: created.id, req, details: { seoResourceId: created.seoResourceId, role: created.role } });
+    broadcast('seo');
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to create entity reference' });
+  }
+});
+
+app.delete('/api/seo/entity-references/:id', requireAuth, (req, res) => {
+  try {
+    seoEntities.deleteEntityReference(db, req.params.id, req.user);
+    res.json({ success: true });
+    logActivity(db, { action: 'delete', resourceType: 'seo-entity-reference', resourceId: req.params.id, req, details: {} });
+    broadcast('seo');
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to delete entity reference' });
+  }
+});
+
+// ---- Master entities (stable @id registry) ----
+app.get('/api/seo/master-entities', requireAuth, (req, res) => {
+  try {
+    res.json(seoMasterEntities.listMasterEntities(db));
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to fetch master entities' });
+  }
+});
+
+app.get('/api/seo/master-entities/:id', requireAuth, (req, res) => {
+  try {
+    const entity = seoMasterEntities.getMasterEntity(db, req.params.id);
+    if (!entity) return res.status(404).json({ error: 'Master entity was not found.' });
+    res.json(entity);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to fetch master entity' });
+  }
+});
+
+app.post('/api/seo/master-entities', requireAuth, requireRole('admin', 'super_admin'), (req, res) => {
+  try {
+    const created = seoMasterEntities.createMasterEntity(db, req.body || {}, req.user);
+    res.status(201).json(created);
+    logActivity(db, { action: 'create', resourceType: 'seo-master-entity', resourceId: created.id, req, details: { name: created.name, idSlug: created.idSlug } });
+    broadcast('seo');
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to create master entity' });
+  }
+});
+
+app.put('/api/seo/master-entities/:id', requireAuth, requireRole('admin', 'super_admin'), (req, res) => {
+  try {
+    const updated = seoMasterEntities.saveMasterEntity(db, req.params.id, req.body || {}, req.user);
+    res.json(updated);
+    logActivity(db, { action: 'update', resourceType: 'seo-master-entity', resourceId: req.params.id, req, details: {} });
+    broadcast('seo');
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to update master entity' });
+  }
+});
+
+app.delete('/api/seo/master-entities/:id', requireAuth, requireRole('admin', 'super_admin'), (req, res) => {
+  try {
+    seoMasterEntities.deleteMasterEntity(db, req.params.id, req.user);
+    res.json({ success: true });
+    logActivity(db, { action: 'delete', resourceType: 'seo-master-entity', resourceId: req.params.id, req, details: {} });
+    broadcast('seo');
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to delete master entity' });
+  }
+});
+
+// ---- Taxonomy (categories/tags/collections/topics) ----
+app.get('/api/seo/taxonomy/terms', requireAuth, (req, res) => {
+  try {
+    res.json(seoTaxonomy.listTaxonomyTerms(db));
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to fetch taxonomy terms' });
+  }
+});
+
+app.get('/api/seo/taxonomy/tree', requireAuth, (req, res) => {
+  try {
+    res.json(seoTaxonomy.buildTaxonomyTree(db));
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to build taxonomy tree' });
+  }
+});
+
+app.get('/api/seo/taxonomy/duplicates', requireAuth, (req, res) => {
+  try {
+    res.json(seoTaxonomy.findDuplicateTaxonomyTerms(db, { termType: req.query.termType || null }));
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to find duplicate taxonomy terms' });
+  }
+});
+
+app.post('/api/seo/taxonomy/terms', requireAuth, (req, res) => {
+  try {
+    const created = seoTaxonomy.createTaxonomyTerm(db, req.body || {}, req.user);
+    res.status(201).json(created);
+    logActivity(db, { action: 'create', resourceType: 'seo-taxonomy-term', resourceId: created.id, req, details: { name: created.name, termType: created.termType } });
+    broadcast('seo');
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to create taxonomy term' });
+  }
+});
+
+app.put('/api/seo/taxonomy/terms/:id', requireAuth, (req, res) => {
+  try {
+    const updated = seoTaxonomy.saveTaxonomyTerm(db, req.params.id, req.body || {}, req.user);
+    res.json(updated);
+    logActivity(db, { action: 'update', resourceType: 'seo-taxonomy-term', resourceId: req.params.id, req, details: {} });
+    broadcast('seo');
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to update taxonomy term' });
+  }
+});
+
+app.delete('/api/seo/taxonomy/terms/:id', requireAuth, requireRole('admin', 'super_admin'), (req, res) => {
+  try {
+    seoTaxonomy.deleteTaxonomyTerm(db, req.params.id, req.user);
+    res.json({ success: true });
+    logActivity(db, { action: 'delete', resourceType: 'seo-taxonomy-term', resourceId: req.params.id, req, details: {} });
+    broadcast('seo');
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to delete taxonomy term' });
+  }
+});
+
+app.get('/api/seo/taxonomy/terms/:termId/resources', requireAuth, (req, res) => {
+  try {
+    res.json(seoTaxonomy.listResourcesForTerm(db, req.params.termId));
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to fetch resources for term' });
+  }
+});
+
+app.get('/api/seo/resources/:seoResourceId/terms', requireAuth, (req, res) => {
+  try {
+    res.json(seoTaxonomy.listTermsForResource(db, req.params.seoResourceId));
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to fetch terms for resource' });
+  }
+});
+
+app.post('/api/seo/resource-terms', requireAuth, (req, res) => {
+  try {
+    const created = seoTaxonomy.assignTermToResource(db, req.body || {}, req.user);
+    res.status(201).json(created);
+    logActivity(db, { action: 'create', resourceType: 'seo-term-assignment', resourceId: created.id, req, details: { seoResourceId: created.seoResourceId, termId: created.termId } });
+    broadcast('seo');
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to assign term' });
+  }
+});
+
+app.delete('/api/seo/resource-terms/:id', requireAuth, (req, res) => {
+  try {
+    seoTaxonomy.removeTermFromResource(db, req.params.id, req.user);
+    res.json({ success: true });
+    logActivity(db, { action: 'delete', resourceType: 'seo-term-assignment', resourceId: req.params.id, req, details: {} });
+    broadcast('seo');
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to remove term assignment' });
+  }
+});
+
+// ---- Redirects: CSV import/apply/rollback ----
+app.get('/api/redirects/export.csv', requireAuth, (req, res) => {
+  try {
+    const csv = seoRedirectsExt.exportRedirectsToCsv(db);
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="redirects.csv"');
+    res.send(csv);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to export redirects' });
+  }
+});
+
+app.post('/api/redirects/import/preview', requireAuth, (req, res) => {
+  try {
+    const records = Array.isArray(req.body?.records) ? req.body.records : seoRedirectsExt.parseCsv(req.body?.csv || '');
+    const preview = seoRedirectsExt.previewRedirectCsvImport(records, db);
+    const job = seoRedirectsExt.createRedirectImportJob(preview, db, req.user);
+    res.status(201).json(job);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to preview redirect import' });
+  }
+});
+
+app.get('/api/redirects/import/:id', requireAuth, (req, res) => {
+  try {
+    const job = seoRedirectsExt.getRedirectImportJob(req.params.id, db);
+    if (!job) return res.status(404).json({ error: 'Redirect import job was not found.' });
+    res.json(job);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to fetch redirect import job' });
+  }
+});
+
+app.get('/api/redirects/import', requireAuth, (req, res) => {
+  try {
+    res.json(seoRedirectsExt.listRedirectImportJobs(db, req.query.limit));
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to list redirect import jobs' });
+  }
+});
+
+app.post('/api/redirects/import/:id/apply', requireAuth, requireRole('admin', 'super_admin'), (req, res) => {
+  try {
+    const result = seoRedirectsExt.applyRedirectImportJob(req.params.id, db, req.user);
+    res.json(result);
+    logActivity(db, { action: 'apply', resourceType: 'redirect-import-job', resourceId: req.params.id, req, details: { createdCount: result.createdCount } });
+    broadcast('redirects');
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to apply redirect import job' });
+  }
+});
+
+app.post('/api/redirects/import/:id/rollback', requireAuth, requireRole('admin', 'super_admin'), (req, res) => {
+  try {
+    const result = seoRedirectsExt.rollbackRedirectImportJob(req.params.id, db, req.user);
+    res.json(result);
+    logActivity(db, { action: 'rollback', resourceType: 'redirect-import-job', resourceId: req.params.id, req, details: {} });
+    broadcast('redirects');
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to rollback redirect import job' });
+  }
+});
+
+// ---- Redirects: internal-link migration ----
+app.post('/api/redirects/link-migration/preview', requireAuth, (req, res) => {
+  try {
+    const findings = seoRedirectsExt.findStaleInternalLinks(db);
+    const job = seoRedirectsExt.createLinkMigrationJob(findings, db, req.user);
+    res.status(201).json(job);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to preview link migration' });
+  }
+});
+
+app.get('/api/redirects/link-migration/:id', requireAuth, (req, res) => {
+  try {
+    const job = seoRedirectsExt.getLinkMigrationJob(req.params.id, db);
+    if (!job) return res.status(404).json({ error: 'Link migration job was not found.' });
+    res.json(job);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to fetch link migration job' });
+  }
+});
+
+app.get('/api/redirects/link-migration', requireAuth, (req, res) => {
+  try {
+    res.json(seoRedirectsExt.listLinkMigrationJobs(db, req.query.limit));
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to list link migration jobs' });
+  }
+});
+
+app.post('/api/redirects/link-migration/:id/apply', requireAuth, requireRole('admin', 'super_admin'), (req, res) => {
+  try {
+    const result = seoRedirectsExt.applyLinkMigrationJob(req.params.id, db, req.user);
+    res.json(result);
+    logActivity(db, { action: 'apply', resourceType: 'link-migration-job', resourceId: req.params.id, req, details: { pagesChangedCount: result.pagesChangedCount } });
+    broadcast('pages');
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to apply link migration job' });
+  }
+});
+
+app.post('/api/redirects/link-migration/:id/rollback', requireAuth, requireRole('admin', 'super_admin'), (req, res) => {
+  try {
+    const result = seoRedirectsExt.rollbackLinkMigrationJob(req.params.id, db, req.user);
+    res.json(result);
+    logActivity(db, { action: 'rollback', resourceType: 'link-migration-job', resourceId: req.params.id, req, details: {} });
+    broadcast('pages');
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to rollback link migration job' });
+  }
+});
+
+// ---- robots.txt: editor + validator + tester ----
+// GET is public (the live robots.txt an Astro-side route or reverse-proxy rule
+// would serve — served here from seo_site_settings.robotsText, falling back to
+// the real BLVD default text when unset, never a stale build-time file).
+app.get('/api/seo/robots', (req, res) => {
+  try {
+    const settings = db.prepare("SELECT robotsText FROM seo_site_settings WHERE id = 'default'").get();
+    const text = settings?.robotsText || seoRobots.DEFAULT_ROBOTS_TEXT;
+    res.setHeader('Content-Type', 'text/plain');
+    res.send(text);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch robots.txt' });
+  }
+});
+
+app.get('/api/seo/robots/default', requireAuth, (req, res) => {
+  res.json({ robotsText: seoRobots.DEFAULT_ROBOTS_TEXT });
+});
+
+app.put('/api/seo/robots', requireAuth, requireRole('admin', 'super_admin'), (req, res) => {
+  try {
+    const text = String(req.body?.robotsText ?? '');
+    const validation = seoRobots.validateRobotsText(text);
+    if (!validation.valid) return res.status(400).json({ error: 'robots.txt failed validation', details: validation.errors });
+    db.prepare("UPDATE seo_site_settings SET robotsText = ?, updatedAt = CURRENT_TIMESTAMP, updatedBy = ? WHERE id = 'default'")
+      .run(text, req.user?.username || req.user?.email || 'admin');
+    res.json({ robotsText: text, validation });
+    logActivity(db, { action: 'update', resourceType: 'seo-robots-txt', resourceId: 'default', req, details: { length: text.length } });
+    broadcast('seo');
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to save robots.txt' });
+  }
+});
+
+app.post('/api/seo/robots/validate', requireAuth, (req, res) => {
+  try {
+    res.json(seoRobots.validateRobotsText(String(req.body?.robotsText ?? '')));
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to validate robots.txt' });
+  }
+});
+
+app.post('/api/seo/robots/test', requireAuth, (req, res) => {
+  try {
+    const settings = db.prepare("SELECT robotsText FROM seo_site_settings WHERE id = 'default'").get();
+    const text = req.body?.robotsText !== undefined ? String(req.body.robotsText) : (settings?.robotsText || seoRobots.DEFAULT_ROBOTS_TEXT);
+    res.json(seoRobots.testRobotsPath(text, req.body?.userAgent || '*', req.body?.path || '/'));
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to test robots.txt path' });
+  }
+});
+
+// ---- Sitemap validation ----
+app.get('/api/seo/sitemap/validations', requireAuth, (req, res) => {
+  try {
+    res.json(seoSitemapValidation.listSitemapValidationRuns(db, req.query.limit));
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to fetch sitemap validation history' });
+  }
+});
+
+app.post('/api/seo/sitemap/validate', requireAuth, async (req, res) => {
+  try {
+    const result = await seoSitemapValidation.runSitemapValidation(db, req.user);
+    res.status(201).json(result);
+    logActivity(db, { action: 'validate', resourceType: 'sitemap', resourceId: String(result.id), req, details: { overallValid: result.overallValid, fileCount: result.fileCount } });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to validate sitemap' });
+  }
+});
+
+// ---- Robots directives (pure builder — exposed for admin preview of what a
+// given resource's live <meta name="robots"> tag would render as) ----
+app.post('/api/seo/directives/preview', requireAuth, (req, res) => {
+  try {
+    const { resource, options } = req.body || {};
+    res.json({
+      robots: seoDirectives.buildRobotsDirectives(resource || {}, options || {}),
+      googlebot: seoDirectives.buildGooglebotDirectives(resource || {}, options || {}),
+      isExpired: seoDirectives.isSeoExpired(resource || {}),
+    });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Failed to build robots directives' });
+  }
 });
 
 app.listen(PORT, () => {
