@@ -1,5 +1,6 @@
 const Database = require('better-sqlite3');
 const path = require('path');
+const { ensureColumns } = require('./lib/schema-guard');
 
 const defaultDbPath = process.env.DB_PATH || path.join(__dirname, 'database', 'blvdpark.db');
 
@@ -212,6 +213,27 @@ const initDatabase = (dbPath = defaultDbPath) => {
     updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
   );
   `);
+
+  // On a pre-existing production DB the CREATE TABLE IF NOT EXISTS above no-ops,
+  // so columns added since that DB was created must be guarded in BEFORE the
+  // index block below references them (idx_events_slug/idx_events_deleted_at
+  // crash init on a legacy DB otherwise).
+  ensureColumns(db, 'events', [
+    { name: 'slug', ddl: 'slug TEXT' },
+    { name: 'seoTitle', ddl: "seoTitle TEXT DEFAULT ''" },
+    { name: 'seoDescription', ddl: "seoDescription TEXT DEFAULT ''" },
+    { name: 'seoKeywords', ddl: "seoKeywords TEXT DEFAULT ''" },
+    { name: 'ogTitle', ddl: "ogTitle TEXT DEFAULT ''" },
+    { name: 'ogDescription', ddl: "ogDescription TEXT DEFAULT ''" },
+    { name: 'ogImage', ddl: "ogImage TEXT DEFAULT ''" },
+    { name: 'deleted_at', ddl: 'deleted_at TEXT DEFAULT NULL' },
+  ]);
+  ensureColumns(db, 'users', [
+    { name: 'isActive', ddl: 'isActive INTEGER DEFAULT 1' },
+  ]);
+  ensureColumns(db, 'pages', [
+    { name: 'faq_items', ddl: "faq_items TEXT DEFAULT '[]'" },
+  ]);
 
   // Create indexes
   db.exec(`
