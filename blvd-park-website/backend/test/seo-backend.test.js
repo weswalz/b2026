@@ -55,13 +55,21 @@ const auth = { 'x-auth-key': KEY, 'Content-Type': 'application/json' };
 // robots.txt: default text, validator, tester
 // ---------------------------------------------------------------------------
 
-test('GET /api/seo/robots serves the real default robots.txt (public, no auth)', async () => {
+test('GET /api/seo/robots serves the real live-seeded robots.txt (public, no auth)', async () => {
+  // seo_site_settings.robotsText is seeded with the EXACT content of the
+  // pre-existing public/robots.txt (deleted in the same Wave-2 commit that
+  // added this seed — see backend/lib/seo-schema.js's INSERT OR IGNORE INTO
+  // seo_site_settings) so an admin's first edit starts from what was
+  // actually live on blvdpark.com, not backend/lib/robots.js's fuller
+  // DEFAULT_ROBOTS_TEXT fallback (which only applies to a row where this
+  // column is genuinely NULL).
   const res = await fetch(`${BASE}/api/seo/robots`);
   assert.strictEqual(res.status, 200);
   const text = await res.text();
   assert.ok(text.includes('Sitemap: https://blvdpark.com/sitemap.xml'), 'must advertise the real single sitemap.xml URL');
-  assert.ok(text.includes('Disallow: /admin'));
-  assert.ok(text.includes('Disallow: /api'));
+  assert.ok(text.includes('Disallow: /admin/'));
+  assert.ok(text.includes('User-agent: *'));
+  assert.ok(text.includes('Allow: /'));
 });
 
 test('robots.txt validator accepts the real default text and rejects malformed text', async () => {

@@ -33,6 +33,60 @@ const {
   jsonLd,
   canonicalLink,
 } = Astro.props;
+
+// Site-wide venue JSON-LD (Wave-2 net-new — BLVD had NO site-wide venue
+// schema anywhere before this; confirmed by grepping every src/ file for
+// "schema.org" and "@type" before writing this: only per-page FAQPage
+// (src/pages/[slug].astro) and per-event Event schema (src/pages/events/[slug].astro)
+// existed). Mirrors HEIGHTSASTRO/src/components/SEO.astro:169-220's real
+// NightClub/LocalBusiness JSON-LD shape (read in full 2026-07-23) — BLVD is
+// a sports bar with pickleball courts rather than a nightclub, so `@type`
+// is BarOrPub (https://schema.org/BarOrPub, a real schema.org LocalBusiness
+// subtype for "a bar or pub" — verified 2026-07-23) rather than Heights'
+// NightClub, with amenityFeature listing BLVD's real, distinguishing
+// features (free pickleball courts) instead of inventing a copy of
+// Heights' own venue description.
+//
+// @id: only swapped from a plain URL fragment to the stable master-entity
+// slug (backend/lib/seo-master-entities.js's buildMasterEntityId()) once an
+// admin has actually created that record — getOrganizationEntity() returns
+// null until then, matching Heights' own "never fabricate the record"
+// contract exactly. This layout is used by BOTH prerendered
+// (export const prerender = true, e.g. index.astro) and SSR pages — for a
+// prerendered page this fetch runs once at BUILD time (the same build-time
+// resolution every other metaTitleKey/etc CMS hook here already accepts for
+// prerendered routes), so a master entity created after the last deploy
+// will not appear in prerendered pages' JSON-LD until the next rebuild —
+// disclosed here, not silently assumed away.
+const INTERNAL_API = process.env.INTERNAL_API_URL || import.meta.env.PUBLIC_API_URL || "https://blvdpark.com";
+let masterVenueEntity: { idSlug: string } | null = null;
+try {
+  const res = await fetch(`${INTERNAL_API}/api/seo/master-entities`);
+  if (res.ok) {
+    const entities = await res.json();
+    masterVenueEntity = Array.isArray(entities) ? entities.find((e: any) => e.idSlug === "organization") || null : null;
+  }
+} catch (_e) {
+  // Backend unreachable at build/request time — fall back to the plain
+  // fragment id below rather than failing the page render.
+}
+const siteOrigin = "https://blvdpark.com";
+const venueSchema = {
+  "@context": "https://schema.org",
+  "@type": ["BarOrPub", "LocalBusiness"],
+  "@id": masterVenueEntity ? `${siteOrigin}/#${masterVenueEntity.idSlug}` : `${siteOrigin}/#organization`,
+  name: "BLVD Park",
+  url: siteOrigin,
+  image: `${siteOrigin}/images/hero-background.webp`,
+  description:
+    "The Heights' premier sports bar with free pickleball courts. Craft cocktails, game day vibes, and a vibrant atmosphere at Houston's favorite playground.",
+  amenityFeature: [
+    { "@type": "LocationFeatureSpecification", name: "Free Pickleball Courts" },
+    { "@type": "LocationFeatureSpecification", name: "Full Bar" },
+    { "@type": "LocationFeatureSpecification", name: "Game Day Viewing" },
+  ],
+};
+const venueSchemaString = JSON.stringify(venueSchema).replace(/</g, "\\u003c");
 ---
 
 <!doctype html>
@@ -49,6 +103,7 @@ const {
       content={description}
       data-cms-attr={metaDescriptionKey ? `content:${metaDescriptionKey}` : undefined}
     />
+    <script type="application/ld+json" set:html={venueSchemaString} />
     {keywords && <meta name="keywords" content={keywords} />}
     {robots && <meta name="robots" content={robots} />}
     {canonicalLink && <link rel="canonical" href={canonicalLink} />}

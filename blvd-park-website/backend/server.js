@@ -2047,6 +2047,29 @@ app.get('/api/seo/robots/default', requireAuth, (req, res) => {
   res.json({ robotsText: seoRobots.DEFAULT_ROBOTS_TEXT });
 });
 
+// ---- Public, minimal-exposure site settings ----
+// Deliberately returns ONLY canonicalOrigin + emergencyNoindex — the two
+// fields the SSR frontend actually needs (src/middleware.ts's
+// hostname-mismatch noindex guard, per Wave-2 item #1). Every other
+// seo_site_settings column (robotsText, trackingParameters, indexNowEnabled,
+// etc.) is admin-surface configuration with no reason to be reachable from
+// an unauthenticated route — this is intentionally NOT the same shape as the
+// full authenticated settings resource (no such endpoint exists yet; when
+// one is added it must stay behind requireAuth and must not be confused with
+// this one).
+app.get('/api/seo/public-settings', (req, res) => {
+  try {
+    const settings = db.prepare("SELECT canonicalOrigin, emergencyNoindex FROM seo_site_settings WHERE id = 'default'").get();
+    res.json({
+      canonicalOrigin: settings?.canonicalOrigin || process.env.FRONTEND_URL || 'https://blvdpark.com',
+      emergencyNoindex: !!settings?.emergencyNoindex,
+    });
+  } catch (err) {
+    console.error('SEO public-settings fetch error:', err);
+    res.status(500).json({ error: 'Failed to fetch site settings' });
+  }
+});
+
 app.put('/api/seo/robots', requireAuth, requireRole('admin', 'super_admin'), (req, res) => {
   try {
     const text = String(req.body?.robotsText ?? '');

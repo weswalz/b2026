@@ -414,8 +414,26 @@ function applySeoSchema(db) {
       id, robotsText, defaultLanguage, canonicalOrigin, hostnamePolicy,
       trailingSlashPolicy, lowercasePaths, stripTrackingParameters,
       trackingParameters, emergencyNoindex, indexNowEnabled, updatedAt, updatedBy
-    ) VALUES ('default', NULL, 'en-US', ?, 'non-www', 'never', 1, 1, ?, 0, 0, CURRENT_TIMESTAMP, 'system')
+    ) VALUES ('default', ?, 'en-US', ?, 'non-www', 'never', 1, 1, ?, 0, 0, CURRENT_TIMESTAMP, 'system')
   `).run(
+    // Seeded with the EXACT content of the pre-existing public/robots.txt
+    // (read in full 2026-07-23 before that file was deleted in this same
+    // commit) — an admin's first edit starts from what was actually live on
+    // blvdpark.com, not a fabricated template. backend/lib/robots.js's
+    // DEFAULT_ROBOTS_TEXT (a fuller Heights-derived policy) is only the
+    // runtime fallback for a row where this column is NULL, e.g. a database
+    // created before this migration ran through some other path — not the
+    // real seed value here.
+    `# robots.txt for BLVD Park
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://blvdpark.com/sitemap.xml
+
+# Block admin pages
+Disallow: /admin/
+`,
     process.env.FRONTEND_URL || 'https://blvdpark.com',
     'utm_source,utm_medium,utm_campaign,utm_term,utm_content,gclid,fbclid,msclkid'
   );
