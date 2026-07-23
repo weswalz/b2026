@@ -132,6 +132,7 @@ const initDatabase = (dbPath = defaultDbPath) => {
     password_reset_token TEXT,
     password_reset_expires DATETIME,
     last_login DATETIME,
+    isActive INTEGER DEFAULT 1,
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
   );

@@ -11,6 +11,9 @@ const { contentSchema, buildDefaultContent } = require('./content-schema');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const ssoRoutes = require('./routes/sso');
+const { sendEmail, buildInviteEmail, buildPasswordResetEmail } = require('./email');
+const crypto = require('crypto');
+const argon2 = require('argon2');
 
 const app = express();
 const dbPath = process.env.DB_PATH || path.join(__dirname, 'database', 'blvdpark.db');
@@ -87,6 +90,10 @@ ensureColumns(db, 'events', [
 // SQLite ADD COLUMN can't declare UNIQUE inline on an already-existing table,
 // so the unique index is created separately (idempotent, matches init-db.js).
 try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_events_slug_unique ON events(slug) WHERE slug IS NOT NULL'); } catch (_e) {}
+
+ensureColumns(db, 'users', [
+  { name: 'isActive', ddl: 'isActive INTEGER DEFAULT 1' },
+]);
 
 const { assertSlugAvailable, generateUniqueSlug, backfillEventSlugs, syncEventStatuses } = require('./lib/events');
 const backfilledCount = backfillEventSlugs(db);
@@ -187,15 +194,15 @@ const requireAuth = (req, res, next) => {
     return next();
   }
 
-  // Session token lookup
+  // Session token lookup — isActive=0 rejects even an otherwise-valid, unexpired session
   try {
     const session = db.prepare(`
-      SELECT u.id as user_id, u.email, u.username, u.role
+      SELECT u.id as user_id, u.email, u.username, u.role, u.isActive
       FROM sessions s JOIN users u ON s.user_id = u.id
       WHERE s.token = ? AND s.expires_at > datetime('now')
     `).get(token);
 
-    if (session) {
+    if (session && session.isActive !== 0) {
       req.user = { id: session.user_id, email: session.email, username: session.username, role: session.role };
       return next();
     }
@@ -204,6 +211,15 @@ const requireAuth = (req, res, next) => {
   }
 
   res.status(401).json({ error: 'Unauthorized' });
+};
+
+// Role gate — apply after requireAuth. Rejects with 403 if req.user.role isn't in the
+// allowed set. The API-key bypass always attaches role: 'super_admin', so it always passes.
+const requireRole = (...roles) => (req, res, next) => {
+  if (!req.user || !roles.includes(req.user.role)) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  next();
 };
 
 // ============== SSO ==============
@@ -405,7 +421,7 @@ app.put('/api/pages/:id', requireAuth, upload.single('og_image_file'), (req, res
   }
 });
 
-app.delete('/api/pages/:id', requireAuth, (req, res) => {
+app.delete('/api/pages/:id', requireAuth, requireRole('admin', 'super_admin'), (req, res) => {
   try {
     const existing = db.prepare('SELECT slug FROM pages WHERE id = ?').get(req.params.id);
     db.prepare('DELETE FROM pages WHERE id = ?').run(req.params.id);
@@ -541,7 +557,7 @@ app.put('/api/redirects/:id', requireAuth, (req, res) => {
   }
 });
 
-app.delete('/api/redirects/:id', requireAuth, (req, res) => {
+app.delete('/api/redirects/:id', requireAuth, requireRole('admin', 'super_admin'), (req, res) => {
   try {
     const existing = db.prepare('SELECT fromPath FROM redirects WHERE id = ?').get(req.params.id);
     db.prepare('DELETE FROM redirects WHERE id = ?').run(req.params.id);
@@ -550,6 +566,111 @@ app.delete('/api/redirects/:id', requireAuth, (req, res) => {
     broadcast('redirects');
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete redirect' });
+  }
+});
+
+// ============== USERS ==============
+const USER_SAFE_COLUMNS = 'id, email, username, role, isActive, last_login, createdAt, updatedAt';
+
+app.get('/api/users', requireAuth, requireRole('super_admin'), (req, res) => {
+  try {
+    res.json(db.prepare(`SELECT ${USER_SAFE_COLUMNS} FROM users ORDER BY username`).all());
+  } catch (err) {
+    console.error('Users fetch error:', err);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+app.post('/api/users', requireAuth, requireRole('super_admin'), async (req, res) => {
+  const { email, username, role } = req.body || {};
+  if (!email || !username) return res.status(400).json({ error: 'email and username are required' });
+  const safeRole = ['super_admin', 'admin', 'editor'].includes(role) ? role : 'editor';
+
+  try {
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetExpires = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString();
+
+    const info = db.prepare(`
+      INSERT INTO users (email, username, role, password_reset_token, password_reset_expires)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(email, username, safeRole, resetToken, resetExpires);
+
+    const frontendUrl = process.env.FRONTEND_URL || 'https://blvdpark.com';
+    const resetLink = `${frontendUrl}/admin/reset-password?token=${resetToken}&user_id=${info.lastInsertRowid}`;
+    try {
+      await sendEmail({ to: email, ...buildInviteEmail({ username, resetLink }) });
+    } catch (mailErr) {
+      // Invite email delivery is best-effort — the user row + token exist regardless,
+      // so "resend invite" always has something to resend even if SMTP is unreachable.
+      console.warn('Invite email send failed (user still created):', mailErr.message || mailErr);
+    }
+
+    const created = db.prepare(`SELECT ${USER_SAFE_COLUMNS} FROM users WHERE id = ?`).get(info.lastInsertRowid);
+    res.status(201).json(created);
+    logActivity(db, { action: 'create', resourceType: 'user', resourceId: created.id, req, details: { email, role: safeRole } });
+  } catch (err) {
+    if (String(err.message || '').includes('UNIQUE')) {
+      return res.status(409).json({ error: 'A user with this email already exists' });
+    }
+    console.error('User create error:', err);
+    res.status(500).json({ error: 'Failed to create user' });
+  }
+});
+
+app.put('/api/users/:id', requireAuth, requireRole('super_admin'), (req, res) => {
+  const { id } = req.params;
+  const { username, email, role, isActive } = req.body || {};
+  const safeRole = role !== undefined ? (['super_admin', 'admin', 'editor'].includes(role) ? role : undefined) : undefined;
+
+  try {
+    const existing = db.prepare('SELECT id FROM users WHERE id = ?').get(id);
+    if (!existing) return res.status(404).json({ error: 'User not found' });
+
+    db.prepare(`
+      UPDATE users SET
+        username = COALESCE(?, username),
+        email = COALESCE(?, email),
+        role = COALESCE(?, role),
+        isActive = COALESCE(?, isActive),
+        updatedAt = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(username, email, safeRole, isActive !== undefined ? (isActive ? 1 : 0) : undefined, id);
+
+    const updated = db.prepare(`SELECT ${USER_SAFE_COLUMNS} FROM users WHERE id = ?`).get(id);
+    res.json(updated);
+    logActivity(db, { action: 'update', resourceType: 'user', resourceId: id, req, details: { role: updated.role, isActive: updated.isActive } });
+  } catch (err) {
+    if (String(err.message || '').includes('UNIQUE')) {
+      return res.status(409).json({ error: 'A user with this email already exists' });
+    }
+    console.error('User update error:', err);
+    res.status(500).json({ error: 'Failed to update user' });
+  }
+});
+
+app.post('/api/users/:id/resend-invite', requireAuth, requireRole('super_admin'), async (req, res) => {
+  try {
+    const user = db.prepare('SELECT id, email, username FROM users WHERE id = ?').get(req.params.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetExpires = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString();
+    db.prepare('UPDATE users SET password_reset_token = ?, password_reset_expires = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?')
+      .run(resetToken, resetExpires, user.id);
+
+    const frontendUrl = process.env.FRONTEND_URL || 'https://blvdpark.com';
+    const resetLink = `${frontendUrl}/admin/reset-password?token=${resetToken}&user_id=${user.id}`;
+    try {
+      await sendEmail({ to: user.email, ...buildInviteEmail({ username: user.username, resetLink }) });
+    } catch (mailErr) {
+      console.warn('Resend-invite email send failed (token still issued):', mailErr.message || mailErr);
+    }
+
+    res.json({ success: true });
+    logActivity(db, { action: 'resend-invite', resourceType: 'user', resourceId: user.id, req, details: { email: user.email } });
+  } catch (err) {
+    console.error('Resend invite error:', err);
+    res.status(500).json({ error: 'Failed to resend invite' });
   }
 });
 
@@ -738,7 +859,7 @@ app.put('/api/events/:id', requireAuth, upload.single('image'), (req, res) => {
 
 // Soft delete — row preserved, deleted_at timestamp set. Public queries + admin
 // default list exclude it; ?deleted=true reveals it; POST /restore clears it.
-app.delete('/api/events/:id', requireAuth, (req, res) => {
+app.delete('/api/events/:id', requireAuth, requireRole('admin', 'super_admin'), (req, res) => {
   try {
     const existing = db.prepare('SELECT id, title FROM events WHERE id = ?').get(req.params.id);
     if (!existing) return res.status(404).json({ error: 'Event not found' });
@@ -852,7 +973,7 @@ app.put('/api/gallery/reorder', requireAuth, (req, res) => {
   }
 });
 
-app.delete('/api/gallery/:id', requireAuth, (req, res) => {
+app.delete('/api/gallery/:id', requireAuth, requireRole('admin', 'super_admin'), (req, res) => {
   try {
     const image = db.prepare('SELECT url FROM gallery_images WHERE id = ?').get(req.params.id);
     if (image) {
@@ -949,7 +1070,7 @@ app.put('/api/menu/:id', requireAuth, upload.single('image'), (req, res) => {
   }
 });
 
-app.delete('/api/menu/:id', requireAuth, (req, res) => {
+app.delete('/api/menu/:id', requireAuth, requireRole('admin', 'super_admin'), (req, res) => {
   try {
     const existing = db.prepare('SELECT name FROM menu_items WHERE id = ?').get(req.params.id);
     db.prepare('DELETE FROM menu_items WHERE id = ?').run(req.params.id);
@@ -1159,10 +1280,6 @@ app.put('/api/hours', requireAuth, (req, res) => {
   }
 });
 
-const { sendEmail, buildPasswordResetEmail } = require('./email');
-const crypto = require('crypto');
-const argon2 = require('argon2');
-
 // ============== AUTHENTICATION ==============
 app.post('/api/auth/login', authLimiter, async (req, res) => {
   const { email, password } = req.body;
@@ -1274,8 +1391,11 @@ app.post('/api/auth/reset-password', async (req, res) => {
   }
 });
 
+// Header-fix: accepts x-auth-key (what the frontend API client actually sends,
+// src/lib/api.ts) alongside the legacy x-auth-token / Authorization: Bearer pair
+// that requireAuth's sibling routes already accept.
 app.get('/api/auth/verify', (req, res) => {
-  const token = req.headers['x-auth-token'] || req.headers.authorization?.replace('Bearer ', '');
+  const token = req.headers['x-auth-key'] || req.headers['x-auth-token'] || req.headers.authorization?.replace('Bearer ', '');
 
   if (!token) {
     return res.status(401).json({ error: 'No token provided' });
@@ -1283,13 +1403,13 @@ app.get('/api/auth/verify', (req, res) => {
 
   try {
     const session = db.prepare(`
-      SELECT s.*, u.id as user_id, u.email, u.username, u.role
+      SELECT s.*, u.id as user_id, u.email, u.username, u.role, u.isActive
       FROM sessions s
       JOIN users u ON s.user_id = u.id
       WHERE s.token = ? AND s.expires_at > datetime('now')
     `).get(token);
 
-    if (!session) {
+    if (!session || session.isActive === 0) {
       return res.status(401).json({ error: 'Invalid or expired session' });
     }
 
@@ -1308,7 +1428,7 @@ app.get('/api/auth/verify', (req, res) => {
 });
 
 app.post('/api/auth/logout', (req, res) => {
-  const token = req.headers['x-auth-token'] || req.headers.authorization?.replace('Bearer ', '');
+  const token = req.headers['x-auth-key'] || req.headers['x-auth-token'] || req.headers.authorization?.replace('Bearer ', '');
 
   if (token) {
     try {

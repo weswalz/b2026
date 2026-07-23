@@ -11,6 +11,7 @@ import AdminReservations from './AdminReservations';
 import AdminSidebar from './AdminSidebar';
 import AdminContent from './AdminContent';
 import AdminPages from './AdminPages';
+import AdminUsers from './AdminUsers';
 
 export default function AdminPage({
   currentPath,
@@ -28,7 +29,8 @@ export default function AdminPage({
     | 'content'
     | 'pages'
     | 'activity'
-    | 'redirects';
+    | 'redirects'
+    | 'users';
 }) {
   const pages = {
     dashboard: AdminDashboard,
@@ -42,6 +44,7 @@ export default function AdminPage({
     pages: AdminPages,
     activity: AdminActivity,
     redirects: AdminRedirects,
+    users: AdminUsers,
   };
 
   const PageComponent = pages[page];

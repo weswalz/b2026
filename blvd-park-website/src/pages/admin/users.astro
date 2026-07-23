@@ -1,0 +1,11 @@
+---
+export const prerender = true;
+// Admin Users Management — super_admin only (gate enforced server-side; UI hides the nav
+// entry for non-super_admin, and the backend returns 403 on the underlying routes).
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import AdminPage from '../../components/admin/AdminPage';
+---
+
+<AdminLayout title="Users">
+  <AdminPage client:only="react" currentPath={Astro.url.pathname} page="users" />
+</AdminLayout>

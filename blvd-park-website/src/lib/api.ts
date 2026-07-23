@@ -146,6 +146,7 @@ export interface User {
   email: string;
   username: string;
   role: 'super_admin' | 'admin' | 'editor';
+  isActive?: number;
   last_login?: string | null;
   createdAt?: string;
   updatedAt?: string;
@@ -476,6 +477,41 @@ export const api = {
       headers: getAuthHeaders(),
     });
     if (!res.ok) throw apiError(res, 'Failed to delete page');
+  },
+
+  // Users
+  async getUsers(): Promise<User[]> {
+    const res = await fetch(`${API_URL}/api/users`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to fetch users');
+    return res.json();
+  },
+
+  async createUser(data: { email: string; username: string; role: string }): Promise<User> {
+    const res = await fetch(`${API_URL}/api/users`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to create user');
+    return res.json();
+  },
+
+  async updateUser(id: number, data: Partial<{ username: string; email: string; role: string; isActive: boolean }>): Promise<User> {
+    const res = await fetch(`${API_URL}/api/users/${id}`, {
+      method: 'PUT',
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to update user');
+    return res.json();
+  },
+
+  async resendInvite(id: number): Promise<void> {
+    const res = await fetch(`${API_URL}/api/users/${id}/resend-invite`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to resend invite');
   },
 
   // Redirects
