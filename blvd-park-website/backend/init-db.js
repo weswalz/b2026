@@ -1,6 +1,7 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 const { ensureColumns } = require('./lib/schema-guard');
+const { applySeoSchema } = require('./lib/seo-schema');
 
 const defaultDbPath = process.env.DB_PATH || path.join(__dirname, 'database', 'blvdpark.db');
 
@@ -234,6 +235,11 @@ const initDatabase = (dbPath = defaultDbPath) => {
   ensureColumns(db, 'pages', [
     { name: 'faq_items', ddl: "faq_items TEXT DEFAULT '[]'" },
   ]);
+
+  // SEO-ops platform (Wave-2 port from HEIGHTSASTRO) — 20 tables, camelCase
+  // matching this file's own existing column convention. Idempotent, same
+  // as every CREATE TABLE IF NOT EXISTS block above.
+  applySeoSchema(db);
 
   // Create indexes
   db.exec(`

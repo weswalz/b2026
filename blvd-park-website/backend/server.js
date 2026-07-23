@@ -100,6 +100,13 @@ ensureColumns(db, 'pages', [
   { name: 'faq_items', ddl: "faq_items TEXT DEFAULT '[]'" },
 ]);
 
+// SEO-ops platform (Wave-2): schema is applied by initDatabase(dbPath) above
+// (line 24, backend/init-db.js's own applySeoSchema(db) call) — that runs
+// unconditionally on every server start (not gated behind RESET_DB), so no
+// second call is needed here. Confirmed by reading init-db.js in full:
+// applySeoSchema(db) is inside the same always-runs code path as the
+// CREATE TABLE IF NOT EXISTS block for events/pages/redirects/etc.
+
 const { assertSlugAvailable, generateUniqueSlug, backfillEventSlugs, syncEventStatuses } = require('./lib/events');
 const backfilledCount = backfillEventSlugs(db);
 if (backfilledCount > 0) console.log(`Backfilled slugs for ${backfilledCount} existing event(s)`);
