@@ -161,6 +161,7 @@ const initDatabase = (dbPath = defaultDbPath) => {
     json_ld TEXT DEFAULT '',
     robots TEXT NOT NULL DEFAULT 'noindex, nofollow',
     status TEXT NOT NULL DEFAULT 'draft',
+    faq_items TEXT DEFAULT '[]',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_by TEXT DEFAULT ''

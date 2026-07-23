@@ -1,10 +1,27 @@
 import { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, getImageUrl, type Page, type PageSection } from '../../lib/api';
+import { Editor } from '@tinymce/tinymce-react';
+import { api, getImageUrl, type Page, type PageSection, type FaqItem } from '../../lib/api';
 import MediaPicker from './MediaPicker';
 
 const ROBOTS_OPTIONS = ['noindex, nofollow', 'noindex, follow', 'index, follow', 'index, nofollow'];
 const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+const MAX_FAQ_ITEMS = 50;
+
+// TinyMCE requires a real cloud API key to load; when it's unset, fall back to a plain
+// textarea rather than rendering a broken/error-banner editor (mirrors the pattern
+// used for Content CMS rich fields, but adds the graceful-degradation Content doesn't have).
+const TINYMCE_API_KEY = import.meta.env.PUBLIC_TINYMCE_API_KEY as string | undefined;
+const TINYMCE_AVAILABLE = !!TINYMCE_API_KEY && TINYMCE_API_KEY !== 'no-api-key';
+const TINYMCE_SCRIPT = TINYMCE_AVAILABLE ? `https://cdn.tiny.cloud/1/${TINYMCE_API_KEY}/tinymce/6/tinymce.min.js` : '';
+const TINYMCE_INIT = {
+  height: 220,
+  menubar: false,
+  skin: 'oxide-dark',
+  content_css: 'dark',
+  plugins: 'link lists code',
+  toolbar: 'undo redo | styles | bold italic underline | alignleft aligncenter alignright | bullist numlist | link | code',
+};
 
 interface FormState {
   title: string;
@@ -18,17 +35,28 @@ interface FormState {
   robots: string;
   status: 'draft' | 'published';
   sections: PageSection[];
+  faqItems: FaqItem[];
 }
 
 const emptyForm = (): FormState => ({
   title: '', slug: '', description: '',
   seo_title: '', seo_description: '', seo_keywords: '',
   og_image: '', json_ld: '', robots: 'noindex, nofollow', status: 'draft',
-  sections: [],
+  sections: [], faqItems: [],
 });
 
 const slugify = (s: string) =>
   s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
+
+// Google's live SERP snippet historically truncates around ~50-60 chars for titles
+// and ~120-160 chars for descriptions — the counters below flag "too short" (grey),
+// "in range" (green), and "too long, will likely truncate" (amber).
+function serpCounterColor(len: number, min: number, max: number) {
+  if (len === 0) return 'text-white/30';
+  if (len < min) return 'text-white/50';
+  if (len <= max) return 'text-[#22C55E]';
+  return 'text-[#C9A962]';
+}
 
 export default function AdminPages() {
   const queryClient = useQueryClient();
@@ -67,11 +95,13 @@ export default function AdminPages() {
   const openEdit = (page: Page) => {
     let sections: PageSection[] = [];
     try { sections = JSON.parse(page.content_sections || '[]'); } catch (_e) {}
+    let faqItems: FaqItem[] = [];
+    try { faqItems = JSON.parse(page.faq_items || '[]'); } catch (_e) {}
     setForm({
       title: page.title, slug: page.slug, description: page.description,
       seo_title: page.seo_title, seo_description: page.seo_description, seo_keywords: page.seo_keywords,
       og_image: page.og_image, json_ld: page.json_ld, robots: page.robots, status: page.status,
-      sections,
+      sections, faqItems,
     });
     setSlugTouched(true);
     setEditingPage(page);
@@ -88,6 +118,18 @@ export default function AdminPages() {
       if (j < 0 || j >= next.length) return f;
       [next[i], next[j]] = [next[j], next[i]];
       return { ...f, sections: next };
+    });
+
+  const setFaqItem = (i: number, patch: Partial<FaqItem>) =>
+    setForm((f) => ({ ...f, faqItems: f.faqItems.map((item, idx) => (idx === i ? { ...item, ...patch } : item)) }));
+
+  const moveFaqItem = (i: number, dir: -1 | 1) =>
+    setForm((f) => {
+      const next = [...f.faqItems];
+      const j = i + dir;
+      if (j < 0 || j >= next.length) return f;
+      [next[i], next[j]] = [next[j], next[i]];
+      return { ...f, faqItems: next };
     });
 
   const validateJsonLd = (value: string) => {
@@ -119,6 +161,7 @@ export default function AdminPages() {
     data.append('robots', form.robots);
     data.append('status', form.status);
     data.append('content_sections', JSON.stringify(form.sections));
+    data.append('faq_items', JSON.stringify(form.faqItems));
     const file = fileRef.current?.files?.[0];
     if (file) data.append('og_image_file', file);
 
@@ -128,6 +171,10 @@ export default function AdminPages() {
 
   const submitError = createMutation.error || updateMutation.error;
   const inputCls = 'w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:border-[#C9A962] focus:outline-none';
+
+  const serpTitle = form.seo_title || form.title || 'Page title';
+  const serpDescription = form.seo_description || form.description || 'A meta description will appear here once you add one.';
+  const serpUrl = `blvdpark.com/${form.slug || 'your-slug'}`;
 
   if (isLoading) {
     return (
@@ -234,19 +281,49 @@ export default function AdminPages() {
 
               <div className="border border-white/10 rounded-lg p-4 space-y-4">
                 <p className="text-white/70 text-sm font-medium">SEO</p>
-                <input
-                  value={form.seo_title}
-                  className={inputCls}
-                  placeholder="SEO title (falls back to page title)"
-                  onChange={(e) => setForm((f) => ({ ...f, seo_title: e.target.value }))}
-                />
-                <textarea
-                  value={form.seo_description}
-                  rows={2}
-                  className={inputCls + ' resize-none'}
-                  placeholder="Meta description"
-                  onChange={(e) => setForm((f) => ({ ...f, seo_description: e.target.value }))}
-                />
+
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-white/70 text-sm">SEO title</label>
+                    <span className={`text-xs font-mono ${serpCounterColor(form.seo_title.length, 50, 60)}`}>
+                      {form.seo_title.length} / 50–60
+                    </span>
+                  </div>
+                  <input
+                    value={form.seo_title}
+                    className={inputCls}
+                    placeholder="SEO title (falls back to page title)"
+                    onChange={(e) => setForm((f) => ({ ...f, seo_title: e.target.value }))}
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-white/70 text-sm">Meta description</label>
+                    <span className={`text-xs font-mono ${serpCounterColor(form.seo_description.length, 120, 160)}`}>
+                      {form.seo_description.length} / 120–160
+                    </span>
+                  </div>
+                  <textarea
+                    value={form.seo_description}
+                    rows={2}
+                    className={inputCls + ' resize-none'}
+                    placeholder="Meta description"
+                    onChange={(e) => setForm((f) => ({ ...f, seo_description: e.target.value }))}
+                  />
+                </div>
+
+                {/* Live Google-style SERP preview */}
+                <div className="bg-white rounded-lg p-4">
+                  <p className="text-[#1a0dab] text-lg leading-tight truncate font-arial" style={{ fontFamily: 'arial, sans-serif' }}>
+                    {serpTitle}
+                  </p>
+                  <p className="text-[#006621] text-sm mt-0.5" style={{ fontFamily: 'arial, sans-serif' }}>{serpUrl}</p>
+                  <p className="text-[#545454] text-sm mt-1 line-clamp-2" style={{ fontFamily: 'arial, sans-serif' }}>
+                    {serpDescription}
+                  </p>
+                </div>
+
                 <input
                   value={form.seo_keywords}
                   className={inputCls}
@@ -324,16 +401,85 @@ export default function AdminPages() {
                         Remove
                       </button>
                     </div>
-                    <textarea
-                      value={s.body}
-                      rows={s.type === 'html' ? 6 : 3}
-                      className={inputCls + (s.type === 'html' ? ' font-mono text-xs' : '')}
-                      placeholder={s.type === 'html' ? '<h2>Heading</h2><p>Rich content…</p> (scripts are stripped)' : 'Plain text paragraph'}
-                      onChange={(e) => setSection(i, { body: e.target.value })}
-                    />
+                    {s.type === 'html' && TINYMCE_AVAILABLE ? (
+                      <div className="bg-black/40 rounded-lg border border-white/10 overflow-hidden">
+                        <Editor
+                          value={s.body}
+                          tinymceScriptSrc={TINYMCE_SCRIPT}
+                          init={TINYMCE_INIT}
+                          onEditorChange={(content) => setSection(i, { body: content })}
+                        />
+                      </div>
+                    ) : (
+                      <textarea
+                        value={s.body}
+                        rows={s.type === 'html' ? 6 : 3}
+                        className={inputCls + (s.type === 'html' ? ' font-mono text-xs' : '')}
+                        placeholder={s.type === 'html' ? '<h2>Heading</h2><p>Rich content…</p> (scripts are stripped)' : 'Plain text paragraph'}
+                        onChange={(e) => setSection(i, { body: e.target.value })}
+                      />
+                    )}
                   </div>
                 ))}
                 {form.sections.length === 0 && <p className="text-white/30 text-sm">No sections yet.</p>}
+              </div>
+
+              <div className="border border-white/10 rounded-lg p-4 space-y-4">
+                <div className="flex justify-between items-center">
+                  <p className="text-white/70 text-sm font-medium">
+                    FAQ {form.faqItems.length > 0 && <span className="text-white/40">({form.faqItems.length}/{MAX_FAQ_ITEMS})</span>}
+                  </p>
+                  <button
+                    type="button"
+                    disabled={form.faqItems.length >= MAX_FAQ_ITEMS}
+                    onClick={() => setForm((f) => ({ ...f, faqItems: [...f.faqItems, { question: '', answer: '' }] }))}
+                    className="px-3 py-1.5 text-sm bg-white/10 text-white rounded-lg hover:bg-white/20 disabled:opacity-40"
+                  >
+                    + FAQ Item
+                  </button>
+                </div>
+                {form.faqItems.map((item, i) => (
+                  <div key={i} className="bg-white/5 rounded-lg p-3 space-y-2">
+                    <div className="flex items-center gap-2 text-xs text-white/50">
+                      <span className="uppercase tracking-wider">FAQ #{i + 1}</span>
+                      <span className="flex-1" />
+                      <button type="button" onClick={() => moveFaqItem(i, -1)} className="px-2 py-1 hover:text-white">↑</button>
+                      <button type="button" onClick={() => moveFaqItem(i, 1)} className="px-2 py-1 hover:text-white">↓</button>
+                      <button
+                        type="button"
+                        onClick={() => setForm((f) => ({ ...f, faqItems: f.faqItems.filter((_, idx) => idx !== i) }))}
+                        className="px-2 py-1 text-red-400/70 hover:text-red-400"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <input
+                      value={item.question}
+                      className={inputCls}
+                      placeholder="Question"
+                      onChange={(e) => setFaqItem(i, { question: e.target.value })}
+                    />
+                    {TINYMCE_AVAILABLE ? (
+                      <div className="bg-black/40 rounded-lg border border-white/10 overflow-hidden">
+                        <Editor
+                          value={item.answer}
+                          tinymceScriptSrc={TINYMCE_SCRIPT}
+                          init={{ ...TINYMCE_INIT, height: 160 }}
+                          onEditorChange={(content) => setFaqItem(i, { answer: content })}
+                        />
+                      </div>
+                    ) : (
+                      <textarea
+                        value={item.answer}
+                        rows={3}
+                        className={inputCls}
+                        placeholder="Answer"
+                        onChange={(e) => setFaqItem(i, { answer: e.target.value })}
+                      />
+                    )}
+                  </div>
+                ))}
+                {form.faqItems.length === 0 && <p className="text-white/30 text-sm">No FAQ items yet. Adding some renders an FAQPage schema automatically.</p>}
               </div>
 
               <div className="flex gap-3 pt-4">

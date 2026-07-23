@@ -6,6 +6,9 @@ const RESERVED_SLUGS = new Set(['admin', 'api', 'uploads', 'assets', 'images', '
 const ROBOTS_VALUES = new Set(['noindex, nofollow', 'noindex, follow', 'index, follow', 'index, nofollow']);
 const STATUS_VALUES = new Set(['draft', 'published']);
 const MAX_SECTIONS = 40;
+const MAX_FAQ_ITEMS = 50;
+const MAX_FAQ_QUESTION_LEN = 500;
+const MAX_FAQ_ANSWER_LEN = 10000;
 
 // Validates + normalizes a pages payload. Returns { ok: true, page } or { ok: false, errors }.
 function validatePagePayload(body) {
@@ -52,6 +55,31 @@ function validatePagePayload(body) {
     });
   }
   out.content_sections = JSON.stringify((sections || []).filter(Boolean));
+
+  let faqItems = body.faq_items;
+  if (typeof faqItems === 'string') {
+    try { faqItems = JSON.parse(faqItems); } catch (_e) { errors.push('faq_items is not valid JSON'); faqItems = null; }
+  }
+  if (faqItems == null) faqItems = [];
+  if (!Array.isArray(faqItems) || faqItems.length > MAX_FAQ_ITEMS) {
+    errors.push(`faq_items must be an array (max ${MAX_FAQ_ITEMS})`);
+    faqItems = [];
+  } else {
+    faqItems = faqItems.map((item, i) => {
+      const question = item && typeof item.question === 'string' ? item.question.trim() : '';
+      const answerRaw = item && typeof item.answer === 'string' ? item.answer : '';
+      if (!question || question.length > MAX_FAQ_QUESTION_LEN) {
+        errors.push(`faq_items[${i}]: question is required (max ${MAX_FAQ_QUESTION_LEN} chars)`);
+        return null;
+      }
+      if (answerRaw.length > MAX_FAQ_ANSWER_LEN) {
+        errors.push(`faq_items[${i}]: answer too long (max ${MAX_FAQ_ANSWER_LEN} chars)`);
+        return null;
+      }
+      return { question, answer: sanitizeCmsHtml(answerRaw) };
+    });
+  }
+  out.faq_items = JSON.stringify((faqItems || []).filter(Boolean));
 
   const jsonLdRaw = str(body.json_ld);
   if (jsonLdRaw) {

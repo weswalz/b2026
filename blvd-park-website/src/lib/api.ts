@@ -198,6 +198,11 @@ export interface AccessLogItem extends ActivityLogItem {
   userAgent: string | null;
 }
 
+export interface FaqItem {
+  question: string;
+  answer: string;
+}
+
 export interface Page {
   id: number;
   slug: string;
@@ -211,6 +216,7 @@ export interface Page {
   json_ld: string;
   robots: string;
   status: 'draft' | 'published';
+  faq_items: string; // JSON string of FaqItem[]
   created_at: string;
   updated_at: string;
   updated_by: string;

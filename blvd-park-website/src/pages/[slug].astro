@@ -19,15 +19,36 @@ if (slug && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) {
 if (!page) Astro.response.status = 404;
 
 let sections: { type: string; body: string }[] = [];
+let faqItems: { question: string; answer: string }[] = [];
 let jsonLdSafe = "";
+let faqJsonLdSafe = "";
 if (page) {
   try {
     sections = JSON.parse(page.content_sections || "[]");
+  } catch (_e) {}
+  try {
+    faqItems = JSON.parse(page.faq_items || "[]");
   } catch (_e) {}
   if (page.json_ld) {
     try {
       jsonLdSafe = JSON.stringify(JSON.parse(page.json_ld)).replace(/</g, "\\u003c");
     } catch (_e) {}
+  }
+  // Auto FAQPage JSON-LD (https://schema.org/FAQPage, https://schema.org/Question) —
+  // kept separate from the manual json_ld field per the shared Pages contract. Note:
+  // Google deprecated FAQ rich results in Search as of May 2026, but the schema.org
+  // vocabulary itself is still valid and may be consumed by other engines/crawlers.
+  if (faqItems.length > 0) {
+    const faqSchema = {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: faqItems.map((item) => ({
+        "@type": "Question",
+        name: item.question,
+        acceptedAnswer: { "@type": "Answer", text: item.answer },
+      })),
+    };
+    faqJsonLdSafe = JSON.stringify(faqSchema).replace(/</g, "\\u003c");
   }
 }
 ---
@@ -58,6 +79,27 @@ if (page) {
           )}
         </div>
       </section>
+
+      {faqItems.length > 0 && (
+        <section class="section-padding" style="background: var(--blvd-cream-dark);">
+          <div style="max-width: 48rem; margin: 0 auto; padding: 0 1.5rem;">
+            <h2 class="font-display text-display-sm" style="margin-bottom: 2rem;">
+              Frequently Asked Questions
+            </h2>
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+              {faqItems.map((item) => (
+                <div>
+                  <h3 class="font-display" style="font-size: 1.25rem; margin-bottom: 0.5rem;">
+                    {item.question}
+                  </h3>
+                  <div class="cms-html" set:html={item.answer} />
+                </div>
+              ))}
+            </div>
+          </div>
+          {faqJsonLdSafe && <script type="application/ld+json" set:html={faqJsonLdSafe} />}
+        </section>
+      )}
     </Layout2026>
   ) : (
     <Layout2026 title="Page Not Found | BLVD Park" description="This page does not exist." robots="noindex, nofollow">
