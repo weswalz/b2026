@@ -121,7 +121,17 @@ CLE Group Admin Hub issues a short-lived JWT signed with `SSO_SECRET`. The hub r
 
 ## Deployment
 
-**Single production environment** — no staging. Always use the deploy script:
+**Single production environment** — no staging.
+
+**Frontend (SSR, since 2026-07-22):** the frontend is an SSR Node container (`blvdpark-ssr`) built from `/opt/clegroup/sources/blvdpark-frontend` (canonical git repo). Deploy frontend changes:
+
+```bash
+rsync -az --checksum -e ssh --exclude node_modules/ --exclude dist/ --exclude .astro/ --exclude backups/ --exclude test-results/ --exclude backend/node_modules/ --exclude backend/database/ --exclude .env --exclude backend/.env --exclude public/uploads/ ./ weswalz@69.28.91.132:/opt/clegroup/sources/blvdpark-frontend/
+ssh weswalz@69.28.91.132 'cd /opt/clegroup/sources/blvdpark-frontend && git add -A && git commit -m "deploy: <what changed>"'
+ssh weswalz@69.28.91.132 'cd /opt/clegroup && docker compose up -d --build blvdpark-ssr'
+```
+
+The old static-nginx `blvdpark-frontend` container is retained for rollback (nginx upstream revert). `deploy.sh` remains the **backend** path only:
 
 ```bash
 ./deploy.sh                    # standard — builds, backs up, rsync, docker compose up --build
