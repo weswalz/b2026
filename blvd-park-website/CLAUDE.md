@@ -37,12 +37,12 @@ Backend has its own `package.json` in `backend/` — run `npm install` there sep
 Two independent services, deployed as Docker containers behind nginx:
 
 ```
-blvdpark-frontend  (nginx static)   ← Astro SSG dist/
+blvdpark-ssr       (Node SSR)       ← Astro output:'server' + @astrojs/node
 blvdpark-api       (Express + SQLite, port 3006 internal)
-nginx-clegroup     (0.0.0.0:80/443) ← reverse proxy: /api/* → blvdpark-api
+nginx-clegroup     (0.0.0.0:80/443) ← reverse proxy: /api/* → blvdpark-api, rest → blvdpark-ssr:4321
 ```
 
-**Frontend** (`src/`) is a **static Astro 5 site**. All pages are pre-rendered at build time. Interactive admin sections use React (client-side only). No Astro SSR — all dynamic data fetches happen in the browser.
+**Frontend** (`src/`) is an **Astro 5 SSR site** (`output:'server'`, `@astrojs/node@9.4.4` pinned — v10+ needs Astro 6/7) since 2026-07-22. All 21 pre-existing public routes are `prerender = true` (byte-stable); SSR routes are `[slug].astro` (CMS pages), `sitemap.xml.ts`, `[key].txt.ts` (IndexNow key), and `src/middleware.ts` (redirects engine). Server-side fetches reach the API via `INTERNAL_API_URL` (`http://blvdpark-api:3006` in prod); browser-side admin React components fetch via `PUBLIC_API_URL`.
 
 **Backend** (`backend/server.js`) is a **Node.js/Express API** with a SQLite database via `better-sqlite3`. It exposes `/api/*` endpoints consumed by both the public site and the admin panel.
 
