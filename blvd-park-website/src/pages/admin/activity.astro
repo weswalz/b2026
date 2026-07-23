@@ -1,0 +1,10 @@
+---
+export const prerender = true;
+// Admin Activity + Access Log
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import AdminPage from '../../components/admin/AdminPage';
+---
+
+<AdminLayout title="Activity">
+  <AdminPage client:only="react" currentPath={Astro.url.pathname} page="activity" />
+</AdminLayout>

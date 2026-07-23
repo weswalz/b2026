@@ -1,6 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 
+const ACTION_COLORS: Record<string, string> = {
+  create: 'bg-[#1A5F36]/30 text-[#22C55E]',
+  update: 'bg-blue-500/20 text-blue-400',
+  delete: 'bg-red-500/20 text-red-400',
+  restore: 'bg-[#C9A962]/20 text-[#C9A962]',
+  reorder: 'bg-white/10 text-white/60',
+};
+
 export default function AdminDashboard() {
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['stats'],
@@ -15,6 +23,11 @@ export default function AdminDashboard() {
   const { data: reservations = [] } = useQuery({
     queryKey: ['reservations', 'pending'],
     queryFn: () => api.getReservations('pending'),
+  });
+
+  const { data: activity = [] } = useQuery({
+    queryKey: ['activity'],
+    queryFn: api.getActivity,
   });
 
   const statCards = [
@@ -125,6 +138,36 @@ export default function AdminDashboard() {
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Recent Activity */}
+      <div className="mt-6 bg-white/5 rounded-xl border border-white/10">
+        <div className="p-5 border-b border-white/10 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-white">Recent Activity</h2>
+          <a href="/admin/activity" className="text-[#C9A962] text-sm hover:underline">View all</a>
+        </div>
+        <div className="p-5">
+          {activity.length === 0 ? (
+            <p className="text-white/40 text-center py-8">No activity recorded yet</p>
+          ) : (
+            <div className="space-y-3">
+              {activity.slice(0, 10).map((item) => (
+                <div key={item.id} className="flex items-center gap-4">
+                  <span className={`px-2 py-0.5 text-xs rounded-full capitalize flex-shrink-0 ${ACTION_COLORS[item.action] || 'bg-white/10 text-white/60'}`}>
+                    {item.action}
+                  </span>
+                  <p className="flex-1 min-w-0 text-white/70 text-sm truncate">
+                    <span className="text-white">{item.username || 'system'}</span>
+                    {' '}{item.resourceType}{item.resourceId ? ` #${item.resourceId}` : ''}
+                  </p>
+                  <span className="text-white/40 text-xs flex-shrink-0">
+                    {new Date(item.createdAt + 'Z').toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

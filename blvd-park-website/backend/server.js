@@ -92,6 +92,8 @@ const { assertSlugAvailable, generateUniqueSlug, backfillEventSlugs, syncEventSt
 const backfilledCount = backfillEventSlugs(db);
 if (backfilledCount > 0) console.log(`Backfilled slugs for ${backfilledCount} existing event(s)`);
 
+const { logActivity, logAccess } = require('./lib/activity');
+
 // Middleware
 const allowedOrigins = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || 'http://localhost:3000,http://localhost:4321,https://blvdpark.com,https://www.blvdpark.com')
   .split(',')
@@ -289,8 +291,9 @@ app.put('/api/content', requireAuth, (req, res) => {
     });
     tx(updates);
 
-    broadcast('content');
     res.json({ success: true, updated: updates.length });
+    logActivity(db, { action: 'update', resourceType: 'site_content', resourceId: null, req, details: { keys: updates.length } });
+    broadcast('content');
   } catch (err) {
     console.error('Content update error:', err);
     res.status(500).json({ error: 'Failed to update content' });
@@ -363,6 +366,7 @@ app.post('/api/pages', requireAuth, upload.single('og_image_file'), (req, res) =
     `).run(page.slug, page.title, page.description, page.content_sections, page.seo_title, page.seo_description, page.seo_keywords, page.og_image, page.json_ld, page.robots, page.status, req.user?.email || req.user?.username || 'api-key');
     const created = db.prepare('SELECT * FROM pages WHERE id = ?').get(info.lastInsertRowid);
     res.status(201).json(created);
+    logActivity(db, { action: 'create', resourceType: 'page', resourceId: created.id, req, details: { slug: created.slug, status: created.status } });
     broadcast('pages');
   } catch (err) {
     if (String(err.message || '').includes('UNIQUE')) {
@@ -388,7 +392,9 @@ app.put('/api/pages/:id', requireAuth, upload.single('og_image_file'), (req, res
       UPDATE pages SET slug = ?, title = ?, description = ?, content_sections = ?, seo_title = ?, seo_description = ?, seo_keywords = ?, og_image = ?, json_ld = ?, robots = ?, status = ?, updated_at = CURRENT_TIMESTAMP, updated_by = ?
       WHERE id = ?
     `).run(page.slug, page.title, page.description, page.content_sections, page.seo_title, page.seo_description, page.seo_keywords, page.og_image, page.json_ld, page.robots, page.status, req.user?.email || req.user?.username || 'api-key', req.params.id);
-    res.json(db.prepare('SELECT * FROM pages WHERE id = ?').get(req.params.id));
+    const updatedPage = db.prepare('SELECT * FROM pages WHERE id = ?').get(req.params.id);
+    res.json(updatedPage);
+    logActivity(db, { action: 'update', resourceType: 'page', resourceId: req.params.id, req, details: { slug: updatedPage.slug, status: updatedPage.status } });
     broadcast('pages');
   } catch (err) {
     if (String(err.message || '').includes('UNIQUE')) {
@@ -401,8 +407,10 @@ app.put('/api/pages/:id', requireAuth, upload.single('og_image_file'), (req, res
 
 app.delete('/api/pages/:id', requireAuth, (req, res) => {
   try {
+    const existing = db.prepare('SELECT slug FROM pages WHERE id = ?').get(req.params.id);
     db.prepare('DELETE FROM pages WHERE id = ?').run(req.params.id);
     res.json({ success: true });
+    logActivity(db, { action: 'delete', resourceType: 'page', resourceId: req.params.id, req, details: existing ? { slug: existing.slug } : undefined });
     broadcast('pages');
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete page' });
@@ -428,6 +436,27 @@ app.get('/api/stats', requireAuth, (req, res) => {
   } catch (err) {
     console.error('Stats error:', err);
     res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
+// ============== ACTIVITY / ACCESS LOG ==============
+app.get('/api/activity', requireAuth, (req, res) => {
+  try {
+    const rows = db.prepare('SELECT * FROM activity_log ORDER BY createdAt DESC, id DESC LIMIT 200').all();
+    res.json(rows);
+  } catch (err) {
+    console.error('Activity log fetch error:', err);
+    res.status(500).json({ error: 'Failed to fetch activity log' });
+  }
+});
+
+app.get('/api/access-log', requireAuth, (req, res) => {
+  try {
+    const rows = db.prepare('SELECT * FROM access_log ORDER BY createdAt DESC, id DESC LIMIT 200').all();
+    res.json(rows);
+  } catch (err) {
+    console.error('Access log fetch error:', err);
+    res.status(500).json({ error: 'Failed to fetch access log' });
   }
 });
 
@@ -537,6 +566,7 @@ app.post('/api/events', requireAuth, upload.single('image'), (req, res) => {
 
     const created = db.prepare('SELECT * FROM events WHERE id = ?').get(result.lastInsertRowid);
     res.json(created);
+    logActivity(db, { action: 'create', resourceType: 'event', resourceId: created.id, req, details: { title: created.title, slug: created.slug } });
     broadcast('events');
   } catch (err) {
     console.error('Event create error:', err);
@@ -602,6 +632,7 @@ app.put('/api/events/:id', requireAuth, upload.single('image'), (req, res) => {
 
     const updated = db.prepare('SELECT * FROM events WHERE id = ?').get(id);
     res.json(updated);
+    logActivity(db, { action: 'update', resourceType: 'event', resourceId: id, req, details: { title: updated.title, slug: updated.slug } });
     broadcast('events');
   } catch (err) {
     console.error('Event update error:', err);
@@ -616,10 +647,11 @@ app.put('/api/events/:id', requireAuth, upload.single('image'), (req, res) => {
 // default list exclude it; ?deleted=true reveals it; POST /restore clears it.
 app.delete('/api/events/:id', requireAuth, (req, res) => {
   try {
-    const existing = db.prepare('SELECT id FROM events WHERE id = ?').get(req.params.id);
+    const existing = db.prepare('SELECT id, title FROM events WHERE id = ?').get(req.params.id);
     if (!existing) return res.status(404).json({ error: 'Event not found' });
     db.prepare("UPDATE events SET deleted_at = datetime('now'), updatedAt = CURRENT_TIMESTAMP WHERE id = ?").run(req.params.id);
     res.json({ success: true });
+    logActivity(db, { action: 'delete', resourceType: 'event', resourceId: req.params.id, req, details: { title: existing.title } });
     broadcast('events');
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete event' });
@@ -633,6 +665,7 @@ app.post('/api/events/:id/restore', requireAuth, (req, res) => {
     db.prepare('UPDATE events SET deleted_at = NULL, updatedAt = CURRENT_TIMESTAMP WHERE id = ?').run(req.params.id);
     const restored = db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id);
     res.json(restored);
+    logActivity(db, { action: 'restore', resourceType: 'event', resourceId: req.params.id, req, details: { title: restored.title } });
     broadcast('events');
   } catch (err) {
     res.status(500).json({ error: 'Failed to restore event' });
@@ -680,6 +713,7 @@ app.post('/api/gallery', requireAuth, upload.single('image'), (req, res) => {
     `).run(url, alt, category, position, galleryType);
 
     res.json({ id: result.lastInsertRowid, url, alt, category, position, galleryType });
+    logActivity(db, { action: 'create', resourceType: 'gallery_image', resourceId: result.lastInsertRowid, req, details: { alt, galleryType } });
     broadcast('gallery');
   } catch (err) {
     res.status(500).json({ error: 'Failed to save image' });
@@ -701,6 +735,7 @@ app.put('/api/gallery/:id', requireAuth, (req, res) => {
 
     const updated = db.prepare('SELECT * FROM gallery_images WHERE id = ?').get(id);
     res.json(updated);
+    logActivity(db, { action: 'update', resourceType: 'gallery_image', resourceId: id, req, details: { alt: updated.alt, galleryType: updated.galleryType } });
     broadcast('gallery');
   } catch (err) {
     res.status(500).json({ error: 'Failed to update image' });
@@ -717,6 +752,7 @@ app.put('/api/gallery/reorder', requireAuth, (req, res) => {
     });
     updateMany(images);
     res.json({ success: true });
+    logActivity(db, { action: 'reorder', resourceType: 'gallery_image', resourceId: null, req, details: { count: Array.isArray(images) ? images.length : 0 } });
     broadcast('gallery');
   } catch (err) {
     res.status(500).json({ error: 'Failed to reorder' });
@@ -732,6 +768,7 @@ app.delete('/api/gallery/:id', requireAuth, (req, res) => {
     }
     db.prepare('DELETE FROM gallery_images WHERE id = ?').run(req.params.id);
     res.json({ success: true });
+    logActivity(db, { action: 'delete', resourceType: 'gallery_image', resourceId: req.params.id, req, details: image ? { url: image.url } : undefined });
     broadcast('gallery');
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete' });
@@ -780,6 +817,7 @@ app.post('/api/menu', requireAuth, upload.single('image'), (req, res) => {
     `).run(name, description, parseFloat(price), category, subcategory, image, isLunchOnly ? 1 : 0);
 
     res.json({ id: result.lastInsertRowid, name, description, price, category, subcategory, image });
+    logActivity(db, { action: 'create', resourceType: 'menu_item', resourceId: result.lastInsertRowid, req, details: { name, category } });
     broadcast('menu');
   } catch (err) {
     console.error('Menu create error:', err);
@@ -811,6 +849,7 @@ app.put('/api/menu/:id', requireAuth, upload.single('image'), (req, res) => {
 
     const updated = db.prepare('SELECT * FROM menu_items WHERE id = ?').get(id);
     res.json(updated);
+    logActivity(db, { action: 'update', resourceType: 'menu_item', resourceId: id, req, details: { name: updated.name } });
     broadcast('menu');
   } catch (err) {
     res.status(500).json({ error: 'Failed to update menu item' });
@@ -819,8 +858,10 @@ app.put('/api/menu/:id', requireAuth, upload.single('image'), (req, res) => {
 
 app.delete('/api/menu/:id', requireAuth, (req, res) => {
   try {
+    const existing = db.prepare('SELECT name FROM menu_items WHERE id = ?').get(req.params.id);
     db.prepare('DELETE FROM menu_items WHERE id = ?').run(req.params.id);
     res.json({ success: true });
+    logActivity(db, { action: 'delete', resourceType: 'menu_item', resourceId: req.params.id, req, details: existing ? { name: existing.name } : undefined });
     broadcast('menu');
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete menu item' });
@@ -893,6 +934,7 @@ app.patch('/api/reservations/:id', requireAuth, (req, res) => {
 
     const updated = db.prepare('SELECT * FROM reservations WHERE id = ?').get(id);
     res.json(updated);
+    logActivity(db, { action: 'update', resourceType: 'reservation', resourceId: id, req, details: { status: updated.status, contacted: updated.contacted } });
     broadcast('reservations');
   } catch (err) {
     res.status(500).json({ error: 'Failed to update reservation' });
@@ -903,6 +945,7 @@ app.delete('/api/reservations/:id', requireAuth, (req, res) => {
   try {
     db.prepare('DELETE FROM reservations WHERE id = ?').run(req.params.id);
     res.json({ success: true });
+    logActivity(db, { action: 'delete', resourceType: 'reservation', resourceId: req.params.id, req });
     broadcast('reservations');
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete reservation' });
@@ -965,6 +1008,7 @@ app.patch('/api/contact/:id', requireAuth, (req, res) => {
     db.prepare('UPDATE contact_submissions SET status = ? WHERE id = ?').run(status, id);
     const updated = db.prepare('SELECT * FROM contact_submissions WHERE id = ?').get(id);
     res.json(updated);
+    logActivity(db, { action: 'update', resourceType: 'contact_submission', resourceId: id, req, details: { status: updated.status } });
     broadcast('contact');
   } catch (err) {
     res.status(500).json({ error: 'Failed to update submission' });
@@ -975,6 +1019,7 @@ app.delete('/api/contact/:id', requireAuth, (req, res) => {
   try {
     db.prepare('DELETE FROM contact_submissions WHERE id = ?').run(req.params.id);
     res.json({ success: true });
+    logActivity(db, { action: 'delete', resourceType: 'contact_submission', resourceId: req.params.id, req });
     broadcast('contact');
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete submission' });
@@ -1013,6 +1058,7 @@ app.put('/api/hours', requireAuth, (req, res) => {
 
     const updated = db.prepare('SELECT * FROM business_hours ORDER BY dayOfWeek').all();
     res.json(updated);
+    logActivity(db, { action: 'update', resourceType: 'business_hours', resourceId: null, req, details: { days: Array.isArray(hours) ? hours.length : 0 } });
     broadcast('hours');
   } catch (err) {
     console.error('Hours update error:', err);
@@ -1031,11 +1077,13 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
   try {
     const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
     if (!user || !user.password_hash) {
+      logAccess(db, { req, route: '/api/auth/login', statusCode: 401 });
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const validPassword = await argon2.verify(user.password_hash, password);
     if (!validPassword) {
+      logAccess(db, { req, route: '/api/auth/login', statusCode: 401 });
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -1059,8 +1107,10 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
         role: user.role
       }
     });
+    logAccess(db, { req: { ...req, user: { id: user.id, username: user.username, email: user.email } }, route: '/api/auth/login', statusCode: 200 });
   } catch (err) {
     console.error('Login error:', err);
+    logAccess(db, { req, route: '/api/auth/login', statusCode: 500 });
     res.status(500).json({ error: 'Login failed' });
   }
 });

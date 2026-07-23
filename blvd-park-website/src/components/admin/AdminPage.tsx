@@ -1,4 +1,5 @@
 import Providers from '../Providers';
+import AdminActivity from './AdminActivity';
 import AdminContactForms from './AdminContactForms';
 import AdminDashboard from './AdminDashboard';
 import AdminEvents from './AdminEvents';
@@ -24,7 +25,8 @@ export default function AdminPage({
     | 'contact'
     | 'hours'
     | 'content'
-    | 'pages';
+    | 'pages'
+    | 'activity';
 }) {
   const pages = {
     dashboard: AdminDashboard,
@@ -36,6 +38,7 @@ export default function AdminPage({
     hours: AdminHours,
     content: AdminContent,
     pages: AdminPages,
+    activity: AdminActivity,
   };
 
   const PageComponent = pages[page];

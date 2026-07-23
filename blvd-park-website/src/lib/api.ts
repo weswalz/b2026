@@ -156,6 +156,25 @@ export interface PageSection {
   body: string;
 }
 
+export interface ActivityLogItem {
+  id: number;
+  action: string;
+  resourceType: string;
+  resourceId: string | null;
+  userId: string | null;
+  username: string | null;
+  details: string | null;
+  ipAddress: string | null;
+  createdAt: string;
+}
+
+export interface AccessLogItem extends ActivityLogItem {
+  route: string | null;
+  method: string | null;
+  statusCode: number | null;
+  userAgent: string | null;
+}
+
 export interface Page {
   id: number;
   slug: string;
@@ -443,6 +462,19 @@ export const api = {
       headers: getAuthHeaders(),
     });
     if (!res.ok) throw apiError(res, 'Failed to delete page');
+  },
+
+  // Activity / access log
+  async getActivity(): Promise<ActivityLogItem[]> {
+    const res = await fetch(`${API_URL}/api/activity`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to fetch activity log');
+    return res.json();
+  },
+
+  async getAccessLog(): Promise<AccessLogItem[]> {
+    const res = await fetch(`${API_URL}/api/access-log`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to fetch access log');
+    return res.json();
   },
 
   // Auth

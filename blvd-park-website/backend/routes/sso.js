@@ -1,6 +1,7 @@
 const { Router } = require('express');
 const crypto = require('crypto');
 const { verifySSOToken } = require('../lib/sso-verify');
+const { logAccess } = require('../lib/activity');
 
 const router = Router();
 
@@ -38,6 +39,7 @@ router.get('/', async (req, res) => {
     );
 
     console.log('[SSO] Session created for', ssoUser.email);
+    logAccess(db, { req: { ...req, user: { id: user.id, username: ssoUser.name || ssoUser.email, email: ssoUser.email } }, route: '/api/sso', statusCode: 302 });
 
     // Redirect with session token in URL hash (frontend picks it up)
     res.redirect(`/admin#sso_token=${sessionToken}&sso_user=${encodeURIComponent(JSON.stringify({ id: user.id, email: ssoUser.email, username: ssoUser.name || ssoUser.email, role: user.role }))}`);

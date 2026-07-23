@@ -164,6 +164,36 @@ const initDatabase = (dbPath = defaultDbPath) => {
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_by TEXT DEFAULT ''
   );
+
+  -- Activity log: records every mutating admin action
+  CREATE TABLE IF NOT EXISTS activity_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    action TEXT,
+    resourceType TEXT,
+    resourceId TEXT,
+    userId TEXT,
+    username TEXT,
+    details TEXT,
+    ipAddress TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  -- Access log: records auth events (login success/fail, SSO login)
+  CREATE TABLE IF NOT EXISTS access_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    action TEXT,
+    resourceType TEXT,
+    resourceId TEXT,
+    userId TEXT,
+    username TEXT,
+    details TEXT,
+    ipAddress TEXT,
+    route TEXT,
+    method TEXT,
+    statusCode INTEGER,
+    userAgent TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
   `);
 
   // Create indexes
@@ -175,6 +205,8 @@ const initDatabase = (dbPath = defaultDbPath) => {
     CREATE INDEX IF NOT EXISTS idx_pages_status ON pages(status);
     CREATE INDEX IF NOT EXISTS idx_events_slug ON events(slug);
     CREATE INDEX IF NOT EXISTS idx_events_deleted_at ON events(deleted_at);
+    CREATE INDEX IF NOT EXISTS idx_activity_log_createdAt ON activity_log(createdAt);
+    CREATE INDEX IF NOT EXISTS idx_access_log_createdAt ON access_log(createdAt);
   `);
 
   // Seed default hours
