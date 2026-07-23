@@ -83,6 +83,7 @@ export default function AdminReservations() {
                 <th className="text-left text-white/50 text-sm font-medium p-4">Guest</th>
                 <th className="text-left text-white/50 text-sm font-medium p-4">Date & Time</th>
                 <th className="text-left text-white/50 text-sm font-medium p-4">Party</th>
+                <th className="text-left text-white/50 text-sm font-medium p-4">Received</th>
                 <th className="text-left text-white/50 text-sm font-medium p-4">Status</th>
                 <th className="text-left text-white/50 text-sm font-medium p-4">Actions</th>
               </tr>
@@ -108,6 +109,14 @@ export default function AdminReservations() {
                     {res.tablePreference && (
                       <p className="text-white/50 text-sm">{res.tablePreference}</p>
                     )}
+                  </td>
+                  <td className="p-4">
+                    <p className="text-white text-sm">
+                      {new Date(res.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </p>
+                    <p className="text-white/40 text-xs">
+                      {new Date(res.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                    </p>
                   </td>
                   <td className="p-4">
                     <select

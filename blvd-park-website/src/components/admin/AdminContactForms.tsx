@@ -112,6 +112,9 @@ export default function AdminContactForms() {
                 <div>
                   <h3 className="text-white font-medium text-lg">{selectedMessage.name}</h3>
                   <p className="text-white/50">{selectedMessage.email}</p>
+                  {selectedMessage.phone && (
+                    <p className="text-white/50">{selectedMessage.phone}</p>
+                  )}
                 </div>
                 <span className={`px-3 py-1 text-sm rounded-full capitalize ${getStatusColor(selectedMessage.status)}`}>
                   {selectedMessage.status}

@@ -18,17 +18,21 @@
           <!-- Eyebrow -->
           <span class="inline-flex items-center gap-2 font-mono text-xs text-blvd-green tracking-[0.2em] uppercase mb-6">
             <span class="w-8 h-px bg-blvd-green/30"></span>
-            About Us
+            <span data-cms-key="home.about.eyebrow">About Us</span>
           </span>
           
           <!-- Headline - More dramatic -->
           <h2 class="font-display font-bold text-4xl sm:text-5xl lg:text-6xl text-blvd-charcoal mb-6 leading-[0.95] tracking-tight">
-            Where Houston<br/>
-            <span class="text-blvd-green">Comes to Play</span>
+            <span data-cms-key="home.about.headline_line1">Where Houston</span><br/>
+            <span class="text-blvd-green" data-cms-key="home.about.headline_line2">Comes to Play</span>
           </h2>
 
           <!-- Body copy - refined -->
-          <div class="space-y-4 text-blvd-charcoal/70 text-base sm:text-lg leading-relaxed font-body max-w-md">
+          <div
+            class="space-y-4 text-blvd-charcoal/70 text-base sm:text-lg leading-relaxed font-body max-w-md"
+            data-cms-key="home.about.body_html"
+            data-cms-html="true"
+          >
             <p>
               Part sports bar, part social club, part neighborhood living room. BLVD Park is where the Heights comes when they want to watch the game, grab a drink, or just be around good energy.
             </p>
@@ -40,18 +44,18 @@
           <!-- Stats row -->
           <div class="flex items-center gap-8 mt-10 pt-10 border-t border-blvd-charcoal/10">
             <div>
-              <div class="font-display font-bold text-3xl text-blvd-green">FREE</div>
-              <div class="font-mono text-xs text-blvd-charcoal/50 tracking-wide uppercase">Pickleball</div>
+              <div class="font-display font-bold text-3xl text-blvd-green" data-cms-key="home.about.stats.0.value">FREE</div>
+              <div class="font-mono text-xs text-blvd-charcoal/50 tracking-wide uppercase" data-cms-key="home.about.stats.0.label">Pickleball</div>
             </div>
             <div class="w-px h-10 bg-blvd-charcoal/10"></div>
             <div>
-              <div class="font-display font-bold text-3xl text-blvd-green">50+</div>
-              <div class="font-mono text-xs text-blvd-charcoal/50 tracking-wide uppercase">HD Screens</div>
+              <div class="font-display font-bold text-3xl text-blvd-green" data-cms-key="home.about.stats.1.value">50+</div>
+              <div class="font-mono text-xs text-blvd-charcoal/50 tracking-wide uppercase" data-cms-key="home.about.stats.1.label">HD Screens</div>
             </div>
             <div class="w-px h-10 bg-blvd-charcoal/10"></div>
             <div>
-              <div class="font-display font-bold text-3xl text-blvd-green">7</div>
-              <div class="font-mono text-xs text-blvd-charcoal/50 tracking-wide uppercase">Days/Week</div>
+              <div class="font-display font-bold text-3xl text-blvd-green" data-cms-key="home.about.stats.2.value">7</div>
+              <div class="font-mono text-xs text-blvd-charcoal/50 tracking-wide uppercase" data-cms-key="home.about.stats.2.label">Days/Week</div>
             </div>
           </div>
 
@@ -60,8 +64,9 @@
             <a
               href="/book"
               class="group inline-flex items-center gap-2 px-6 py-3.5 bg-blvd-green text-white font-display font-semibold text-sm rounded-full transition-all duration-300 hover:bg-blvd-green-bright hover:shadow-lg hover:shadow-blvd-green-bright/25"
+              data-cms-attr="href:home.about.cta.href"
             >
-              Book an Event
+              <span data-cms-key="home.about.cta.label">Book an Event</span>
               <svg class="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
               </svg>
@@ -80,6 +85,7 @@
               <img 
                 src="/images/2026GALLERY/DSC03577.jpg"
                 alt="BLVD Park Atmosphere"
+                data-cms-attr="src:home.about.image_primary_src,alt:home.about.image_primary_alt"
                 class="w-full h-full object-cover"
                 loading="lazy"
               />
@@ -94,14 +100,15 @@
                   </svg>
                 </div>
                 <div>
-                  <div class="font-display font-bold text-sm text-blvd-charcoal">The Heights</div>
-                  <div class="font-mono text-xs text-blvd-charcoal/50">Houston, TX</div>
+                  <div class="font-display font-bold text-sm text-blvd-charcoal" data-cms-key="home.about.card_title">The Heights</div>
+                  <div class="font-mono text-xs text-blvd-charcoal/50" data-cms-key="home.about.card_subtitle">Houston, TX</div>
                 </div>
               </div>
               <div class="h-20 rounded-lg overflow-hidden">
                 <img 
                   src="/images/2026GALLERY/DSC01726.jpg"
                   alt="BLVD Park"
+                  data-cms-attr="src:home.about.card_image_src,alt:home.about.card_image_alt"
                   class="w-full h-full object-cover"
                   loading="lazy"
                 />

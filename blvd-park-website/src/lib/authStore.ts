@@ -1,11 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { api } from './api';
 
 interface AuthState {
   token: string | null;
   isAuthenticated: boolean;
-  login: (apiKey: string) => Promise<boolean>;
+  setToken: (token: string) => void;
   logout: () => void;
   checkAuth: () => boolean;
 }
@@ -16,18 +15,14 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       isAuthenticated: false,
 
-      login: async (apiKey: string) => {
-        const isValid = await api.verifyAuth(apiKey);
-        if (isValid) {
-          localStorage.setItem('blvd-auth-token', apiKey);
-          set({ token: apiKey, isAuthenticated: true });
-          return true;
-        }
-        return false;
+      setToken: (token: string) => {
+        localStorage.setItem('blvd-auth-token', token);
+        set({ token, isAuthenticated: true });
       },
 
       logout: () => {
         localStorage.removeItem('blvd-auth-token');
+        localStorage.removeItem('blvd-user');
         set({ token: null, isAuthenticated: false });
       },
 

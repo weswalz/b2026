@@ -125,15 +125,12 @@ export default function AdminGallery() {
     },
   });
 
-  const handleDrop = useCallback(async (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
-
-    if (files.length === 0) return;
+  const uploadFiles = useCallback(async (files: File[]) => {
+    const validFiles = files.filter(f => f.type.startsWith('image/'));
+    if (validFiles.length === 0) return;
     setUploading(true);
 
-    for (const file of files) {
+    for (const file of validFiles) {
       const name = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
       const formData = new FormData();
       formData.append('image', file);
@@ -144,6 +141,19 @@ export default function AdminGallery() {
     }
     setUploading(false);
   }, [uploadMutation]);
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const files = Array.from(e.dataTransfer.files || []);
+    await uploadFiles(files);
+  }, [uploadFiles]);
+
+  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    await uploadFiles(files);
+    e.target.value = '';
+  }, [uploadFiles]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -200,6 +210,14 @@ export default function AdminGallery() {
           isDragOver ? 'border-[#C9A962] bg-[#C9A962]/10' : 'border-white/20 hover:border-white/40'
         }`}
       >
+        <input
+          id="gallery-upload"
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={handleFileSelect}
+        />
         {uploading ? (
           <div className="flex items-center justify-center gap-3">
             <div className="animate-spin rounded-full h-5 w-5 border-2 border-[#C9A962] border-t-transparent"></div>
@@ -212,6 +230,12 @@ export default function AdminGallery() {
             </svg>
             <p className="text-white/50">Drop images here to upload</p>
             <p className="text-white/30 text-sm mt-1">Supports JPG, PNG, WebP</p>
+            <label
+              htmlFor="gallery-upload"
+              className="inline-flex items-center justify-center mt-4 px-4 py-2 text-sm font-medium rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors cursor-pointer"
+            >
+              Select files
+            </label>
           </div>
         )}
       </div>

@@ -19,8 +19,9 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
       playsinline
       webkit-playsinline
       poster="/images/venue/venue-hero-tall.webp"
+      data-cms-attr="poster:home.hero.poster_src"
     >
-      <source src="/images/blvdhero.mp4" type="video/mp4" />
+      <source src="/images/blvdhero.mp4" type="video/mp4" data-cms-attr="src:home.hero.video_src" />
     </video>
     
     <!-- Fallback static image (shown only if video fails) -->
@@ -28,6 +29,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
       id="hero-fallback"
       class="hidden absolute inset-0 bg-cover bg-center"
       style="background-image: url('/images/venue/venue-hero-tall.webp');"
+      data-cms-bg-key="home.hero.fallback_src"
     ></div>
     
     <!-- Premium gradient overlay - darker for text legibility -->
@@ -44,23 +46,23 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
   <div class="relative z-10 container mx-auto px-5 sm:px-6 pt-20 pb-32 text-center">
     <!-- Location Tag -->
     <div class="hero-eyebrow opacity-0 mb-8">
-      <span class="inline-flex items-center gap-3 text-[#C9A962] font-mono text-xs sm:text-sm tracking-[0.2em] uppercase">
-        <span class="w-6 sm:w-10 h-px bg-[#C9A962]/60"></span>
-        Houston, TX
-        <span class="w-6 sm:w-10 h-px bg-[#C9A962]/60"></span>
-      </span>
+        <span class="inline-flex items-center gap-3 text-[#C9A962] font-mono text-xs sm:text-sm tracking-[0.2em] uppercase">
+          <span class="w-6 sm:w-10 h-px bg-[#C9A962]/60"></span>
+        <span data-cms-key="home.hero.location">Houston, TX</span>
+          <span class="w-6 sm:w-10 h-px bg-[#C9A962]/60"></span>
+        </span>
     </div>
 
     <!-- Main Headline -->
     <h1 class="hero-headline opacity-0 font-display font-bold mb-8">
-      <span class="block text-3xl sm:text-4xl md:text-5xl text-white/80 tracking-wide mb-2">The Heights'</span>
-      <span class="block text-5xl sm:text-6xl md:text-7xl lg:text-8xl bg-gradient-to-r from-[#22C55E] via-[#4ADE80] to-[#22C55E] bg-clip-text text-transparent leading-[0.9] tracking-tight">
+      <span class="block text-3xl sm:text-4xl md:text-5xl text-white/80 tracking-wide mb-2" data-cms-key="home.hero.headline_top">The Heights'</span>
+      <span class="block text-5xl sm:text-6xl md:text-7xl lg:text-8xl bg-gradient-to-r from-[#22C55E] via-[#4ADE80] to-[#22C55E] bg-clip-text text-transparent leading-[0.9] tracking-tight" data-cms-key="home.hero.headline_highlight">
         PLAYGROUND
       </span>
     </h1>
     
     <!-- Tagline with gold accent -->
-    <p class="hero-tagline opacity-0 font-mono text-sm sm:text-base md:text-lg text-white/50 mb-12 tracking-[0.15em] uppercase">
+    <p class="hero-tagline opacity-0 font-mono text-sm sm:text-base md:text-lg text-white/50 mb-12 tracking-[0.15em] uppercase" data-cms-key="home.hero.tagline_html" data-cms-html="true">
       <span class="text-[#C9A962]">Sports</span> · <span class="text-white/70">Social</span> · <span class="text-[#C9A962]">Scene</span>
     </p>
     
@@ -69,8 +71,9 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
       <a 
         href="/#events" 
         class="group relative w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#1A5F36] text-white font-display font-semibold text-base rounded-full overflow-hidden transition-all duration-500 hover:bg-[#22C55E] hover:shadow-[0_0_40px_rgba(34,197,94,0.3)]"
+        data-cms-attr="href:home.hero.cta_primary.href"
       >
-        <span class="relative z-10">Events</span>
+        <span class="relative z-10" data-cms-key="home.hero.cta_primary.label">Events</span>
         <svg class="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
         </svg>
@@ -79,8 +82,9 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
       <a
         href="/menu"
         class="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/5 backdrop-blur-md text-white font-display font-semibold text-base rounded-full border border-white/10 transition-all duration-500 hover:bg-white/10 hover:border-white/20"
+        data-cms-attr="href:home.hero.cta_secondary.href"
       >
-        <span>Menu</span>
+        <span data-cms-key="home.hero.cta_secondary.label">Menu</span>
         <svg class="w-4 h-4 opacity-50 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
         </svg>
@@ -98,7 +102,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
             <svg class="w-4 h-4 text-[#22C55E]" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
             </svg>
-            <span class="font-mono">Heights, HTX</span>
+            <span class="font-mono" data-cms-key="home.hero.info_location">Heights, HTX</span>
           </div>
           
           <!-- Open Status -->
@@ -107,7 +111,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
               <span id="status-ping" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75"></span>
               <span id="status-dot" class="relative inline-flex rounded-full h-2 w-2 bg-[#22C55E]"></span>
             </span>
-            <span id="hero-status" class="font-mono">Loading...</span>
+            <span id="hero-status" class="font-mono" data-cms-key="global.status.loading">Loading...</span>
           </div>
           
         </div>
@@ -175,6 +179,17 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
 </style>
 
 <script define:vars={{ apiUrl }}>
+  const getContentValue = (key, fallback) => (window.__blvdContent && window.__blvdContent[key]) || fallback;
+  const escapeHtml = (value) => {
+    if (!value) return '';
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  };
+
   const parseTimeToMinutes = (value) => {
     if (!value) return null;
     const [hoursRaw, minutesRaw] = value.split(':');
@@ -242,6 +257,17 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
     
     // Update open/closed status
     loadSchedule().then(updateStatus);
+
+    document.addEventListener('blvd:hours', () => {
+      window.__blvdHoursSchedule = null;
+      loadSchedule().then(updateStatus);
+    });
+
+    if (window.__blvdSubscribeContent) {
+      window.__blvdSubscribeContent(() => {
+        updateStatus(window.__blvdHoursSchedule);
+      });
+    }
   });
   
   const isCrossMidnight = (entry) => entry.close < entry.open;
@@ -283,8 +309,13 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
     const dotEl = document.getElementById('status-dot');
     if (!statusEl) return;
 
+    const openLabel = getContentValue('global.status.open_label', 'Open');
+    const closedLabel = getContentValue('global.status.closed_label', 'Closed');
+    const openUntilLabel = getContentValue('global.status.open_until_label', 'til');
+    const unavailableLabel = getContentValue('global.status.hours_unavailable', 'Hours unavailable');
+
     if (!Array.isArray(schedule)) {
-      statusEl.innerHTML = `<span class="text-[#C9A962]">Hours unavailable</span>`;
+      statusEl.innerHTML = `<span class="text-[#C9A962]">${escapeHtml(unavailableLabel)}</span>`;
       if (pingEl) pingEl.classList.add('hidden');
       if (dotEl) dotEl.style.backgroundColor = '#C9A962';
       return;
@@ -297,7 +328,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
     const today = schedule[day];
     const yesterday = schedule[(day + 6) % 7];
     if (!today || !yesterday) {
-      statusEl.innerHTML = `<span class="text-[#C9A962]">Hours unavailable</span>`;
+      statusEl.innerHTML = `<span class="text-[#C9A962]">${escapeHtml(unavailableLabel)}</span>`;
       if (pingEl) pingEl.classList.add('hidden');
       if (dotEl) dotEl.style.backgroundColor = '#C9A962';
       return;
@@ -321,11 +352,11 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
     
     if (isOpen) {
       const closeTimeLabel = closeMinutes !== null ? formatMinutesToTime(closeMinutes) : '';
-      statusEl.innerHTML = `<span class="text-[#22C55E]">Open</span> til ${closeTimeLabel}`;
+      statusEl.innerHTML = `<span class="text-[#22C55E]">${escapeHtml(openLabel)}</span> ${escapeHtml(openUntilLabel)} ${escapeHtml(closeTimeLabel)}`;
       if (pingEl) pingEl.classList.remove('hidden');
       if (dotEl) dotEl.style.backgroundColor = '#22C55E';
     } else {
-      statusEl.innerHTML = `<span class="text-[#C9A962]">Closed</span>`;
+      statusEl.innerHTML = `<span class="text-[#C9A962]">${escapeHtml(closedLabel)}</span>`;
       if (pingEl) pingEl.classList.add('hidden');
       if (dotEl) dotEl.style.backgroundColor = '#C9A962';
     }

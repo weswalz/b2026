@@ -1,10 +1,29 @@
-const API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.PUBLIC_API_URL || 'https://blvdpark.com';
 
 const getAuthHeaders = (): HeadersInit => {
   if (typeof window === 'undefined') return {};
   const token = localStorage.getItem('blvd-auth-token');
   return token ? { 'x-auth-key': token } : {};
 };
+
+// Attaches HTTP status to thrown errors so callers (and QueryCache) can inspect it
+function apiError(res: Response, message: string): Error {
+  const err = new Error(message) as Error & { status: number };
+  err.status = res.status;
+  return err;
+}
+
+// Reads JSON error body and surfaces server-provided message; falls back to default.
+async function apiErrorWithBody(res: Response, fallback: string): Promise<Error> {
+  let serverMessage = '';
+  try {
+    const body = await res.clone().json();
+    serverMessage = body?.message || body?.error || '';
+  } catch (_e) { /* not JSON */ }
+  const err = new Error(serverMessage || fallback) as Error & { status: number };
+  err.status = res.status;
+  return err;
+}
 
 // Types
 export interface Event {
@@ -63,26 +82,11 @@ export interface Reservation {
   createdAt: string;
 }
 
-export interface PrivateEvent {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  company: string | null;
-  eventType: string;
-  preferredDate: string | null;
-  guestCount: number | null;
-  budget: string | null;
-  details: string | null;
-  status: string;
-  notes: string | null;
-  createdAt: string;
-}
-
 export interface ContactSubmission {
   id: number;
   name: string;
   email: string;
+  phone: string | null;
   subject: string | null;
   message: string;
   status: string;
@@ -103,28 +107,71 @@ export interface DashboardStats {
   galleryImages: number;
   menuItems: number;
   pendingReservations: number;
-  newPrivateEvents: number;
   unreadMessages: number;
+}
+
+export interface ContentField {
+  key: string;
+  label: string;
+  type: 'text' | 'textarea' | 'rich' | 'url' | 'image' | 'number' | 'boolean';
+  default?: string | boolean;
+}
+
+export interface ContentSection {
+  id: string;
+  title: string;
+  fields: ContentField[];
+}
+
+export interface ContentSchema {
+  schema: ContentSection[];
+}
+
+export interface ContentItem {
+  key: string;
+  value: string;
+  type?: string;
+}
+
+export interface User {
+  id: number;
+  email: string;
+  username: string;
+  role: 'super_admin' | 'admin' | 'editor';
+  last_login?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface PageSection {
+  type: 'text' | 'html';
+  body: string;
+}
+
+export interface Page {
+  id: number;
+  slug: string;
+  title: string;
+  description: string;
+  content_sections: string; // JSON string of PageSection[]
+  seo_title: string;
+  seo_description: string;
+  seo_keywords: string;
+  og_image: string;
+  json_ld: string;
+  robots: string;
+  status: 'draft' | 'published';
+  created_at: string;
+  updated_at: string;
+  updated_by: string;
 }
 
 // API Methods
 export const api = {
-  // Auth
-  async verifyAuth(apiKey: string): Promise<boolean> {
-    try {
-      const res = await fetch(`${API_URL}/api/health`, {
-        headers: { 'x-auth-key': apiKey },
-      });
-      return res.ok;
-    } catch {
-      return false;
-    }
-  },
-
   // Stats
   async getStats(): Promise<DashboardStats> {
     const res = await fetch(`${API_URL}/api/stats`, { headers: getAuthHeaders() });
-    if (!res.ok) throw new Error('Failed to fetch stats');
+    if (!res.ok) throw apiError(res, 'Failed to fetch stats');
     return res.json();
   },
 
@@ -132,7 +179,7 @@ export const api = {
   async getEvents(all = false): Promise<Event[]> {
     const url = all ? `${API_URL}/api/events?all=true` : `${API_URL}/api/events`;
     const res = await fetch(url);
-    if (!res.ok) throw new Error('Failed to fetch events');
+    if (!res.ok) throw apiError(res, 'Failed to fetch events');
     return res.json();
   },
 
@@ -142,7 +189,7 @@ export const api = {
       headers: getAuthHeaders(),
       body: data,
     });
-    if (!res.ok) throw new Error('Failed to create event');
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to create event');
     return res.json();
   },
 
@@ -152,7 +199,7 @@ export const api = {
       headers: getAuthHeaders(),
       body: data,
     });
-    if (!res.ok) throw new Error('Failed to update event');
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to update event');
     return res.json();
   },
 
@@ -161,14 +208,14 @@ export const api = {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });
-    if (!res.ok) throw new Error('Failed to delete event');
+    if (!res.ok) throw apiError(res, 'Failed to delete event');
   },
 
   // Gallery
   async getGallery(type?: string): Promise<GalleryImage[]> {
     const url = type ? `${API_URL}/api/gallery?type=${type}` : `${API_URL}/api/gallery`;
     const res = await fetch(url);
-    if (!res.ok) throw new Error('Failed to fetch gallery');
+    if (!res.ok) throw apiError(res, 'Failed to fetch gallery');
     return res.json();
   },
 
@@ -178,7 +225,7 @@ export const api = {
       headers: getAuthHeaders(),
       body: data,
     });
-    if (!res.ok) throw new Error('Failed to upload image');
+    if (!res.ok) throw apiError(res, 'Failed to upload image');
     return res.json();
   },
 
@@ -188,7 +235,7 @@ export const api = {
       headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error('Failed to update image');
+    if (!res.ok) throw apiError(res, 'Failed to update image');
     return res.json();
   },
 
@@ -198,7 +245,7 @@ export const api = {
       headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
       body: JSON.stringify({ images }),
     });
-    if (!res.ok) throw new Error('Failed to reorder');
+    if (!res.ok) throw apiError(res, 'Failed to reorder');
   },
 
   async deleteImage(id: number): Promise<void> {
@@ -206,7 +253,7 @@ export const api = {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });
-    if (!res.ok) throw new Error('Failed to delete image');
+    if (!res.ok) throw apiError(res, 'Failed to delete image');
   },
 
   // Menu
@@ -218,7 +265,7 @@ export const api = {
     if (params.toString()) url += `?${params.toString()}`;
 
     const res = await fetch(url);
-    if (!res.ok) throw new Error('Failed to fetch menu');
+    if (!res.ok) throw apiError(res, 'Failed to fetch menu');
     return res.json();
   },
 
@@ -228,7 +275,7 @@ export const api = {
       headers: getAuthHeaders(),
       body: data,
     });
-    if (!res.ok) throw new Error('Failed to create menu item');
+    if (!res.ok) throw apiError(res, 'Failed to create menu item');
     return res.json();
   },
 
@@ -238,7 +285,7 @@ export const api = {
       headers: getAuthHeaders(),
       body: data,
     });
-    if (!res.ok) throw new Error('Failed to update menu item');
+    if (!res.ok) throw apiError(res, 'Failed to update menu item');
     return res.json();
   },
 
@@ -247,14 +294,14 @@ export const api = {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });
-    if (!res.ok) throw new Error('Failed to delete menu item');
+    if (!res.ok) throw apiError(res, 'Failed to delete menu item');
   },
 
   // Reservations
   async getReservations(status?: string): Promise<Reservation[]> {
     const url = status ? `${API_URL}/api/reservations?status=${status}` : `${API_URL}/api/reservations`;
     const res = await fetch(url, { headers: getAuthHeaders() });
-    if (!res.ok) throw new Error('Failed to fetch reservations');
+    if (!res.ok) throw apiError(res, 'Failed to fetch reservations');
     return res.json();
   },
 
@@ -264,7 +311,7 @@ export const api = {
       headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error('Failed to update reservation');
+    if (!res.ok) throw apiError(res, 'Failed to update reservation');
     return res.json();
   },
 
@@ -273,40 +320,14 @@ export const api = {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });
-    if (!res.ok) throw new Error('Failed to delete reservation');
-  },
-
-  // Private Events
-  async getPrivateEvents(status?: string): Promise<PrivateEvent[]> {
-    const url = status ? `${API_URL}/api/private-events?status=${status}` : `${API_URL}/api/private-events`;
-    const res = await fetch(url, { headers: getAuthHeaders() });
-    if (!res.ok) throw new Error('Failed to fetch private events');
-    return res.json();
-  },
-
-  async updatePrivateEvent(id: number, data: Partial<PrivateEvent>): Promise<PrivateEvent> {
-    const res = await fetch(`${API_URL}/api/private-events/${id}`, {
-      method: 'PATCH',
-      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error('Failed to update private event');
-    return res.json();
-  },
-
-  async deletePrivateEvent(id: number): Promise<void> {
-    const res = await fetch(`${API_URL}/api/private-events/${id}`, {
-      method: 'DELETE',
-      headers: getAuthHeaders(),
-    });
-    if (!res.ok) throw new Error('Failed to delete private event');
+    if (!res.ok) throw apiError(res, 'Failed to delete reservation');
   },
 
   // Contact
   async getContactSubmissions(status?: string): Promise<ContactSubmission[]> {
     const url = status ? `${API_URL}/api/contact?status=${status}` : `${API_URL}/api/contact`;
     const res = await fetch(url, { headers: getAuthHeaders() });
-    if (!res.ok) throw new Error('Failed to fetch contact submissions');
+    if (!res.ok) throw apiError(res, 'Failed to fetch contact submissions');
     return res.json();
   },
 
@@ -316,7 +337,7 @@ export const api = {
       headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error('Failed to update submission');
+    if (!res.ok) throw apiError(res, 'Failed to update submission');
     return res.json();
   },
 
@@ -325,13 +346,13 @@ export const api = {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });
-    if (!res.ok) throw new Error('Failed to delete submission');
+    if (!res.ok) throw apiError(res, 'Failed to delete submission');
   },
 
   // Hours
   async getHours(): Promise<BusinessHours[]> {
     const res = await fetch(`${API_URL}/api/hours`);
-    if (!res.ok) throw new Error('Failed to fetch hours');
+    if (!res.ok) throw apiError(res, 'Failed to fetch hours');
     return res.json();
   },
 
@@ -341,8 +362,119 @@ export const api = {
       headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
       body: JSON.stringify({ hours }),
     });
-    if (!res.ok) throw new Error('Failed to update hours');
+    if (!res.ok) throw apiError(res, 'Failed to update hours');
     return res.json();
+  },
+
+  // Content (CMS)
+  async getContentSchema(): Promise<ContentSchema> {
+    const res = await fetch(`${API_URL}/api/content/schema`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to fetch content schema');
+    return res.json();
+  },
+
+  async getContent(): Promise<ContentItem[]> {
+    const res = await fetch(`${API_URL}/api/content`);
+    if (!res.ok) throw apiError(res, 'Failed to fetch content');
+    const data = await res.json();
+    return Array.isArray(data) ? data : data.items || [];
+  },
+
+  async updateContent(items: ContentItem[]): Promise<void> {
+    const res = await fetch(`${API_URL}/api/content`, {
+      method: 'PUT',
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items }),
+    });
+    if (!res.ok) throw apiError(res, 'Failed to update content');
+  },
+
+  // Pages (CMS)
+  async getPages(): Promise<Page[]> {
+    const res = await fetch(`${API_URL}/api/pages`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to fetch pages');
+    return res.json();
+  },
+
+  async createPage(data: FormData): Promise<Page> {
+    const res = await fetch(`${API_URL}/api/pages`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: data,
+    });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to create page');
+    return res.json();
+  },
+
+  async updatePage(id: number, data: FormData): Promise<Page> {
+    const res = await fetch(`${API_URL}/api/pages/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: data,
+    });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to update page');
+    return res.json();
+  },
+
+  async deletePage(id: number): Promise<void> {
+    const res = await fetch(`${API_URL}/api/pages/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw apiError(res, 'Failed to delete page');
+  },
+
+  // Auth
+  async login(email: string, password: string): Promise<{ token: string; user: User }> {
+    const res = await fetch(`${API_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw apiError(res, (errBody as any).error || 'Login failed');
+    }
+    return res.json();
+  },
+
+  async requestPasswordReset(email: string): Promise<{ success: boolean; message: string }> {
+    const res = await fetch(`${API_URL}/api/auth/reset-password-request`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw apiError(res, (errBody as any).error || 'Failed to request password reset');
+    }
+    return res.json();
+  },
+
+  async resetPassword(userId: number, token: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+    const res = await fetch(`${API_URL}/api/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, token, new_password: newPassword }),
+    });
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw apiError(res, (errBody as any).error || 'Failed to reset password');
+    }
+    return res.json();
+  },
+
+  async verifyAuth(): Promise<{ authenticated: boolean; user?: User }> {
+    const res = await fetch(`${API_URL}/api/auth/verify`, { headers: getAuthHeaders() });
+    if (!res.ok) return { authenticated: false };
+    return res.json();
+  },
+
+  async logout(): Promise<void> {
+    await fetch(`${API_URL}/api/auth/logout`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    });
   },
 };
 

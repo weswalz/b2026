@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const Database = require('better-sqlite3');
 
-const dbPath = path.join(__dirname, 'database', 'blvdpark.db');
+const dbPath = process.env.DB_PATH || path.join(__dirname, 'database', 'blvdpark.db');
 const db = new Database(dbPath);
 
 const events = [

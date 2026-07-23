@@ -51,14 +51,17 @@ const vibes = [
             data-index={index}
           >
             <div class="flex items-baseline justify-center gap-1 mb-2">
-              <span class="font-display text-3xl md:text-4xl font-bold text-white transition-colors duration-300 group-hover:text-blvd-green-bright">
+              <span
+                class="font-display text-3xl md:text-4xl font-bold text-white transition-colors duration-300 group-hover:text-blvd-green-bright"
+                data-cms-key={`home.vibe.stats.${index}.value`}
+              >
                 {stat.value}
               </span>
               {stat.suffix && (
-                <span class="text-xl md:text-2xl text-blvd-gold">{stat.suffix}</span>
+                <span class="text-xl md:text-2xl text-blvd-gold" data-cms-key={`home.vibe.stats.${index}.suffix`}>{stat.suffix}</span>
               )}
             </div>
-            <span class="font-mono text-xs font-medium tracking-wide uppercase text-white/40">
+            <span class="font-mono text-xs font-medium tracking-wide uppercase text-white/40" data-cms-key={`home.vibe.stats.${index}.label`}>
               {stat.label}
             </span>
           </div>
@@ -69,12 +72,12 @@ const vibes = [
     <!-- Section Header -->
     <div class="text-center mb-16">
       <span class="eyebrow inline-block mb-4 px-4 py-2 rounded-full border border-blvd-gold/20 bg-blvd-gold/5">
-        The Vibe
+        <span data-cms-key="home.vibe.eyebrow">The Vibe</span>
       </span>
-      <h2 class="font-display text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-white tracking-tight">
+      <h2 class="font-display text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-white tracking-tight" data-cms-key="home.vibe.headline">
         Your Kind of Night
       </h2>
-      <p class="font-body text-lg md:text-xl max-w-2xl mx-auto text-white/50">
+      <p class="font-body text-lg md:text-xl max-w-2xl mx-auto text-white/50" data-cms-key="home.vibe.subtext">
         Whether you're here for the game, the drinks, or the company—we've got a spot for you.
       </p>
     </div>
@@ -109,10 +112,10 @@ const vibes = [
               )}
             </div>
 
-            <h3 class="font-display text-xl font-bold mb-3 text-white transition-colors duration-300 group-hover:text-blvd-green-bright">
+            <h3 class="font-display text-xl font-bold mb-3 text-white transition-colors duration-300 group-hover:text-blvd-green-bright" data-cms-key={`home.vibe.cards.${index}.title`}>
               {vibe.title}
             </h3>
-            <p class="font-body text-base leading-relaxed text-white/50">
+            <p class="font-body text-base leading-relaxed text-white/50" data-cms-key={`home.vibe.cards.${index}.description`}>
               {vibe.description}
             </p>
           </div>
@@ -129,13 +132,13 @@ const vibes = [
         <svg class="absolute -top-4 -left-8 w-12 h-12 opacity-10 text-blvd-green-bright" fill="currentColor" viewBox="0 0 24 24">
           <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
         </svg>
-        <blockquote class="font-body text-2xl md:text-3xl font-medium italic mb-6 text-white leading-snug">
+        <blockquote class="font-body text-2xl md:text-3xl font-medium italic mb-6 text-white leading-snug" data-cms-key="home.vibe.quote">
           "Best spot in the Heights. Period. Come for the games, stay for the vibes."
         </blockquote>
         <cite class="not-italic">
-          <span class="font-semibold text-white/70">— Google Review</span>
+          <span class="font-semibold text-white/70">— <span data-cms-key="home.vibe.cite_name">Google Review</span></span>
           <span class="mx-2 text-white/20">•</span>
-          <span class="text-sm text-blvd-gold">★★★★★</span>
+          <span class="text-sm text-blvd-gold" data-cms-key="home.vibe.cite_rating">★★★★★</span>
         </cite>
       </div>
     </div>

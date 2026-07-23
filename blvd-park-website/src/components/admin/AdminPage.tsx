@@ -5,9 +5,10 @@ import AdminEvents from './AdminEvents';
 import AdminGallery from './AdminGallery';
 import AdminHours from './AdminHours';
 import AdminMenu from './AdminMenu';
-import AdminPrivateEvents from './AdminPrivateEvents';
 import AdminReservations from './AdminReservations';
 import AdminSidebar from './AdminSidebar';
+import AdminContent from './AdminContent';
+import AdminPages from './AdminPages';
 
 export default function AdminPage({
   currentPath,
@@ -20,9 +21,10 @@ export default function AdminPage({
     | 'gallery'
     | 'menu'
     | 'reservations'
-    | 'private-events'
     | 'contact'
-    | 'hours';
+    | 'hours'
+    | 'content'
+    | 'pages';
 }) {
   const pages = {
     dashboard: AdminDashboard,
@@ -30,9 +32,10 @@ export default function AdminPage({
     gallery: AdminGallery,
     menu: AdminMenu,
     reservations: AdminReservations,
-    'private-events': AdminPrivateEvents,
     contact: AdminContactForms,
     hours: AdminHours,
+    content: AdminContent,
+    pages: AdminPages,
   };
 
   const PageComponent = pages[page];

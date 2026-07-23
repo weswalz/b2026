@@ -60,12 +60,16 @@ const specials = [
     <div class="specials-header max-w-3xl mb-12 opacity-0">
       <span class="eyebrow inline-flex items-center gap-3 mb-5 text-blvd-green">
         <span class="w-8 h-px bg-blvd-green/30"></span>
-        Daily Specials
+        <span data-cms-key="home.specials.eyebrow">Daily Specials</span>
       </span>
-      <h2 class="font-display font-bold text-4xl sm:text-5xl text-blvd-charcoal mb-4 leading-[0.98] tracking-tight">
+      <h2
+        class="font-display font-bold text-4xl sm:text-5xl text-blvd-charcoal mb-4 leading-[0.98] tracking-tight"
+        data-cms-key="home.specials.headline_html"
+        data-cms-html="true"
+      >
         The week plays differently<br class="hidden sm:block"/> at BLVD Park.
       </h2>
-      <p class="text-blvd-charcoal/60 text-base sm:text-lg font-body max-w-xl">
+      <p class="text-blvd-charcoal/60 text-base sm:text-lg font-body max-w-xl" data-cms-key="home.specials.subtext">
         Apps, burgers, wings, and buckets stacked from Monday through Sunday. Pick your day, grab your crew.
       </p>
     </div>
@@ -78,6 +82,8 @@ const specials = [
             special.featured ? "sm:col-span-2 lg:col-span-3" : ""
           }`}
           data-index={index}
+          data-specials-featured-key={`home.specials.${index}.featured`}
+          data-featured={special.featured ? 'true' : 'false'}
         >
           <div class={`relative h-full p-6 md:p-7 ${
             special.featured ? "md:flex md:items-center md:gap-8" : ""
@@ -117,17 +123,26 @@ const specials = [
                 )}
               </div>
               <div>
-                <span class="inline-block px-2.5 py-1 rounded-full text-[10px] font-mono uppercase tracking-[0.15em] mb-2 bg-blvd-green/10 text-blvd-green border border-blvd-green/20">
+                <span
+                  class="inline-block px-2.5 py-1 rounded-full text-[10px] font-mono uppercase tracking-[0.15em] mb-2 bg-blvd-green/10 text-blvd-green border border-blvd-green/20"
+                  data-cms-key={`home.specials.${index}.tag`}
+                >
                   {special.tag}
                 </span>
-                <h3 class="font-display text-xl md:text-2xl font-bold text-blvd-charcoal transition-colors duration-300 group-hover:text-blvd-green">
+                <h3
+                  class="font-display text-xl md:text-2xl font-bold text-blvd-charcoal transition-colors duration-300 group-hover:text-blvd-green"
+                  data-cms-key={`home.specials.${index}.day`}
+                >
                   {special.day}
                 </h3>
               </div>
             </div>
 
             <!-- Items List -->
-            <ul class={`space-y-2.5 ${special.featured ? "mt-0 md:flex-1 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-2.5 md:space-y-0" : "mt-5"}`}>
+            <ul
+              class={`space-y-2.5 ${special.featured ? "mt-0 md:flex-1 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-2.5 md:space-y-0" : "mt-5"}`}
+              data-specials-items-key={`home.specials.${index}.items`}
+            >
               {special.items.map((item) => (
                 <li class="flex items-start gap-3 text-sm md:text-base text-blvd-charcoal/70">
                   <span class="mt-2 h-1.5 w-1.5 rounded-full flex-shrink-0 bg-blvd-green-bright"></span>
@@ -189,12 +204,12 @@ const specials = [
   .special-card[data-index="5"] { transition-delay: 0.35s; }
 
   /* Featured card accent */
-  .special-card[data-index="5"] {
+  .special-card[data-featured="true"] {
     background: linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(201,169,98,0.08) 100%);
     border-color: rgba(201, 169, 98, 0.2);
   }
 
-  .special-card[data-index="5"]:hover {
+  .special-card[data-featured="true"]:hover {
     border-color: rgba(201, 169, 98, 0.35);
     box-shadow: 0 12px 40px rgba(201, 169, 98, 0.15);
   }
@@ -210,6 +225,37 @@ const specials = [
 </style>
 
 <script>
+  const parseBoolean = (value) => value === true || value === 'true' || value === '1';
+  const buildItems = (raw) => {
+    if (!raw) return [];
+    return raw
+      .split('\n')
+      .map(item => item.trim())
+      .filter(Boolean);
+  };
+
+  const updateSpecialsFromContent = (content = {}) => {
+    document.querySelectorAll('[data-specials-items-key]').forEach((listEl) => {
+      const key = listEl.getAttribute('data-specials-items-key');
+      if (!key) return;
+      const items = buildItems(content[key]);
+      if (items.length === 0) return;
+      listEl.innerHTML = items.map((item) => `
+        <li class="flex items-start gap-3 text-sm md:text-base text-blvd-charcoal/70">
+          <span class="mt-2 h-1.5 w-1.5 rounded-full flex-shrink-0 bg-blvd-green-bright"></span>
+          <span class="font-body">${item}</span>
+        </li>
+      `).join('');
+    });
+
+    document.querySelectorAll('[data-specials-featured-key]').forEach((card) => {
+      const key = card.getAttribute('data-specials-featured-key');
+      if (!key) return;
+      const isFeatured = parseBoolean(content[key]);
+      card.setAttribute('data-featured', isFeatured ? 'true' : 'false');
+    });
+  };
+
   const observer = new IntersectionObserver(
     (entries) => {
       entries.forEach(entry => {
@@ -227,5 +273,12 @@ const specials = [
   document.addEventListener('DOMContentLoaded', () => {
     const section = document.querySelector('.specials-2026');
     if (section) observer.observe(section);
+
+    if (window.__blvdContent) {
+      updateSpecialsFromContent(window.__blvdContent);
+    }
+    if (window.__blvdSubscribeContent) {
+      window.__blvdSubscribeContent(updateSpecialsFromContent);
+    }
   });
 </script>

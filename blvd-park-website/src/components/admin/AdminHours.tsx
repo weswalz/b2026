@@ -91,6 +91,7 @@ export default function AdminHours() {
             className={`grid grid-cols-[180px_1fr_1fr_auto] gap-4 p-4 items-center border-b border-white/5 ${
               day.isClosed ? 'opacity-50' : ''
             }`}
+            data-day={day.dayOfWeek}
           >
             <div className="text-white font-medium">{DAYS[day.dayOfWeek]}</div>
             <div>
@@ -100,6 +101,7 @@ export default function AdminHours() {
                 disabled={!!day.isClosed}
                 onChange={(e) => handleChange(day.dayOfWeek, 'openTime', e.target.value)}
                 className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white focus:border-[#C9A962] focus:outline-none disabled:opacity-50"
+                data-testid={`hours-open-${day.dayOfWeek}`}
               />
             </div>
             <div>
@@ -109,6 +111,7 @@ export default function AdminHours() {
                 disabled={!!day.isClosed}
                 onChange={(e) => handleChange(day.dayOfWeek, 'closeTime', e.target.value)}
                 className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white focus:border-[#C9A962] focus:outline-none disabled:opacity-50"
+                data-testid={`hours-close-${day.dayOfWeek}`}
               />
             </div>
             <div className="flex items-center justify-center">
@@ -118,6 +121,7 @@ export default function AdminHours() {
                   checked={!!day.isClosed}
                   onChange={(e) => handleChange(day.dayOfWeek, 'isClosed', e.target.checked)}
                   className="sr-only peer"
+                  data-testid={`hours-closed-${day.dayOfWeek}`}
                 />
                 <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
               </label>

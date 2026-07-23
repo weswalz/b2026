@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, getImageUrl, type Event } from '../../lib/api';
 
@@ -6,6 +6,7 @@ export default function AdminEvents() {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const submittingRef = useRef(false);
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ['events', 'all'],
@@ -18,6 +19,9 @@ export default function AdminEvents() {
       queryClient.invalidateQueries({ queryKey: ['events'] });
       setShowForm(false);
     },
+    onSettled: () => {
+      submittingRef.current = false;
+    },
   });
 
   const updateMutation = useMutation({
@@ -25,6 +29,9 @@ export default function AdminEvents() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
       setEditingEvent(null);
+    },
+    onSettled: () => {
+      submittingRef.current = false;
     },
   });
 
@@ -35,6 +42,8 @@ export default function AdminEvents() {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     const formData = new FormData(e.currentTarget);
 
     if (editingEvent) {
@@ -43,6 +52,8 @@ export default function AdminEvents() {
       createMutation.mutate(formData);
     }
   };
+
+  const submitError = createMutation.error || updateMutation.error;
 
   const categories = ['special', 'steak-night', 'watch-party', 'live-music', 'holiday'];
 
@@ -62,7 +73,7 @@ export default function AdminEvents() {
           <p className="text-white/50 mt-1">{events.length} total events</p>
         </div>
         <button
-          onClick={() => { setShowForm(true); setEditingEvent(null); }}
+          onClick={() => { createMutation.reset(); updateMutation.reset(); setShowForm(true); setEditingEvent(null); }}
           className="px-5 py-2.5 bg-[#1A5F36] text-white rounded-lg hover:bg-[#22C55E] transition-colors flex items-center gap-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,6 +101,11 @@ export default function AdminEvents() {
               </button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-5">
+              {submitError && (
+                <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                  {submitError.message}
+                </div>
+              )}
               <div>
                 <label className="block text-white/70 text-sm mb-2">Title</label>
                 <input
@@ -235,7 +251,7 @@ export default function AdminEvents() {
             </div>
             <div className="flex gap-2">
               <button
-                onClick={() => setEditingEvent(event)}
+                onClick={() => { createMutation.reset(); updateMutation.reset(); setEditingEvent(event); }}
                 className="p-2 text-white/50 hover:text-white transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

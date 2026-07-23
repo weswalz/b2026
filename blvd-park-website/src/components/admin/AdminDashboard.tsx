@@ -22,7 +22,6 @@ export default function AdminDashboard() {
     { label: 'Gallery Images', value: stats?.galleryImages || 0, href: '/admin/gallery', color: 'bg-[#0F3D22]' },
     { label: 'Menu Items', value: stats?.menuItems || 0, href: '/admin/menu', color: 'bg-[#1A5F36]' },
     { label: 'Pending Reservations', value: stats?.pendingReservations || 0, href: '/admin/reservations', color: 'bg-[#C9A962]', textDark: true },
-    { label: 'New Event Inquiries', value: stats?.newPrivateEvents || 0, href: '/admin/private-events', color: 'bg-[#C9A962]', textDark: true },
     { label: 'Unread Messages', value: stats?.unreadMessages || 0, href: '/admin/contact', color: 'bg-[#0F3D22]' },
   ];
 
@@ -168,6 +167,15 @@ export default function AdminDashboard() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
             Update Hours
+          </a>
+          <a
+            href="/admin/content"
+            className="px-5 py-3 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m-6-8h6M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z"/>
+            </svg>
+            Edit Content
           </a>
         </div>
       </div>

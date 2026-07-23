@@ -41,6 +41,23 @@ blvdpark/
 
 ---
 
+## NEW: CMS + Realtime Updates (2026)
+
+The website is now fully CMS-driven via a `site_content` table and a dedicated admin page.
+
+- **Content storage**: `site_content` table (key/value/type)
+- **Admin UI**: `/admin/content` (TinyMCE for rich text)
+- **Content API**: `GET /api/content`, `PUT /api/content`, `GET /api/content/schema`
+- **Auth verify**: `GET /api/auth/verify` (used by the login screen)
+- **Realtime**: `GET /api/stream` (SSE); mutations broadcast updates to the frontend
+- **Frontend**: `Layout2026.astro` hydrates content and listens for realtime events
+
+Environment:
+- `PUBLIC_TINYMCE_API_KEY` (optional) for TinyMCE cloud
+- `PUBLIC_API_URL` (frontend) and `FRONTEND_URLS` (backend CORS)
+
+---
+
 ## 1. Database Schema
 
 ```javascript
@@ -131,6 +148,7 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     email TEXT NOT NULL,
+    phone TEXT,
     subject TEXT,
     message TEXT NOT NULL,
     status TEXT DEFAULT 'unread',
@@ -147,13 +165,12 @@ db.exec(`
     note TEXT
   );
 
-  -- Sessions for auth
-  CREATE TABLE IF NOT EXISTS sessions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    sessionId TEXT UNIQUE NOT NULL,
-    refreshTokenHash TEXT NOT NULL,
-    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-    expiresAt DATETIME NOT NULL
+  -- Site Content (CMS)
+  CREATE TABLE IF NOT EXISTS site_content (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    type TEXT DEFAULT 'text',
+    updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 `);
 
@@ -654,7 +671,7 @@ app.get('/api/contact', requireAuth, (req, res) => {
 });
 
 app.post('/api/contact', (req, res) => {
-  const { name, email, subject, message } = req.body;
+  const { name, email, phone, subject, message } = req.body;
 
   if (!name || !email || !message) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -662,9 +679,9 @@ app.post('/api/contact', (req, res) => {
 
   try {
     const result = db.prepare(`
-      INSERT INTO contact_submissions (name, email, subject, message)
-      VALUES (?, ?, ?, ?)
-    `).run(name, email, subject, message);
+      INSERT INTO contact_submissions (name, email, phone, subject, message)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(name, email, phone, subject, message);
 
     res.json({ id: result.lastInsertRowid, message: 'Message sent successfully' });
   } catch (err) {

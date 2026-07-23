@@ -1,29 +1,28 @@
 #!/bin/bash
 
-# BLVD Park — Production Deployment Script
+# BLVD Park — Docker Production Deployment Script
 # 9-phase pipeline: preflight, backup, db backup, server-newer, compare, schema, deploy, post-deploy, rollback
-# Astro SSG frontend + Express backend (PM2)
+# Astro SSG frontend + Express backend (Docker Compose)
 
 set -euo pipefail
 
 # ============================================
 # CONFIGURATION
 # ============================================
-SERVER="root@104.219.54.169"
+SERVER="weswalz@69.28.91.132"
 SSH_OPTS="-o BatchMode=yes -o ConnectTimeout=10"
-FRONTEND_REMOTE="/var/www/blvdpark.com"
-BACKEND_REMOTE="/opt/blvdpark-api"
-UPLOADS_REMOTE="/var/www/blvdpark-uploads"
-DB_REMOTE_PATH="${BACKEND_REMOTE}/database/blvdpark.db"
-PM2_NAME="blvdpark-api"
-HEALTH_URL="http://localhost:3006/api/health"
+DOCKER_DIR="/opt/clegroup"
+FRONTEND_REMOTE="${DOCKER_DIR}/sources/blvdpark.com"
+BACKEND_REMOTE="${DOCKER_DIR}/sources/blvdpark-api"
+CONTAINER_API="blvdpark-api"
+CONTAINER_FRONTEND="blvdpark-frontend"
+HEALTH_URL="https://blvdpark.com/api/health"
 SITE_URL="https://blvdpark.com"
 LOCAL_BACKUP_DIR="backups"
 LOCAL_DB_BACKUP_DIR="backups/db"
-LOCKFILE="${BACKEND_REMOTE}/.deploy.lock"
 MAX_BACKUPS=5
 HEALTH_RETRIES=3
-HEALTH_DELAY=3
+HEALTH_DELAY=5
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 
 # ============================================
@@ -36,6 +35,8 @@ FLAG_INIT_DB=false
 FLAG_DRY_RUN=false
 FLAG_YES=false
 FLAG_FORCE_OVERWRITE=false
+FLAG_FRONTEND_ONLY=false
+FLAG_BACKEND_ONLY=false
 
 for arg in "$@"; do
   case "$arg" in
@@ -46,6 +47,8 @@ for arg in "$@"; do
     --dry-run)          FLAG_DRY_RUN=true ;;
     --yes)              FLAG_YES=true ;;
     --force-overwrite)  FLAG_FORCE_OVERWRITE=true ;;
+    --frontend-only)    FLAG_FRONTEND_ONLY=true ;;
+    --backend-only)     FLAG_BACKEND_ONLY=true ;;
     --help)
       echo "Usage: ./deploy.sh [flags]"
       echo ""
@@ -57,6 +60,8 @@ for arg in "$@"; do
       echo "  --dry-run           Show file changes without deploying"
       echo "  --yes               Skip confirmation prompts"
       echo "  --force-overwrite   Overwrite server files even if server copy is newer"
+      echo "  --frontend-only     Deploy only the frontend (dist/)"
+      echo "  --backend-only      Deploy only the backend (backend/)"
       echo "  --help              Show this help"
       exit 0
       ;;
@@ -66,6 +71,10 @@ for arg in "$@"; do
       ;;
   esac
 done
+
+if [ "$FLAG_FRONTEND_ONLY" = true ] && [ "$FLAG_BACKEND_ONLY" = true ]; then
+  err "Cannot use --frontend-only and --backend-only together"
+fi
 
 # ============================================
 # UTILITY FUNCTIONS
@@ -121,37 +130,27 @@ if [ "$FLAG_ROLLBACK" = true ]; then
   log "Found backup: $LATEST_BACKUP"
   confirm "Restore this backup to production? This will overwrite current server state." || exit 0
 
-  # Set lockfile for rollback
-  ssh_cmd "echo '$(whoami)@$(hostname) ROLLBACK $TIMESTAMP' > $LOCKFILE"
-
   # Upload backup to server
   log "Uploading backup to server..."
   scp $SSH_OPTS "$LATEST_BACKUP" "${SERVER}:/tmp/blvd-rollback.tar.gz"
 
-  # Stop PM2, extract, restart
+  # Stop containers, extract, rebuild
   log "Restoring on server..."
   ssh_cmd bash -s << 'ENDSSH'
     set -e
 
-    # Stop the app
-    pm2 delete blvdpark-api 2>/dev/null || true
+    # Stop containers
+    cd /opt/clegroup
+    sudo docker compose stop blvdpark-api blvdpark-frontend
 
-    # Extract backup (restores frontend and backend)
-    tar -xzf /tmp/blvd-rollback.tar.gz -C /
+    # Extract backup (restores frontend and backend source)
+    sudo tar -xzf /tmp/blvd-rollback.tar.gz -C /
 
     # Clean up tarball
-    rm -f /tmp/blvd-rollback.tar.gz
+    sudo rm -f /tmp/blvd-rollback.tar.gz || rm -f /tmp/blvd-rollback.tar.gz || true
 
-    # Reinstall backend deps
-    cd /opt/blvdpark-api
-    npm ci --omit=dev
-
-    # Fix permissions
-    chown -R www-data:www-data /var/www/blvdpark.com
-
-    # Restart PM2
-    pm2 start /opt/blvdpark-api/server.js --name blvdpark-api
-    pm2 save
+    # Rebuild and restart containers
+    sudo docker compose up -d --build blvdpark-api blvdpark-frontend
 ENDSSH
 
   # Health check
@@ -163,9 +162,6 @@ ENDSSH
   else
     warn "Health check returned $HTTP_CODE after rollback -- check server manually"
   fi
-
-  # Remove lockfile
-  ssh_cmd "rm -f $LOCKFILE" 2>/dev/null || true
 
   exit 0
 fi
@@ -186,27 +182,12 @@ if ! ssh_cmd "echo ok" > /dev/null 2>&1; then
   err "Cannot connect to $SERVER -- check SSH config"
 fi
 
-# Verify and create remote directories
+# Verify server directories
 log "Verifying server directories..."
-ssh_cmd "mkdir -p $FRONTEND_REMOTE $BACKEND_REMOTE/database $UPLOADS_REMOTE"
-
-# Check for deploy lockfile
-if ssh_cmd "test -f $LOCKFILE" 2>/dev/null; then
-  LOCK_CONTENT=$(ssh_cmd "cat $LOCKFILE" 2>/dev/null || echo "unknown")
-  err "Deploy lock exists on server (set by: $LOCK_CONTENT). Remove $LOCKFILE on server to proceed."
-fi
-
-# Set lockfile
-ssh_cmd "echo '$(whoami)@$(hostname) $TIMESTAMP' > $LOCKFILE"
+ssh_cmd "sudo mkdir -p $FRONTEND_REMOTE $BACKEND_REMOTE"
 
 # Create local backup directories
 mkdir -p "$LOCAL_BACKUP_DIR" "$LOCAL_DB_BACKUP_DIR"
-
-# Trap to clean up lockfile on failure
-cleanup() {
-  ssh $SSH_OPTS "$SERVER" "rm -f $LOCKFILE" 2>/dev/null || true
-}
-trap cleanup EXIT
 
 log "Pre-flight passed"
 
@@ -219,12 +200,10 @@ BACKUP_NAME="blvd-backup-${TIMESTAMP}.tar.gz"
 REMOTE_BACKUP="/tmp/${BACKUP_NAME}"
 
 log "Creating server backup tarball..."
-ssh_cmd "tar -czf $REMOTE_BACKUP \
+ssh_cmd "sudo tar -czf $REMOTE_BACKUP \
   -C / \
-  --exclude='opt/blvdpark-api/node_modules' \
-  --exclude='opt/blvdpark-api/.env' \
-  var/www/blvdpark.com \
-  opt/blvdpark-api 2>/dev/null" || {
+  opt/clegroup/sources/blvdpark.com \
+  opt/clegroup/sources/blvdpark-api 2>/dev/null" || {
   warn "Server backup failed (first deploy or empty dirs) -- continuing"
   REMOTE_BACKUP=""
 }
@@ -232,7 +211,9 @@ ssh_cmd "tar -czf $REMOTE_BACKUP \
 if [ -n "$REMOTE_BACKUP" ]; then
   log "Downloading backup to $LOCAL_BACKUP_DIR/$BACKUP_NAME..."
   scp $SSH_OPTS "${SERVER}:${REMOTE_BACKUP}" "$LOCAL_BACKUP_DIR/$BACKUP_NAME"
-  ssh_cmd "rm -f $REMOTE_BACKUP"
+  # Backup tarball is created with sudo (root-owned), so cleanup must use sudo too.
+  # Don't fail the deploy if cleanup fails for any reason.
+  ssh_cmd "sudo rm -f $REMOTE_BACKUP || rm -f $REMOTE_BACKUP || true"
   prune_backups "$LOCAL_BACKUP_DIR" "blvd-backup-*.tar.gz" "$MAX_BACKUPS"
   log "Server backup saved"
 else
@@ -244,12 +225,20 @@ fi
 # ============================================
 log "=== PHASE 3: Database backup ==="
 
-DB_EXISTS=$(ssh_cmd "test -f $DB_REMOTE_PATH && echo yes || echo no")
+# Database is in Docker volume, use docker cp
+if [ "$FLAG_FRONTEND_ONLY" = true ]; then
+  log "Frontend-only deploy -- skipping DB backup"
+  DB_EXISTS="no"
+else
+DB_EXISTS=$(ssh_cmd "docker exec $CONTAINER_API test -f /app/database/blvdpark.db && echo yes || echo no")
+fi
 
 if [ "$DB_EXISTS" = "yes" ]; then
   DB_BACKUP_NAME="blvdpark-${TIMESTAMP}.db"
   log "Downloading database to $LOCAL_DB_BACKUP_DIR/$DB_BACKUP_NAME..."
-  scp $SSH_OPTS "${SERVER}:${DB_REMOTE_PATH}" "$LOCAL_DB_BACKUP_DIR/$DB_BACKUP_NAME"
+  ssh_cmd "docker cp ${CONTAINER_API}:/app/database/blvdpark.db /tmp/blvdpark.db"
+  scp $SSH_OPTS "${SERVER}:/tmp/blvdpark.db" "$LOCAL_DB_BACKUP_DIR/$DB_BACKUP_NAME"
+  ssh_cmd "rm -f /tmp/blvdpark.db"
   prune_backups "$LOCAL_DB_BACKUP_DIR" "blvdpark-*.db" "$MAX_BACKUPS"
   log "Database backup saved"
 else
@@ -262,12 +251,15 @@ fi
 log "=== PHASE 4: Server-newer detection ==="
 
 # Get remote file timestamps from backend (excluding protected paths)
-REMOTE_TIMES=$(ssh_cmd "find $BACKEND_REMOTE \
-  -not -path '*/node_modules/*' \
-  -not -path '*/database/*' \
-  -not -name '.env' \
-  -not -name '.deploy.lock' \
-  -type f -printf '%T@ %P\n' 2>/dev/null" || echo "")
+REMOTE_TIMES=""
+if [ "$FLAG_FRONTEND_ONLY" = false ]; then
+  REMOTE_TIMES=$(ssh_cmd "find $BACKEND_REMOTE \
+    -not -path '*/node_modules/*' \
+    -not -path '*/database/*' \
+    -not -name '.env' \
+    -not -name 'Dockerfile' \
+    -type f -printf '%T@ %P\n' 2>/dev/null" || echo "")
+fi
 
 SERVER_NEWER=""
 if [ -n "$REMOTE_TIMES" ]; then
@@ -287,9 +279,12 @@ if [ -n "$REMOTE_TIMES" ]; then
 fi
 
 # Also check frontend files
-REMOTE_FRONT_TIMES=$(ssh_cmd "find $FRONTEND_REMOTE \
-  -not -path '*/uploads/*' \
-  -type f -printf '%T@ %P\n' 2>/dev/null" || echo "")
+REMOTE_FRONT_TIMES=""
+if [ "$FLAG_BACKEND_ONLY" = false ]; then
+  REMOTE_FRONT_TIMES=$(ssh_cmd "find $FRONTEND_REMOTE \
+    -not -name 'Dockerfile' \
+    -type f -printf '%T@ %P\n' 2>/dev/null" || echo "")
+fi
 
 if [ -n "$REMOTE_FRONT_TIMES" ] && [ -d "dist" ]; then
   while IFS= read -r line; do
@@ -332,51 +327,70 @@ fi
 log "=== PHASE 5: File comparison ==="
 
 # Build frontend unless skipped
-if [ "$FLAG_SKIP_BUILD" = false ]; then
-  log "Building Astro frontend..."
-  npm run build
-  if [ ! -d "dist" ]; then
-    err "Build failed -- dist/ directory not found"
+if [ "$FLAG_BACKEND_ONLY" = false ]; then
+  if [ "$FLAG_SKIP_BUILD" = false ]; then
+    log "Building Astro frontend..."
+    PUBLIC_API_URL=https://blvdpark.com npm run build
+    if [ ! -d "dist" ]; then
+      err "Build failed -- dist/ directory not found"
+    fi
+    log "Build complete"
+  else
+    log "Skipping build (--skip-build)"
+    if [ ! -d "dist" ]; then
+      err "No dist/ directory and --skip-build was set"
+    fi
   fi
-  log "Build complete"
 else
-  log "Skipping build (--skip-build)"
-  if [ ! -d "dist" ]; then
-    err "No dist/ directory and --skip-build was set"
-  fi
+  log "Backend-only deploy -- skipping frontend build"
 fi
 
 # Frontend dry-run comparison
-log "Comparing frontend (dist/ -> $FRONTEND_REMOTE/)..."
-FRONTEND_RSYNC=$(rsync -avz --checksum --delete --dry-run -i \
-  -e "ssh $SSH_OPTS" \
-  --exclude '.DS_Store' \
-  --exclude 'uploads/' \
-  --exclude 'uploads' \
-  dist/ \
-  ${SERVER}:${FRONTEND_REMOTE}/ 2>&1 || true)
+FRONTEND_RSYNC=""
+FRONT_UPLOAD=0
+FRONT_DELETE=0
+if [ "$FLAG_BACKEND_ONLY" = false ]; then
+  log "Comparing frontend (dist/ -> $FRONTEND_REMOTE/)..."
+  FRONTEND_RSYNC=$(rsync -avz --checksum --delete --dry-run -i \
+    -e "ssh $SSH_OPTS" \
+    --exclude '.DS_Store' \
+    --exclude 'Dockerfile' \
+    --exclude '.dockerignore' \
+    dist/ \
+    ${SERVER}:${FRONTEND_REMOTE}/ 2>&1 || true)
 
-FRONT_UPLOAD=$(echo "$FRONTEND_RSYNC" | grep -c '^>f' || true)
-FRONT_DELETE=$(echo "$FRONTEND_RSYNC" | grep -c '^\*deleting' || true)
+  FRONT_UPLOAD=$(echo "$FRONTEND_RSYNC" | grep -c '^>f' || true)
+  FRONT_DELETE=$(echo "$FRONTEND_RSYNC" | grep -c '^\*deleting' || true)
 
-log "Frontend -- files to upload: $FRONT_UPLOAD, files to delete: $FRONT_DELETE"
+  log "Frontend -- files to upload: $FRONT_UPLOAD, files to delete: $FRONT_DELETE"
+else
+  log "Backend-only deploy -- skipping frontend compare"
+fi
 
 # Backend dry-run comparison
-log "Comparing backend (backend/ -> $BACKEND_REMOTE/)..."
-BACKEND_RSYNC=$(rsync -avz --dry-run -i \
-  -e "ssh $SSH_OPTS" \
-  --exclude 'node_modules/' \
-  --exclude '.env' \
-  --exclude 'database/' \
-  --exclude '.DS_Store' \
-  --exclude '.deploy.lock' \
-  backend/ \
-  ${SERVER}:${BACKEND_REMOTE}/ 2>&1 || true)
+BACKEND_RSYNC=""
+BACK_UPLOAD=0
+BACK_DELETE=0
+if [ "$FLAG_FRONTEND_ONLY" = false ]; then
+  log "Comparing backend (backend/ -> $BACKEND_REMOTE/)..."
+  BACKEND_RSYNC=$(rsync -avz --dry-run -i \
+    -e "ssh $SSH_OPTS" \
+    --exclude 'node_modules/' \
+    --exclude '.env' \
+    --exclude 'database/' \
+    --exclude '.DS_Store' \
+    --exclude 'Dockerfile' \
+    --exclude '.dockerignore' \
+    backend/ \
+    ${SERVER}:${BACKEND_REMOTE}/ 2>&1 || true)
 
-BACK_UPLOAD=$(echo "$BACKEND_RSYNC" | grep -c '^>f' || true)
-BACK_DELETE=$(echo "$BACKEND_RSYNC" | grep -c '^\*deleting' || true)
+  BACK_UPLOAD=$(echo "$BACKEND_RSYNC" | grep -c '^>f' || true)
+  BACK_DELETE=$(echo "$BACKEND_RSYNC" | grep -c '^\*deleting' || true)
 
-log "Backend  -- files to upload: $BACK_UPLOAD, files to delete: $BACK_DELETE"
+  log "Backend  -- files to upload: $BACK_UPLOAD, files to delete: $BACK_DELETE"
+else
+  log "Frontend-only deploy -- skipping backend compare"
+fi
 
 # Warn about deletions
 TOTAL_DELETE=$((FRONT_DELETE + BACK_DELETE))
@@ -402,8 +416,6 @@ if [ "$FLAG_DRY_RUN" = true ]; then
   echo "$BACKEND_RSYNC" | grep -E '^(>f|<f|\*deleting|cd)' | head -50 || echo "  (none)"
   echo ""
   log "No changes were made. Remove --dry-run to deploy."
-  ssh_cmd "rm -f $LOCKFILE" 2>/dev/null || true
-  trap - EXIT
   exit 0
 fi
 
@@ -419,46 +431,53 @@ log "No SQL schema management for this project -- skipping"
 log "=== PHASE 7: Deploy ==="
 
 # Deploy frontend
-log "Deploying frontend (dist/ -> $FRONTEND_REMOTE/)..."
-rsync -avz --checksum --delete \
-  -e "ssh $SSH_OPTS" \
-  --exclude '.DS_Store' \
-  --exclude 'uploads/' \
-  --exclude 'uploads' \
-  dist/ \
-  ${SERVER}:${FRONTEND_REMOTE}/
+if [ "$FLAG_BACKEND_ONLY" = false ]; then
+  log "Deploying frontend (dist/ -> $FRONTEND_REMOTE/)..."
+  rsync -avz --checksum --delete \
+    -e "ssh $SSH_OPTS" \
+    --exclude '.DS_Store' \
+    --exclude 'Dockerfile' \
+    --exclude '.dockerignore' \
+    dist/ \
+    ${SERVER}:${FRONTEND_REMOTE}/
+else
+  log "Backend-only deploy -- skipping frontend rsync"
+fi
 
 # Deploy backend
-log "Deploying backend (backend/ -> $BACKEND_REMOTE/)..."
-rsync -avz \
-  -e "ssh $SSH_OPTS" \
-  --exclude 'node_modules/' \
-  --exclude '.env' \
-  --exclude 'database/' \
-  --exclude '.DS_Store' \
-  --exclude '.deploy.lock' \
-  backend/ \
-  ${SERVER}:${BACKEND_REMOTE}/
+if [ "$FLAG_FRONTEND_ONLY" = false ]; then
+  log "Deploying backend (backend/ -> $BACKEND_REMOTE/)..."
+  rsync -avz \
+    -e "ssh $SSH_OPTS" \
+    --exclude 'node_modules/' \
+    --exclude '.env' \
+    --exclude 'database/' \
+    --exclude '.DS_Store' \
+    --exclude 'Dockerfile' \
+    --exclude '.dockerignore' \
+    backend/ \
+    ${SERVER}:${BACKEND_REMOTE}/
+else
+  log "Frontend-only deploy -- skipping backend rsync"
+fi
 
-# Server-side: install deps, fix permissions, restart PM2
-log "Installing dependencies and restarting backend..."
-ssh_cmd bash -s << 'ENDSSH'
+# Rebuild and restart Docker containers
+log "Rebuilding and restarting Docker containers..."
+ssh_cmd bash -s << ENDSSH
   set -e
+  cd /opt/clegroup
 
-  # Install production dependencies
-  cd /opt/blvdpark-api
-  npm ci --omit=dev
+  # Rebuild and restart containers
+  if [ "$FLAG_FRONTEND_ONLY" = "true" ]; then
+    sudo docker compose up -d --build blvdpark-frontend
+  elif [ "$FLAG_BACKEND_ONLY" = "true" ]; then
+    sudo docker compose up -d --build blvdpark-api
+  else
+    sudo docker compose up -d --build blvdpark-api blvdpark-frontend
+  fi
 
-  # Fix frontend permissions
-  chown -R www-data:www-data /var/www/blvdpark.com
-
-  # Ensure uploads directory permissions
-  chown -R www-data:www-data /var/www/blvdpark-uploads 2>/dev/null || true
-
-  # Restart PM2 (delete + start clears Node module cache)
-  pm2 delete blvdpark-api 2>/dev/null || true
-  pm2 start /opt/blvdpark-api/server.js --name blvdpark-api
-  pm2 save
+  # Restart nginx so it picks up new container IPs
+  sudo docker restart nginx-clegroup
 ENDSSH
 
 log "Deploy complete"
@@ -531,10 +550,6 @@ echo "  Site:         $SITE_URL"
 echo "  API:          $SITE_URL/api/health"
 echo "============================================"
 echo ""
-
-# Clean up lockfile
-ssh_cmd "rm -f $LOCKFILE" 2>/dev/null || true
-trap - EXIT
 
 if [ "$HEALTH_OK" = true ]; then
   log "Deployment successful"

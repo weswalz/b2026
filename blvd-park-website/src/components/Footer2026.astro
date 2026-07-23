@@ -16,9 +16,9 @@
       <!-- Brand Column -->
       <div class="lg:col-span-1">
         <a href="/" class="inline-block mb-4">
-          <span class="font-display font-bold text-2xl text-white tracking-tight">BLVD PARK</span>
+          <span class="font-display font-bold text-2xl text-white tracking-tight" data-cms-key="footer.brand">BLVD PARK</span>
         </a>
-        <p class="font-body text-sm text-white/60 mb-6 max-w-xs leading-relaxed">
+        <p class="font-body text-sm text-white/60 mb-6 max-w-xs leading-relaxed" data-cms-key="footer.about">
           Sports bar meets social club. Free pickleball, 50+ screens, craft cocktails, and the kind of crowd that makes any night worth staying out for.
         </p>
 
@@ -30,6 +30,7 @@
             rel="noopener noreferrer"
             class="footer-social w-10 h-10 rounded-lg flex items-center justify-center bg-white/10 transition-all duration-300 hover:bg-blvd-green hover:-translate-y-0.5"
             aria-label="Instagram"
+            data-cms-attr="href:social.instagram"
           >
             <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z"/>
@@ -41,6 +42,7 @@
             rel="noopener noreferrer"
             class="footer-social w-10 h-10 rounded-lg flex items-center justify-center bg-white/10 transition-all duration-300 hover:bg-blvd-green hover:-translate-y-0.5"
             aria-label="Facebook"
+            data-cms-attr="href:social.facebook"
           >
             <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
               <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
@@ -51,70 +53,110 @@
 
       <!-- Navigation -->
       <div>
-        <h4 class="eyebrow mb-4">Explore</h4>
+        <h4 class="eyebrow mb-4" data-cms-key="footer.explore_title">Explore</h4>
         <ul class="space-y-3">
           <li>
-            <a href="/menu" class="footer-link font-body text-sm text-white/60 hover:text-white transition-colors duration-300">
+            <a
+              href="/menu"
+              class="footer-link font-body text-sm text-white/60 hover:text-white transition-colors duration-300"
+              data-cms-key="footer.explore_links.0.label"
+              data-cms-attr="href:footer.explore_links.0.href"
+            >
               Menu
             </a>
           </li>
           <li>
-            <a href="/#pickleball" class="footer-link font-body text-sm text-white/60 hover:text-white transition-colors duration-300">
+            <a
+              href="/#pickleball"
+              class="footer-link font-body text-sm text-white/60 hover:text-white transition-colors duration-300"
+              data-cms-key="footer.explore_links.1.label"
+              data-cms-attr="href:footer.explore_links.1.href"
+            >
               Pickleball
             </a>
           </li>
           <li>
-            <a href="/#events" class="footer-link font-body text-sm text-white/60 hover:text-white transition-colors duration-300">
+            <a
+              href="/#events"
+              class="footer-link font-body text-sm text-white/60 hover:text-white transition-colors duration-300"
+              data-cms-key="footer.explore_links.2.label"
+              data-cms-attr="href:footer.explore_links.2.href"
+            >
               Events
             </a>
           </li>
           <li>
-            <a href="/#hours-location" class="footer-link font-body text-sm text-white/60 hover:text-white transition-colors duration-300">
+            <a
+              href="/#hours-location"
+              class="footer-link font-body text-sm text-white/60 hover:text-white transition-colors duration-300"
+              data-cms-key="footer.explore_links.3.label"
+              data-cms-attr="href:footer.explore_links.3.href"
+            >
               Hours & Location
             </a>
           </li>
           <li>
-            <a href="/book" class="footer-link font-body text-sm text-white/60 hover:text-white transition-colors duration-300">
+            <a
+              href="/book"
+              class="footer-link font-body text-sm text-white/60 hover:text-white transition-colors duration-300"
+              data-cms-key="footer.explore_links.4.label"
+              data-cms-attr="href:footer.explore_links.4.href"
+            >
               Reserve a Table
             </a>
           </li>
         </ul>
       </div>
 
-      <!-- Hours -->
+      <!-- Hours (dynamically loaded from /api/hours) -->
       <div>
-        <h4 class="eyebrow mb-4">Hours</h4>
-        <ul class="space-y-2 font-body text-sm text-white/60">
-          <li class="flex justify-between gap-4">
-            <span>Mon – Tue</span>
-            <span class="text-white font-medium">4PM – 12AM</span>
+        <h4 class="eyebrow mb-4" data-cms-key="footer.hours_title">Hours</h4>
+        <ul id="footer-hours-list" class="space-y-2 font-body text-sm text-white/60">
+          <li class="flex justify-between gap-4" data-day="1">
+            <span>Monday</span>
+            <span class="text-white font-medium">—</span>
           </li>
-          <li class="flex justify-between gap-4">
-            <span>Wed – Thu</span>
-            <span class="text-white font-medium">12PM – 12AM</span>
+          <li class="flex justify-between gap-4" data-day="2">
+            <span>Tuesday</span>
+            <span class="text-white font-medium">—</span>
           </li>
-          <li class="flex justify-between gap-4">
+          <li class="flex justify-between gap-4" data-day="3">
+            <span>Wednesday</span>
+            <span class="text-white font-medium">—</span>
+          </li>
+          <li class="flex justify-between gap-4" data-day="4">
+            <span>Thursday</span>
+            <span class="text-white font-medium">—</span>
+          </li>
+          <li class="flex justify-between gap-4" data-day="5">
             <span>Friday</span>
-            <span class="text-white font-medium">12PM – 2AM</span>
+            <span class="text-white font-medium">—</span>
           </li>
-          <li class="flex justify-between gap-4">
+          <li class="flex justify-between gap-4" data-day="6">
             <span>Saturday</span>
-            <span class="text-white font-medium">11AM – 2AM</span>
+            <span class="text-white font-medium">—</span>
           </li>
-          <li class="flex justify-between gap-4">
+          <li class="flex justify-between gap-4" data-day="0">
             <span>Sunday</span>
-            <span class="text-white font-medium">12PM – 12AM</span>
+            <span class="text-white font-medium">—</span>
           </li>
         </ul>
       </div>
 
       <!-- Contact -->
       <div>
-        <h4 class="eyebrow mb-4">Visit Us</h4>
+        <h4 class="eyebrow mb-4" data-cms-key="footer.visit_title">Visit Us</h4>
         <ul class="space-y-3">
           <li>
-            <a href="https://maps.google.com/?q=1119+W+20th+St+Houston+TX+77008" target="_blank" rel="noopener noreferrer" class="footer-link font-body text-sm text-white/60 hover:text-white transition-colors duration-300">
-              1119 W 20th Street<br/>Houston, TX 77008
+            <a
+              href="https://maps.google.com/?q=1119+W+20th+St+Houston+TX+77008"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="footer-link font-body text-sm text-white/60 hover:text-white transition-colors duration-300"
+              data-cms-attr="href:home.location.directions_href"
+            >
+              <span data-cms-key="footer.address_line1">1119 W 20th Street</span><br/>
+              <span data-cms-key="footer.address_line2">Houston, TX 77008</span>
             </a>
           </li>
           <li class="pt-2">
@@ -123,8 +165,9 @@
               target="_blank"
               rel="noopener noreferrer"
               class="inline-flex items-center gap-2 text-sm font-semibold text-blvd-green-bright hover:text-white transition-colors duration-300"
+              data-cms-attr="href:home.location.directions_href"
             >
-              Get Directions
+              <span data-cms-key="footer.directions_label">Get Directions</span>
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
               </svg>
@@ -137,18 +180,105 @@
 
     <!-- Bottom Bar -->
     <div class="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
-      <p class="font-body text-xs text-white/40">
-        © {new Date().getFullYear()} BLVD Park. All rights reserved.
-      </p>
+      <div class="flex flex-col items-center md:items-start gap-1">
+        <p class="font-body text-xs text-white/40" data-cms-key="footer.copyright_html" data-cms-html="true" data-cms-year="true">
+          © {new Date().getFullYear()} BLVD Park. All rights reserved.
+        </p>
+        <p class="font-body text-xs text-blvd-gold">WEBSITE DESIGN BY: <a href="https://weswalz.com" target="_blank" rel="noopener" class="hover:text-white transition-colors">WES WALZ</a></p>
+      </div>
       <div class="flex gap-6">
-        <a href="/privacy" class="font-body text-xs text-white/40 hover:text-white transition-colors duration-300">
-          Privacy Policy
+        <a
+          href="/privacy"
+          class="font-body text-xs text-white/40 hover:text-white transition-colors duration-300"
+          data-cms-attr="href:footer.privacy_href"
+        >
+          <span data-cms-key="footer.privacy_label">Privacy Policy</span>
         </a>
-        <a href="/terms" class="font-body text-xs text-white/40 hover:text-white transition-colors duration-300">
-          Terms of Service
+        <a
+          href="/terms"
+          class="font-body text-xs text-white/40 hover:text-white transition-colors duration-300"
+          data-cms-attr="href:footer.terms_href"
+        >
+          <span data-cms-key="footer.terms_label">Terms of Service</span>
         </a>
       </div>
     </div>
 
   </div>
 </footer>
+
+<script>
+  const footerApiUrl = (import.meta.env.PUBLIC_API_URL || 'https://blvdpark.com').replace(/\/$/, '');
+
+  const formatFooterTime = (totalMinutes) => {
+    const normalized = totalMinutes === 1440 ? 0 : totalMinutes;
+    if (normalized === 0) return '12AM';
+    const hour24 = Math.floor(normalized / 60) % 24;
+    const minute = normalized % 60;
+    const suffix = hour24 >= 12 ? 'PM' : 'AM';
+    let hour12 = hour24 % 12;
+    if (hour12 === 0) hour12 = 12;
+    const minuteLabel = minute !== 0 ? `:${minute.toString().padStart(2, '0')}` : '';
+    return `${hour12}${minuteLabel}${suffix}`;
+  };
+
+  const formatFooterRange = (entry) => {
+    if (!entry || entry.isClosed) return 'Closed';
+    const parseTime = (v) => {
+      if (!v) return null;
+      const [h, m] = v.split(':');
+      if (h === undefined || m === undefined) return null;
+      const hours = Number(h), minutes = Number(m);
+      if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+      return (hours * 60) + minutes;
+    };
+    const open = parseTime(entry.openTime);
+    const close = parseTime(entry.closeTime);
+    if (open === null || close === null) return 'Closed';
+    return `${formatFooterTime(open)} – ${formatFooterTime(close)}`;
+  };
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    const list = document.getElementById('footer-hours-list');
+    if (!list) return;
+
+    const renderFooterHours = (hours) => {
+      if (!Array.isArray(hours)) return;
+      list.querySelectorAll('[data-day]').forEach((row) => {
+        const day = parseInt(row.getAttribute('data-day'), 10);
+        const entry = hours.find((h) => h.dayOfWeek === day);
+        if (!entry) return;
+        const timeEl = row.querySelector('span:last-child');
+        if (timeEl) timeEl.textContent = formatFooterRange(entry);
+      });
+    };
+
+    // Reuse cached data if LocationSection already fetched it
+    if (window.__blvdHoursData) {
+      renderFooterHours(window.__blvdHoursData);
+      return;
+    }
+
+    try {
+      const res = await fetch(`${footerApiUrl}/api/hours`);
+      if (!res.ok) return;
+      const hours = await res.json();
+      if (!Array.isArray(hours) || hours.length === 0) return;
+      window.__blvdHoursData = hours;
+      renderFooterHours(hours);
+    } catch (_e) {
+      // Silently fail - dashes remain as fallback
+    }
+
+    // Listen for admin updates
+    document.addEventListener('blvd:hours', async () => {
+      try {
+        const res = await fetch(`${footerApiUrl}/api/hours`);
+        if (!res.ok) return;
+        const hours = await res.json();
+        window.__blvdHoursData = hours;
+        renderFooterHours(hours);
+      } catch (_e) { /* ignore */ }
+    });
+  });
+</script>

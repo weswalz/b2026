@@ -35,6 +35,9 @@ cd blvd-park-website
 2. Start the development server:
    npm run dev
 
+3. Start the backend API (separate terminal):
+   npm run backend
+
 3. Build for production:
    npm run build
 
@@ -50,6 +53,24 @@ cd blvd-park-website
 - Edit tailwind.config.cjs to modify color scheme
 - Replace images in the public/images/ directory
 - Update content in component files
+
+## CMS + Realtime Content
+
+- Admin content editor: `/admin/content`
+- Content API: `GET /api/content`, `PUT /api/content`, `GET /api/content/schema`
+- Realtime updates via SSE at `GET /api/stream`
+
+Optional env:
+- `PUBLIC_API_URL` (frontend) and `FRONTEND_URLS` (backend CORS)
+- `PUBLIC_TINYMCE_API_KEY` for TinyMCE cloud
+
+## Testing
+
+End-to-end tests use Playwright:
+
+```bash
+npm run test:e2e
+```
 
 ## License
 

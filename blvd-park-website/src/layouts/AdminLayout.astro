@@ -76,11 +76,39 @@ const { title } = Astro.props;
   </div>
 
   <script is:inline>
-    // Auth check
-    const token = localStorage.getItem('blvd-auth-token');
-    if (!token && !window.location.pathname.includes('/admin/login')) {
-      window.location.href = '/admin/login';
-    }
+    // Handle SSO token in URL hash (set by /api/sso redirect)
+    (function() {
+      var hash = window.location.hash;
+      if (hash && hash.indexOf('sso_token=') !== -1) {
+        var params = new URLSearchParams(hash.substring(1));
+        var ssoToken = params.get('sso_token');
+        var ssoUser = params.get('sso_user');
+        if (ssoToken) {
+          localStorage.setItem('blvd-auth-token', ssoToken);
+          if (ssoUser) {
+            try { localStorage.setItem('blvd-user', ssoUser); } catch(e) {}
+          }
+          // Remove hash and reload cleanly
+          history.replaceState(null, '', window.location.pathname);
+          window.location.reload();
+          return;
+        }
+      }
+
+      var token = localStorage.getItem('blvd-auth-token');
+      var user = localStorage.getItem('blvd-user');
+
+      if (!token) {
+        window.location.href = '/admin/login';
+      } else {
+        try {
+          var userData = JSON.parse(user || '{}');
+          if (userData.role) {
+            document.documentElement.setAttribute('data-user-role', userData.role);
+          }
+        } catch (_e) {}
+      }
+    })();
   </script>
 </body>
 </html>

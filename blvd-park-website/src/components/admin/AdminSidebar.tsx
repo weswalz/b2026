@@ -1,5 +1,6 @@
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../lib/api';
+import { api, type User } from '../../lib/api';
 
 interface NavItem {
   name: string;
@@ -15,6 +16,17 @@ export default function AdminSidebar({ currentPath }: { currentPath: string }) {
     refetchInterval: 30000,
   });
 
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    try {
+      const userStr = localStorage.getItem('blvd-user');
+      if (userStr) {
+        setCurrentUser(JSON.parse(userStr));
+      }
+    } catch (_e) {}
+  }, []);
+
   const navItems: NavItem[] = [
     {
       name: 'Dashboard',
@@ -22,6 +34,24 @@ export default function AdminSidebar({ currentPath }: { currentPath: string }) {
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+        </svg>
+      ),
+    },
+    {
+      name: 'Content',
+      href: '/admin/content',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m-6-8h6M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z"/>
+        </svg>
+      ),
+    },
+    {
+      name: 'Pages',
+      href: '/admin/pages',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
         </svg>
       ),
     },
@@ -64,16 +94,6 @@ export default function AdminSidebar({ currentPath }: { currentPath: string }) {
         </svg>
       ),
       badge: stats?.pendingReservations,
-    },
-    {
-      name: 'Private Events',
-      href: '/admin/private-events',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-        </svg>
-      ),
-      badge: stats?.newPrivateEvents,
     },
     {
       name: 'Messages',
@@ -143,8 +163,19 @@ export default function AdminSidebar({ currentPath }: { currentPath: string }) {
         ))}
       </nav>
 
-      {/* Footer */}
+      {/* User Info & Footer */}
       <div className="p-4 border-t border-white/5">
+        {currentUser && (
+          <div className="flex items-center gap-3 px-4 py-3 mb-2 bg-white/5 rounded-lg">
+            <div className="w-8 h-8 rounded-full bg-[#1A5F36] flex items-center justify-center">
+              <span className="text-white font-medium text-sm">{currentUser.username.charAt(0).toUpperCase()}</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-white text-sm font-medium truncate">{currentUser.username}</p>
+              <p className="text-white/40 text-xs truncate">{currentUser.role.replace('_', ' ')}</p>
+            </div>
+          </div>
+        )}
         <a
           href="/"
           className="flex items-center gap-3 px-4 py-3 text-white/40 hover:text-white/60 transition-colors"
@@ -155,9 +186,13 @@ export default function AdminSidebar({ currentPath }: { currentPath: string }) {
           <span className="text-sm">View Site</span>
         </a>
         <button
-          onClick={() => {
+          onClick={async () => {
+            try {
+              await api.logout();
+            } catch (_e) {}
             localStorage.removeItem('blvd-auth-token');
-            window.location.href = '/admin/login';
+            localStorage.removeItem('blvd-user');
+            window.location.href = import.meta.env.PUBLIC_ADMIN_HUB_URL || 'https://admin.clegroup.com';
           }}
           className="w-full flex items-center gap-3 px-4 py-3 text-red-400/70 hover:text-red-400 transition-colors"
         >
