@@ -1,9 +1,16 @@
 ---
+export const prerender = true;
 // src/pages/contact.astro - Contact form
 import Layout2026 from '@layouts/Layout2026.astro';
 ---
 
-<Layout2026 title="Contact | BLVD Park" description="Contact BLVD Park in the Heights.">
+<Layout2026
+  title="Contact | BLVD Park"
+  description="Contact BLVD Park in the Heights."
+  metaTitleKey="meta.contact.title"
+  metaDescriptionKey="meta.contact.description"
+  metaImageKey="meta.contact.image"
+>
 
   <!-- Hero -->
   <section class="relative min-h-[40vh] flex items-center overflow-hidden" style="background: linear-gradient(180deg, #0F3D22 0%, #1a1a1a 100%);">
@@ -17,16 +24,16 @@ import Layout2026 from '@layouts/Layout2026.astro';
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
           </svg>
-          Back to Home
+          <span data-cms-key="global.back_label">Back to Home</span>
         </a>
 
-        <span class="inline-block font-mono text-xs tracking-[0.3em] uppercase mb-4" style="color: #C9A962;">
+        <span class="inline-block font-mono text-xs tracking-[0.3em] uppercase mb-4" style="color: #C9A962;" data-cms-key="contact.hero.eyebrow">
           Contact
         </span>
-        <h1 class="text-4xl md:text-5xl font-bold text-white mb-4" style="font-family: 'Clash Display', sans-serif; letter-spacing: -0.02em;">
+        <h1 class="text-4xl md:text-5xl font-bold text-white mb-4" style="font-family: 'Clash Display', sans-serif; letter-spacing: -0.02em;" data-cms-key="contact.hero.title">
           Get in Touch
         </h1>
-        <p class="text-lg text-white/60 max-w-xl" style="font-family: 'Satoshi', sans-serif;">
+        <p class="text-lg text-white/60 max-w-xl" style="font-family: 'Satoshi', sans-serif;" data-cms-key="contact.hero.subtext">
           Questions? We'd love to hear from you.
         </p>
       </div>
@@ -44,7 +51,9 @@ import Layout2026 from '@layouts/Layout2026.astro';
             <!-- Name Row -->
             <div class="grid md:grid-cols-2 gap-4">
               <div>
-                <label for="firstName" class="block text-sm font-medium text-white/70 mb-2">First Name *</label>
+                <label for="firstName" class="block text-sm font-medium text-white/70 mb-2">
+                  <span data-cms-key="contact.form.first_name.label">First Name *</span>
+                </label>
                 <input
                   type="text"
                   id="firstName"
@@ -55,7 +64,9 @@ import Layout2026 from '@layouts/Layout2026.astro';
                 />
               </div>
               <div>
-                <label for="lastName" class="block text-sm font-medium text-white/70 mb-2">Last Name *</label>
+                <label for="lastName" class="block text-sm font-medium text-white/70 mb-2">
+                  <span data-cms-key="contact.form.last_name.label">Last Name *</span>
+                </label>
                 <input
                   type="text"
                   id="lastName"
@@ -69,7 +80,9 @@ import Layout2026 from '@layouts/Layout2026.astro';
 
             <!-- Email -->
             <div>
-              <label for="email" class="block text-sm font-medium text-white/70 mb-2">Email *</label>
+              <label for="email" class="block text-sm font-medium text-white/70 mb-2">
+                <span data-cms-key="contact.form.email.label">Email *</span>
+              </label>
               <input
                 type="email"
                 id="email"
@@ -82,7 +95,9 @@ import Layout2026 from '@layouts/Layout2026.astro';
 
             <!-- Phone -->
             <div>
-              <label for="phone" class="block text-sm font-medium text-white/70 mb-2">Phone</label>
+              <label for="phone" class="block text-sm font-medium text-white/70 mb-2">
+                <span data-cms-key="contact.form.phone.label">Phone</span>
+              </label>
               <input
                 type="tel"
                 id="phone"
@@ -94,7 +109,9 @@ import Layout2026 from '@layouts/Layout2026.astro';
 
             <!-- Message -->
             <div>
-              <label for="message" class="block text-sm font-medium text-white/70 mb-2">Message *</label>
+              <label for="message" class="block text-sm font-medium text-white/70 mb-2">
+                <span data-cms-key="contact.form.message.label">Message *</span>
+              </label>
               <textarea
                 id="message"
                 name="message"
@@ -112,13 +129,13 @@ import Layout2026 from '@layouts/Layout2026.astro';
               class="w-full py-4 rounded-xl font-bold text-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
               style="background: linear-gradient(135deg, #22C55E 0%, #16A34A 100%); color: #0d0d0d;"
             >
-              <span id="btnText">Send Message</span>
+              <span id="btnText" data-cms-key="contact.form.submit_label">Send Message</span>
               <span id="btnLoading" class="hidden">
                 <svg class="animate-spin inline w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Sending...
+                <span data-cms-key="contact.form.loading_label">Sending...</span>
               </span>
             </button>
           </form>
@@ -130,13 +147,13 @@ import Layout2026 from '@layouts/Layout2026.astro';
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
               </svg>
             </div>
-            <h3 class="text-2xl font-bold text-white mb-2" style="font-family: 'Clash Display', sans-serif;">Message Sent!</h3>
-            <p class="text-white/60">We'll get back to you soon.</p>
+            <h3 class="text-2xl font-bold text-white mb-2" style="font-family: 'Clash Display', sans-serif;" data-cms-key="contact.form.success_title">Message Sent!</h3>
+            <p class="text-white/60" data-cms-key="contact.form.success_body">We'll get back to you soon.</p>
           </div>
 
           <!-- Error Message -->
           <div id="errorMessage" class="hidden mt-4 p-4 rounded-xl" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2);">
-            <p class="text-red-400 text-sm">Something went wrong. Please try again.</p>
+            <p class="text-red-400 text-sm" data-cms-key="contact.form.error_text">Something went wrong. Please try again.</p>
           </div>
 
         </div>
@@ -154,7 +171,8 @@ import Layout2026 from '@layouts/Layout2026.astro';
   }
 </style>
 
-<script>
+<script define:vars={{ apiUrl: import.meta.env.PUBLIC_API_URL || '' }}>
+  const API_URL = (apiUrl || window.location.origin).replace(/\/$/, '');
   const form = document.getElementById('contactForm');
   const submitBtn = document.getElementById('submitBtn');
   const btnText = document.getElementById('btnText');
@@ -174,12 +192,31 @@ import Layout2026 from '@layouts/Layout2026.astro';
       message: formData.get('message')
     };
 
+    const apiPayload = {
+      name: `${data.firstName} ${data.lastName}`.trim(),
+      email: data.email,
+      phone: data.phone,
+      subject: 'Website Contact',
+      message: data.message
+    };
+
     btnText?.classList.add('hidden');
     btnLoading?.classList.remove('hidden');
     submitBtn?.setAttribute('disabled', 'true');
     errorMessage?.classList.add('hidden');
 
     try {
+      // Submit to local API (saves to DB, shows in admin)
+      const apiResponse = await fetch(`${API_URL}/api/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(apiPayload)
+      });
+
+      if (!apiResponse.ok) {
+        throw new Error('API submission failed');
+      }
+
       // Submit to n8n webhook (BLVD CONTACT FORM)
       const response = await fetch('https://n8n.weswalz.com/webhook/a5dafd13-4e62-4338-bde7-397acf72a3e4', {
         method: 'POST',
@@ -187,12 +224,12 @@ import Layout2026 from '@layouts/Layout2026.astro';
         body: JSON.stringify(data)
       });
 
-      if (response.ok) {
-        form.classList.add('hidden');
-        successMessage?.classList.remove('hidden');
-      } else {
-        throw new Error('Submission failed');
+      if (!response.ok) {
+        console.warn('n8n webhook failed');
       }
+
+      form.classList.add('hidden');
+      successMessage?.classList.remove('hidden');
     } catch (err) {
       console.error('Form submission error:', err);
       errorMessage?.classList.remove('hidden');

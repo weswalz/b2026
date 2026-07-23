@@ -1,6 +1,6 @@
 ---
 export const prerender = true;
-// Admin Login — SSO redirect via CLE Group Admin Hub
+// SSO Error Page — shown when SSO token verification fails
 const adminHubUrl = import.meta.env.PUBLIC_ADMIN_HUB_URL || 'https://admin.clegroup.com';
 ---
 <!DOCTYPE html>
@@ -10,7 +10,7 @@ const adminHubUrl = import.meta.env.PUBLIC_ADMIN_HUB_URL || 'https://admin.clegr
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex, nofollow" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <title>Admin Login | BLVD Park</title>
+  <title>Authentication Error | BLVD Park</title>
   <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; }
@@ -35,7 +35,25 @@ const adminHubUrl = import.meta.env.PUBLIC_ADMIN_HUB_URL || 'https://admin.clegr
         <p style="color: #C9A962; font-size: 0.75rem; font-weight: 500; letter-spacing: 0.2em; margin: 0;">ADMIN PANEL</p>
       </div>
 
-      <p id="status" style="color: rgba(255,255,255,0.5); font-size: 0.875rem; margin-bottom: 1.5rem;">Redirecting to CLE Group Admin Hub...</p>
+      <div style="background: #1C1C1C; padding: 2rem; border-radius: 1rem; border: 1px solid rgba(255,255,255,0.1);">
+        <div style="width: 48px; height: 48px; background: rgba(239,68,68,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+          <svg width="24" height="24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
+          </svg>
+        </div>
+        <h2 style="color: white; font-size: 1.125rem; font-weight: 600; margin: 0 0 0.5rem 0;">Authentication Failed</h2>
+        <p style="color: rgba(255,255,255,0.5); font-size: 0.875rem; line-height: 1.5; margin: 0 0 1.5rem 0;">
+          Your sign-in link has expired or is invalid. Please return to the Admin Hub and try again.
+        </p>
+        <a
+          href={adminHubUrl}
+          style="display: inline-block; padding: 0.875rem 2rem; background: #1A5F36; color: #fff; border-radius: 0.5rem; font-size: 0.875rem; font-weight: 500; text-decoration: none; transition: background 0.2s;"
+          onmouseover="this.style.background='#22C55E'"
+          onmouseout="this.style.background='#1A5F36'"
+        >
+          Go to Admin Hub
+        </a>
+      </div>
 
       <p style="margin-top: 1.5rem;">
         <a href="/" style="color: rgba(255,255,255,0.4); font-size: 0.875rem; text-decoration: none;">
@@ -44,38 +62,5 @@ const adminHubUrl = import.meta.env.PUBLIC_ADMIN_HUB_URL || 'https://admin.clegr
       </p>
     </div>
   </div>
-
-  <script define:vars={{ adminHubUrl }}>
-    const ADMIN_HUB_URL = adminHubUrl;
-
-    // Check for SSO token in URL hash (set by /api/sso redirect)
-    const hash = window.location.hash;
-    if (hash && hash.includes('sso_token=')) {
-      const params = new URLSearchParams(hash.substring(1));
-      const ssoToken = params.get('sso_token');
-      const ssoUser = params.get('sso_user');
-
-      if (ssoToken) {
-        localStorage.setItem('blvd-auth-token', ssoToken);
-        if (ssoUser) {
-          try {
-            localStorage.setItem('blvd-user', ssoUser);
-          } catch (_e) {}
-        }
-        // Clear hash and redirect to admin dashboard
-        history.replaceState(null, '', '/admin/login');
-        window.location.href = '/admin';
-      }
-    } else {
-      // If already authenticated, go to admin
-      const existingToken = localStorage.getItem('blvd-auth-token');
-      if (existingToken) {
-        window.location.href = '/admin';
-      } else {
-        // No token, redirect to CLE Group Admin Hub
-        window.location.href = ADMIN_HUB_URL;
-      }
-    }
-  </script>
 </body>
 </html>

@@ -3,7 +3,7 @@ User-agent: *
 Allow: /
 
 # Sitemap location
-Sitemap: https://blvdpark.com/sitemap-index.xml
+Sitemap: https://blvdpark.com/sitemap.xml
 
 # Block admin pages
 Disallow: /admin/

@@ -1,10 +1,12 @@
 ---
+export const prerender = true;
 // src/pages/index.astro - 2026 homepage
 // Full premium redesign with all updated sections
 
 import Layout2026 from '@layouts/Layout2026.astro';
 import Hero2026 from '@components/Hero2026.astro';
 import ValueProps2026 from '@components/ValueProps2026.astro';
+import EventsSection2026 from '@components/EventsSection2026.astro';
 import SpecialsSection2026 from '@components/SpecialsSection2026.astro';
 import About2026 from '@components/About2026.astro';
 import Gallery2026 from '@components/Gallery2026.astro';
@@ -12,21 +14,25 @@ import MenuSection2026 from '@components/MenuSection2026.astro';
 import VibeSection2026 from '@components/VibeSection2026.astro';
 import PickleballSection2026 from '@components/PickleballSection2026.astro';
 import LocationSection2026 from '@components/LocationSection2026.astro';
-import SuperBowlModal from '@components/SuperBowlModal.astro';
-
 const title = "BLVD Park | The Heights' Playground";
 const description = "The Heights' premier sports bar with free pickleball courts. Craft cocktails, game day vibes, and a vibrant atmosphere.";
 ---
 
-<Layout2026 title={title} description={description}>
-  <!-- Super Bowl Promo Modal -->
-  <SuperBowlModal />
-
+<Layout2026
+  title={title}
+  description={description}
+  metaTitleKey="meta.home.title"
+  metaDescriptionKey="meta.home.description"
+  metaImageKey="meta.home.image"
+>
   <!-- 2026 Hero -->
   <Hero2026 />
   
   <!-- Value Props Strip -->
   <ValueProps2026 />
+
+  <!-- Events -->
+  <EventsSection2026 />
 
   <!-- Daily Specials -->
   <SpecialsSection2026 />

@@ -1,4 +1,5 @@
 ---
+export const prerender = true;
 // src/pages/menu/index.astro - 2026 Menu Page
 import Layout2026 from '@layouts/Layout2026.astro';
 
@@ -6,7 +7,13 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
 const menuMode = 'main';
 ---
 
-<Layout2026 title="Menu | BLVD Park" description="Chef-driven bites and craft cocktails at BLVD Park in the Heights.">
+<Layout2026
+  title="Menu | BLVD Park"
+  description="Chef-driven bites and craft cocktails at BLVD Park in the Heights."
+  metaTitleKey="meta.menu.main.title"
+  metaDescriptionKey="meta.menu.main.description"
+  metaImageKey="meta.menu.main.image"
+>
 
   <!-- Hero -->
   <section class="relative pt-32 pb-20 overflow-hidden" style="background: linear-gradient(180deg, #0F3D22 0%, #1a1a1a 100%);">
@@ -18,16 +25,16 @@ const menuMode = 'main';
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
           </svg>
-          Back to Home
+          <span data-cms-key="global.back_label">Back to Home</span>
         </a>
 
-        <span class="inline-block font-mono text-xs tracking-[0.3em] uppercase mb-4" style="color: #C9A962;">
+        <span class="inline-block font-mono text-xs tracking-[0.3em] uppercase mb-4" style="color: #C9A962;" data-cms-key="menu.main.eyebrow">
           Food & Drink
         </span>
-        <h1 class="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6" style="font-family: 'Clash Display', sans-serif; letter-spacing: -0.02em;">
+        <h1 class="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6" style="font-family: 'Clash Display', sans-serif; letter-spacing: -0.02em;" data-cms-key="menu.main.title">
           The Menu
         </h1>
-        <p class="text-xl text-white/60 max-w-xl" style="font-family: 'Satoshi', sans-serif;">
+        <p class="text-xl text-white/60 max-w-xl" style="font-family: 'Satoshi', sans-serif;" data-cms-key="menu.main.subtext">
           Chef-driven bites and craft cocktails. Perfect for pre-game fuel or post-match celebrations.
         </p>
       </div>
@@ -35,10 +42,10 @@ const menuMode = 'main';
       <!-- Menu Type Toggle -->
       <div class="flex gap-4 mt-12">
         <a href="/menu" class="px-6 py-3 rounded-full font-semibold text-sm transition-all" style="background: white; color: #0F3D22;">
-          Main Menu
+          <span data-cms-key="menu.main.toggle_main">Main Menu</span>
         </a>
         <a href="/menu/lunch" class="px-6 py-3 rounded-full font-semibold text-sm transition-all hover:bg-white/10" style="background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.1);">
-          Lunch Menu
+          <span data-cms-key="menu.main.toggle_lunch">Lunch Menu</span>
         </a>
       </div>
     </div>
@@ -49,12 +56,12 @@ const menuMode = 'main';
     <div class="container mx-auto px-6">
       <div class="max-w-4xl mx-auto">
 
-        <div id="menu-sections" class="text-center text-white/50">
+        <div id="menu-sections" class="text-center text-white/50" data-cms-key="menu.main.loading_label">
           Loading menu...
         </div>
 
         <!-- Disclaimer -->
-        <p class="text-xs text-center mt-16" style="color: rgba(255,255,255,0.3);">
+        <p class="text-xs text-center mt-16" style="color: rgba(255,255,255,0.3);" data-cms-key="menu.main.disclaimer">
           *Raw or uncooked meats, poultry, seafood or eggs may increase your risk of food-borne illnesses.
         </p>
 
@@ -65,15 +72,15 @@ const menuMode = 'main';
   <!-- CTA -->
   <section class="py-20" style="background: linear-gradient(180deg, #0d0d0d 0%, #0F3D22 100%);">
     <div class="container mx-auto px-6 text-center">
-      <h2 class="text-3xl md:text-4xl font-bold text-white mb-6" style="font-family: 'Clash Display', sans-serif;">
+      <h2 class="text-3xl md:text-4xl font-bold text-white mb-6" style="font-family: 'Clash Display', sans-serif;" data-cms-key="menu.main.cta.title">
         Ready to Join Us?
       </h2>
-      <p class="text-lg text-white/60 mb-8 max-w-md mx-auto">
+      <p class="text-lg text-white/60 mb-8 max-w-md mx-auto" data-cms-key="menu.main.cta.subtext">
         Walk in anytime or reserve a table for your group.
       </p>
       <div class="flex flex-wrap justify-center gap-4">
         <a href="/book" class="px-8 py-4 rounded-full font-semibold transition-all duration-300 hover:scale-105" style="background: white; color: #0F3D22;">
-          Reserve a Table
+          <span data-cms-key="menu.main.cta.button_label">Reserve a Table</span>
         </a>
       </div>
     </div>
@@ -93,13 +100,15 @@ const menuMode = 'main';
       'Steak Frites'
     ];
 
-    const categoryNotes = {
-      'Street Tacos': 'Served with three tacos',
-      'Wings': 'Six for twelve • Parmesan ranch or bleu cheese, celery + carrots',
-      'Burgers & Sandwiches': 'Served with skin-on crispy fries',
-      'The Skinny': 'Salad, wrap, or rice bowl',
-      'Steak Frites': 'With garlic parmesan fries',
-    };
+    const getContentValue = (key, fallback) => (window.__blvdContent && window.__blvdContent[key]) || fallback;
+    const buildCategoryNotes = () => ({
+      'Street Tacos': getContentValue('menu.notes.street_tacos', 'Served with three tacos'),
+      'Wings': getContentValue('menu.notes.wings', 'Six for twelve • Parmesan ranch or bleu cheese, celery + carrots'),
+      'Burgers & Sandwiches': getContentValue('menu.notes.burgers', 'Served with skin-on crispy fries'),
+      'The Skinny': getContentValue('menu.notes.skinny', 'Salad, wrap, or rice bowl'),
+      'Steak Frites': getContentValue('menu.notes.steak', 'With garlic parmesan fries'),
+    });
+    let categoryNotes = buildCategoryNotes();
 
     const escapeHtml = (value) => {
       if (!value) return '';
@@ -110,6 +119,10 @@ const menuMode = 'main';
         .replace(/\"/g, '&quot;')
         .replace(/'/g, '&#39;');
     };
+
+    const buildStatus = (text) => `
+      <p class="text-white/50 text-center">${escapeHtml(text)}</p>
+    `;
 
     const formatTitle = (value) => value
       .replace(/[-_]/g, ' ')
@@ -185,27 +198,41 @@ const menuMode = 'main';
 
     const loadMenu = async () => {
       try {
+        const loadingLabel = getContentValue('menu.main.loading_label', 'Loading menu...');
+        const emptyLabel = getContentValue('menu.main.empty_label', 'Menu coming soon.');
+        menuContainer.innerHTML = buildStatus(loadingLabel);
+
         const res = await fetch(`${apiUrl}/api/menu`);
         if (!res.ok) throw new Error('Failed to fetch menu');
         const items = await res.json();
         if (!Array.isArray(items) || items.length === 0) {
-          menuContainer.innerHTML = '<p class="text-white/50 text-center">Menu coming soon.</p>';
+          menuContainer.innerHTML = buildStatus(emptyLabel);
           return;
         }
         const filtered = menuMode === 'lunch'
           ? items.filter((item) => item.isLunchOnly)
           : items.filter((item) => !item.isLunchOnly);
         if (filtered.length === 0) {
-          menuContainer.innerHTML = '<p class="text-white/50 text-center">Menu coming soon.</p>';
+          menuContainer.innerHTML = buildStatus(emptyLabel);
           return;
         }
         menuContainer.innerHTML = buildSections(filtered);
       } catch (_error) {
-        menuContainer.innerHTML = '<p class="text-white/50 text-center">Menu unavailable.</p>';
+        const errorLabel = getContentValue('menu.main.error_label', 'Menu unavailable.');
+        menuContainer.innerHTML = buildStatus(errorLabel);
       }
     };
 
     loadMenu();
+
+    if (window.__blvdSubscribeContent) {
+      window.__blvdSubscribeContent(() => {
+        categoryNotes = buildCategoryNotes();
+        loadMenu();
+      });
+    }
+
+    document.addEventListener('blvd:menu', loadMenu);
   }
 </script>
 

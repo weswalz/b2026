@@ -1,9 +1,17 @@
 ---
+export const prerender = true;
 // src/pages/book.astro - 2026 Booking Page with VIP Form
 import Layout2026 from '@layouts/Layout2026.astro';
+import BookContact2026 from '@components/BookContact2026.astro';
 ---
 
-<Layout2026 title="Reserve | BLVD Park" description="Reserve a table or book your private event at BLVD Park in the Heights.">
+<Layout2026
+  title="Reserve | BLVD Park"
+  description="Reserve a table or book your private event at BLVD Park in the Heights."
+  metaTitleKey="meta.book.title"
+  metaDescriptionKey="meta.book.description"
+  metaImageKey="meta.book.image"
+>
 
   <!-- Hero -->
   <section class="relative min-h-[50vh] flex items-center overflow-hidden" style="background: linear-gradient(180deg, #0F3D22 0%, #1a1a1a 100%);">
@@ -11,6 +19,7 @@ import Layout2026 from '@layouts/Layout2026.astro';
       <img
         src="/images/crowd/crowd-night-1.webp"
         alt="BLVD Park atmosphere"
+        data-cms-attr="src:book.hero.image_src,alt:book.hero.image_alt"
         class="w-full h-full object-cover opacity-30"
       />
       <div class="absolute inset-0" style="background: linear-gradient(180deg, rgba(15, 61, 34, 0.8) 0%, rgba(13, 13, 13, 0.95) 100%);"></div>
@@ -22,17 +31,17 @@ import Layout2026 from '@layouts/Layout2026.astro';
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
           </svg>
-          Back to Home
+          <span data-cms-key="global.back_label">Back to Home</span>
         </a>
 
-        <span class="inline-block font-mono text-xs tracking-[0.3em] uppercase mb-4" style="color: #C9A962;">
+        <span class="inline-block font-mono text-xs tracking-[0.3em] uppercase mb-4" style="color: #C9A962;" data-cms-key="book.hero.eyebrow">
           Reservations
         </span>
         <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4" style="font-family: 'Clash Display', sans-serif; letter-spacing: -0.02em;">
-          Reserve Your<br/>
-          <span style="color: #22C55E;">Spot</span>
+          <span data-cms-key="book.hero.title_line1">Reserve Your</span><br/>
+          <span style="color: #22C55E;" data-cms-key="book.hero.title_line2">Spot</span>
         </h1>
-        <p class="text-lg text-white/60 max-w-xl" style="font-family: 'Satoshi', sans-serif;">
+        <p class="text-lg text-white/60 max-w-xl" style="font-family: 'Satoshi', sans-serif;" data-cms-key="book.hero.subtext">
           VIP tables, large groups, watch parties. Fill out the form and we'll get back to you within 24 hours.
         </p>
       </div>
@@ -44,6 +53,11 @@ import Layout2026 from '@layouts/Layout2026.astro';
     <div class="container mx-auto px-6">
       <div class="max-w-2xl mx-auto">
 
+        <!-- Pricing note -->
+        <p class="text-center text-xs mb-6" style="font-family: 'Satoshi', sans-serif; color: #22C55E; line-height: 1.8;">
+          Reserved tables start at $500 minimum spend. &nbsp;·&nbsp; Walk-in tables available first come, first served.
+        </p>
+
         <!-- Form Card -->
         <div class="p-8 md:p-10 rounded-3xl" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);">
 
@@ -51,7 +65,9 @@ import Layout2026 from '@layouts/Layout2026.astro';
             <!-- Name Row -->
             <div class="grid md:grid-cols-2 gap-4">
               <div>
-                <label for="firstName" class="block text-sm font-medium text-white/70 mb-2">First Name *</label>
+                <label for="firstName" class="block text-sm font-medium text-white/70 mb-2">
+                  <span data-cms-key="book.form.first_name.label">First Name *</span>
+                </label>
                 <input
                   type="text"
                   id="firstName"
@@ -60,10 +76,13 @@ import Layout2026 from '@layouts/Layout2026.astro';
                   class="vip-input w-full px-4 py-3 rounded-xl text-white placeholder-white/30 focus:outline-none transition-all"
                   style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);"
                   placeholder="John"
+                  data-cms-attr="placeholder:book.form.first_name.placeholder"
                 />
               </div>
               <div>
-                <label for="lastName" class="block text-sm font-medium text-white/70 mb-2">Last Name *</label>
+                <label for="lastName" class="block text-sm font-medium text-white/70 mb-2">
+                  <span data-cms-key="book.form.last_name.label">Last Name *</span>
+                </label>
                 <input
                   type="text"
                   id="lastName"
@@ -72,13 +91,16 @@ import Layout2026 from '@layouts/Layout2026.astro';
                   class="vip-input w-full px-4 py-3 rounded-xl text-white placeholder-white/30 focus:outline-none transition-all"
                   style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);"
                   placeholder="Doe"
+                  data-cms-attr="placeholder:book.form.last_name.placeholder"
                 />
               </div>
             </div>
 
             <!-- Email -->
             <div>
-              <label for="email" class="block text-sm font-medium text-white/70 mb-2">Email *</label>
+              <label for="email" class="block text-sm font-medium text-white/70 mb-2">
+                <span data-cms-key="book.form.email.label">Email *</span>
+              </label>
               <input
                 type="email"
                 id="email"
@@ -87,12 +109,15 @@ import Layout2026 from '@layouts/Layout2026.astro';
                 class="vip-input w-full px-4 py-3 rounded-xl text-white placeholder-white/30 focus:outline-none transition-all"
                 style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);"
                 placeholder="john@example.com"
+                data-cms-attr="placeholder:book.form.email.placeholder"
               />
             </div>
 
             <!-- Phone -->
             <div>
-              <label for="phone" class="block text-sm font-medium text-white/70 mb-2">Phone *</label>
+              <label for="phone" class="block text-sm font-medium text-white/70 mb-2">
+                <span data-cms-key="book.form.phone.label">Phone *</span>
+              </label>
               <input
                 type="tel"
                 id="phone"
@@ -101,13 +126,16 @@ import Layout2026 from '@layouts/Layout2026.astro';
                 class="vip-input w-full px-4 py-3 rounded-xl text-white placeholder-white/30 focus:outline-none transition-all"
                 style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);"
                 placeholder="(555) 123-4567"
+                data-cms-attr="placeholder:book.form.phone.placeholder"
               />
             </div>
 
             <!-- Date & Time Row -->
             <div class="grid md:grid-cols-2 gap-4">
               <div>
-                <label for="date" class="block text-sm font-medium text-white/70 mb-2">Date *</label>
+                <label for="date" class="block text-sm font-medium text-white/70 mb-2">
+                  <span data-cms-key="book.form.date.label">Date *</span>
+                </label>
                 <input
                   type="date"
                   id="date"
@@ -118,7 +146,9 @@ import Layout2026 from '@layouts/Layout2026.astro';
                 />
               </div>
               <div>
-                <label for="time" class="block text-sm font-medium text-white/70 mb-2">Preferred Time *</label>
+                <label for="time" class="block text-sm font-medium text-white/70 mb-2">
+                  <span data-cms-key="book.form.time.label">Preferred Time *</span>
+                </label>
                 <select
                   id="time"
                   name="time"
@@ -126,7 +156,7 @@ import Layout2026 from '@layouts/Layout2026.astro';
                   class="vip-input w-full px-4 py-3 rounded-xl text-white focus:outline-none transition-all appearance-none cursor-pointer"
                   style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);"
                 >
-                  <option value="" class="bg-neutral-900">Select time</option>
+                  <option value="" class="bg-neutral-900" data-cms-key="book.form.time.placeholder">Select time</option>
                   <option value="12:00 PM" class="bg-neutral-900">12:00 PM</option>
                   <option value="1:00 PM" class="bg-neutral-900">1:00 PM</option>
                   <option value="2:00 PM" class="bg-neutral-900">2:00 PM</option>
@@ -144,7 +174,9 @@ import Layout2026 from '@layouts/Layout2026.astro';
 
             <!-- Party Size -->
             <div>
-              <label for="partySize" class="block text-sm font-medium text-white/70 mb-2">Party Size *</label>
+              <label for="partySize" class="block text-sm font-medium text-white/70 mb-2">
+                <span data-cms-key="book.form.party.label">Party Size *</span>
+              </label>
               <select
                 id="partySize"
                 name="partySize"
@@ -152,7 +184,7 @@ import Layout2026 from '@layouts/Layout2026.astro';
                 class="vip-input w-full px-4 py-3 rounded-xl text-white focus:outline-none transition-all appearance-none cursor-pointer"
                 style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);"
               >
-                <option value="" class="bg-neutral-900">Select party size</option>
+                <option value="" class="bg-neutral-900" data-cms-key="book.form.party.placeholder">Select party size</option>
                 <option value="2" class="bg-neutral-900">2 guests</option>
                 <option value="4" class="bg-neutral-900">3-4 guests</option>
                 <option value="6" class="bg-neutral-900">5-6 guests</option>
@@ -168,14 +200,16 @@ import Layout2026 from '@layouts/Layout2026.astro';
 
             <!-- Message -->
             <div>
-              <label for="message" class="block text-sm font-medium text-white/70 mb-2">Tell us about your event</label>
+              <label for="message" class="block text-sm font-medium text-white/70 mb-2">
+                Any special requests or celebrations?
+              </label>
               <textarea
                 id="message"
                 name="message"
                 rows="4"
                 class="vip-input w-full px-4 py-3 rounded-xl text-white placeholder-white/30 focus:outline-none transition-all resize-none"
                 style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);"
-                placeholder="Birthday, corporate event, watch party... let us know what you're planning"
+                placeholder="Birthday, anniversary, celebrating a promotion or just a night out with friends..."
               ></textarea>
             </div>
 
@@ -186,13 +220,13 @@ import Layout2026 from '@layouts/Layout2026.astro';
               class="w-full py-4 rounded-xl font-bold text-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
               style="background: linear-gradient(135deg, #22C55E 0%, #16A34A 100%); color: #0d0d0d;"
             >
-              <span id="btnText">Submit Inquiry</span>
+              <span id="btnText" data-cms-key="book.form.submit_label">Submit Inquiry</span>
               <span id="btnLoading" class="hidden">
                 <svg class="animate-spin inline w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Sending...
+                <span data-cms-key="book.form.loading_label">Sending...</span>
               </span>
             </button>
           </form>
@@ -204,29 +238,30 @@ import Layout2026 from '@layouts/Layout2026.astro';
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
               </svg>
             </div>
-            <h3 class="text-2xl font-bold text-white mb-2" style="font-family: 'Clash Display', sans-serif;">Request Received!</h3>
-            <p class="text-white/60">We'll get back to you within 24 hours to confirm your event details.</p>
+            <h3 class="text-2xl font-bold text-white mb-2" style="font-family: 'Clash Display', sans-serif;" data-cms-key="book.form.success_title">Request Received!</h3>
+            <p class="text-white/60" data-cms-key="book.form.success_body">We'll get back to you within 24 hours to confirm your event details.</p>
           </div>
 
           <!-- Error Message (hidden by default) -->
           <div id="errorMessage" class="hidden mt-4 p-4 rounded-xl" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2);">
-            <p class="text-red-400 text-sm">Something went wrong. Please try again or <a href="/contact" class="underline">contact us</a>.</p>
+            <p class="text-red-400 text-sm" data-cms-key="book.form.error_text" data-cms-html="true">Something went wrong. Please try again or <a href="/contact" class="underline">contact us</a>.</p>
           </div>
 
         </div>
 
         <!-- Private Events - Tripleseat -->
         <div class="mt-10 p-6 rounded-2xl text-center" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);">
-          <h3 class="text-xl font-bold text-white mb-2" style="font-family: 'Clash Display', sans-serif;">Private Events</h3>
-          <p class="text-white/50 mb-4 text-sm">Planning a corporate event, birthday, or special occasion?</p>
+          <h3 class="text-xl font-bold text-white mb-2" style="font-family: 'Clash Display', sans-serif;" data-cms-key="book.private.title">Private Events</h3>
+          <p class="text-white/50 mb-4 text-sm" data-cms-key="book.private.body">Planning a corporate event, birthday, or special occasion?</p>
           <a
             href="https://theclegroupllc.tripleseat.com/party_request/42255"
             target="_blank"
             rel="noopener noreferrer"
             class="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm transition-all duration-300 hover:scale-105"
             style="background: rgba(201, 169, 98, 0.2); color: #C9A962; border: 1px solid rgba(201, 169, 98, 0.3);"
+            data-cms-attr="href:book.private.cta_href"
           >
-            Submit Event Request
+            <span data-cms-key="book.private.cta_label">Submit Event Request</span>
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
             </svg>
@@ -237,69 +272,7 @@ import Layout2026 from '@layouts/Layout2026.astro';
     </div>
   </section>
 
-  <!-- Contact Info -->
-  <section class="py-20" style="background: linear-gradient(180deg, #0d0d0d 0%, #121212 100%);">
-    <div class="container mx-auto px-6">
-      <div class="max-w-4xl mx-auto">
-        <div class="grid md:grid-cols-2 gap-12 items-center">
-
-          <!-- Info -->
-          <div>
-            <span class="inline-block font-mono text-xs tracking-[0.3em] uppercase mb-4" style="color: #C9A962;">
-              Questions?
-            </span>
-            <h2 class="text-3xl md:text-4xl font-bold text-white mb-6" style="font-family: 'Clash Display', sans-serif;">
-              Get in Touch
-            </h2>
-            <p class="text-lg mb-8" style="color: rgba(255,255,255,0.5);">
-              Our team is happy to help with reservations, event planning, or any questions you might have.
-            </p>
-
-            <a
-              href="/contact"
-              class="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm transition-all duration-300 hover:scale-105"
-              style="background: rgba(34, 197, 94, 0.1); color: #22C55E; border: 1px solid rgba(34, 197, 94, 0.2);"
-            >
-              Contact Us
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
-              </svg>
-            </a>
-          </div>
-
-          <!-- Hours Card -->
-          <div class="p-8 rounded-3xl" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);">
-            <h3 class="text-xl font-bold text-white mb-6" style="font-family: 'Clash Display', sans-serif;">
-              Hours
-            </h3>
-            <div class="space-y-4">
-              <div class="flex justify-between items-center pb-3" style="border-bottom: 1px solid rgba(255,255,255,0.06);">
-                <span style="color: rgba(255,255,255,0.5);">Mon – Tue</span>
-                <span class="font-semibold text-white">4PM – 12AM</span>
-              </div>
-              <div class="flex justify-between items-center pb-3" style="border-bottom: 1px solid rgba(255,255,255,0.06);">
-                <span style="color: rgba(255,255,255,0.5);">Wed – Thu</span>
-                <span class="font-semibold text-white">12PM – 12AM</span>
-              </div>
-              <div class="flex justify-between items-center pb-3" style="border-bottom: 1px solid rgba(255,255,255,0.06);">
-                <span style="color: rgba(255,255,255,0.5);">Friday</span>
-                <span class="font-semibold text-white">12PM – 2AM</span>
-              </div>
-              <div class="flex justify-between items-center pb-3" style="border-bottom: 1px solid rgba(255,255,255,0.06);">
-                <span style="color: rgba(255,255,255,0.5);">Saturday</span>
-                <span class="font-semibold text-white">11AM – 2AM</span>
-              </div>
-              <div class="flex justify-between items-center">
-                <span style="color: rgba(255,255,255,0.5);">Sunday</span>
-                <span class="font-semibold text-white">12PM – 12AM</span>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-  </section>
+  <BookContact2026 />
 
 </Layout2026>
 
@@ -322,13 +295,94 @@ import Layout2026 from '@layouts/Layout2026.astro';
   }
 </style>
 
-<script>
+<script define:vars={{ apiUrl: import.meta.env.PUBLIC_API_URL || '' }}>
+  const API_URL = (apiUrl || window.location.origin).replace(/\/$/, '');
   const form = document.getElementById('vipBookingForm');
   const submitBtn = document.getElementById('submitBtn');
   const btnText = document.getElementById('btnText');
   const btnLoading = document.getElementById('btnLoading');
   const successMessage = document.getElementById('successMessage');
   const errorMessage = document.getElementById('errorMessage');
+  const timeSelect = document.getElementById('time');
+  const partySelect = document.getElementById('partySize');
+
+  const getContentValue = (key, fallback) => (window.__blvdContent && window.__blvdContent[key]) || fallback;
+
+  const defaultTimeOptions = [
+    { value: '12:00 PM', label: '12:00 PM' },
+    { value: '1:00 PM', label: '1:00 PM' },
+    { value: '2:00 PM', label: '2:00 PM' },
+    { value: '3:00 PM', label: '3:00 PM' },
+    { value: '4:00 PM', label: '4:00 PM' },
+    { value: '5:00 PM', label: '5:00 PM' },
+    { value: '6:00 PM', label: '6:00 PM' },
+    { value: '7:00 PM', label: '7:00 PM' },
+    { value: '8:00 PM', label: '8:00 PM' },
+    { value: '9:00 PM', label: '9:00 PM' },
+    { value: '10:00 PM', label: '10:00 PM' },
+  ];
+
+  const defaultPartyOptions = [
+    { value: '2', label: '2 guests' },
+    { value: '4', label: '3-4 guests' },
+    { value: '6', label: '5-6 guests' },
+    { value: '8', label: '7-8 guests' },
+    { value: '10', label: '9-10 guests' },
+    { value: '15', label: '11-15 guests' },
+    { value: '20', label: '16-20 guests' },
+    { value: '30', label: '21-30 guests' },
+    { value: '50', label: '31-50 guests' },
+    { value: '100', label: '50+ guests' },
+  ];
+
+  const parseOptionLines = (raw, fallback) => {
+    if (!raw || typeof raw !== 'string') return fallback;
+    const lines = raw.split('\n').map(line => line.trim()).filter(Boolean);
+    if (lines.length === 0) return fallback;
+    return lines.map((line) => {
+      const parts = line.split('|').map(part => part.trim()).filter(Boolean);
+      if (parts.length === 0) return null;
+      if (parts.length === 1) return { value: parts[0], label: parts[0] };
+      return { value: parts[0], label: parts.slice(1).join(' | ') };
+    }).filter(Boolean);
+  };
+
+  const renderOptions = (selectEl, options) => {
+    if (!selectEl) return;
+    const placeholder = selectEl.querySelector('option[value=""]');
+    selectEl.querySelectorAll('option:not([value=""])').forEach((opt) => opt.remove());
+    options.forEach((opt) => {
+      const optionEl = document.createElement('option');
+      optionEl.value = opt.value;
+      optionEl.textContent = opt.label;
+      optionEl.className = 'bg-neutral-900';
+      selectEl.appendChild(optionEl);
+    });
+    if (placeholder) {
+      selectEl.insertBefore(placeholder, selectEl.firstChild);
+    }
+  };
+
+  const updateSelectOptions = () => {
+    const timeOptions = parseOptionLines(
+      getContentValue('book.form.time.options', ''),
+      defaultTimeOptions
+    );
+    const partyOptions = parseOptionLines(
+      getContentValue('book.form.party.options', ''),
+      defaultPartyOptions
+    );
+    renderOptions(timeSelect, timeOptions);
+    renderOptions(partySelect, partyOptions);
+  };
+
+  updateSelectOptions();
+
+  if (window.__blvdSubscribeContent) {
+    window.__blvdSubscribeContent(() => {
+      updateSelectOptions();
+    });
+  }
 
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -374,7 +428,7 @@ import Layout2026 from '@layouts/Layout2026.astro';
 
     try {
       // Submit to local API (saves to DB, shows in admin)
-      const apiResponse = await fetch('/api/reservations', {
+      const apiResponse = await fetch(`${API_URL}/api/reservations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(apiData)
