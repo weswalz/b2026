@@ -72,6 +72,26 @@ const ensureContactPhoneColumn = () => {
 
 ensureContactPhoneColumn();
 
+// Additive runtime ALTERs for existing prod DBs (see backend/lib/schema-guard.js)
+const { ensureColumns } = require('./lib/schema-guard');
+ensureColumns(db, 'events', [
+  { name: 'slug', ddl: "slug TEXT" },
+  { name: 'seoTitle', ddl: "seoTitle TEXT DEFAULT ''" },
+  { name: 'seoDescription', ddl: "seoDescription TEXT DEFAULT ''" },
+  { name: 'seoKeywords', ddl: "seoKeywords TEXT DEFAULT ''" },
+  { name: 'ogTitle', ddl: "ogTitle TEXT DEFAULT ''" },
+  { name: 'ogDescription', ddl: "ogDescription TEXT DEFAULT ''" },
+  { name: 'ogImage', ddl: "ogImage TEXT DEFAULT ''" },
+  { name: 'deleted_at', ddl: "deleted_at TEXT DEFAULT NULL" },
+]);
+// SQLite ADD COLUMN can't declare UNIQUE inline on an already-existing table,
+// so the unique index is created separately (idempotent, matches init-db.js).
+try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_events_slug_unique ON events(slug) WHERE slug IS NOT NULL'); } catch (_e) {}
+
+const { assertSlugAvailable, generateUniqueSlug, backfillEventSlugs, syncEventStatuses } = require('./lib/events');
+const backfilledCount = backfillEventSlugs(db);
+if (backfilledCount > 0) console.log(`Backfilled slugs for ${backfilledCount} existing event(s)`);
+
 // Middleware
 const allowedOrigins = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || 'http://localhost:3000,http://localhost:4321,https://blvdpark.com,https://www.blvdpark.com')
   .split(',')
@@ -413,19 +433,41 @@ app.get('/api/stats', requireAuth, (req, res) => {
 
 // ============== EVENTS ==============
 app.get('/api/events', (req, res) => {
-  const { all } = req.query;
+  const { all, deleted } = req.query;
   try {
+    syncEventStatuses(db);
     let query = 'SELECT * FROM events';
-    if (all !== 'true') {
-      // Only show active events that are today or in the future (recurring events always show)
-      query += " WHERE status = 'active' AND (isRecurring = 1 OR date >= date('now'))";
+    const conditions = [];
+    if (deleted === 'true') {
+      conditions.push('deleted_at IS NOT NULL');
+    } else {
+      conditions.push('deleted_at IS NULL');
+      if (all !== 'true') {
+        // Only show active events that are today or in the future (recurring events always show)
+        conditions.push("status = 'active' AND (isRecurring = 1 OR date >= date('now'))");
+      }
     }
+    if (conditions.length) query += ' WHERE ' + conditions.join(' AND ');
     query += ' ORDER BY date ASC, time ASC';
     const events = db.prepare(query).all();
     res.json(events);
   } catch (err) {
     console.error('Events fetch error:', err);
     res.status(500).json({ error: 'Failed to fetch events' });
+  }
+});
+
+// Public slug lookup — active, non-deleted only. Must be registered before /api/events/:id
+// so 'public' is never captured as an :id param value.
+app.get('/api/events/public/:slug', (req, res) => {
+  try {
+    syncEventStatuses(db);
+    const event = db.prepare("SELECT * FROM events WHERE slug = ? AND deleted_at IS NULL AND status = 'active'").get(req.params.slug);
+    if (!event) return res.status(404).json({ error: 'Event not found' });
+    res.json(event);
+  } catch (err) {
+    console.error('Event public fetch error:', err);
+    res.status(500).json({ error: 'Failed to fetch event' });
   }
 });
 
@@ -440,8 +482,14 @@ app.get('/api/events/:id', (req, res) => {
 });
 
 app.post('/api/events', requireAuth, upload.single('image'), (req, res) => {
-  const { title, date, time, description, category, ticketUrl, isRecurring, recurringPattern, recurringEndDate } = req.body;
+  const {
+    title, date, time, description, category, ticketUrl, isRecurring, recurringPattern, recurringEndDate,
+    slug: requestedSlug, seoTitle, seoDescription, seoKeywords, ogTitle, ogDescription, ogImage,
+  } = req.body;
   const image = req.file ? `/uploads/${req.file.filename}` : null;
+  const cleanupUpload = () => {
+    if (req.file) { try { fs.unlinkSync(path.join(uploadsDir, req.file.filename)); } catch (_e) {} }
+  };
 
   try {
     if (title && date) {
@@ -450,12 +498,11 @@ app.post('/api/events', requireAuth, upload.single('image'), (req, res) => {
          WHERE LOWER(TRIM(title)) = LOWER(TRIM(?))
            AND date = ?
            AND status = 'active'
+           AND deleted_at IS NULL
          LIMIT 1`
       ).get(title, date);
       if (existing) {
-        if (req.file) {
-          try { fs.unlinkSync(path.join(uploadsDir, req.file.filename)); } catch (_e) {}
-        }
+        cleanupUpload();
         return res.status(409).json({
           error: 'Duplicate event',
           message: `An event titled "${title}" already exists on ${date}. Edit the existing event instead of creating a new one.`,
@@ -464,28 +511,67 @@ app.post('/api/events', requireAuth, upload.single('image'), (req, res) => {
       }
     }
 
-    const result = db.prepare(`
-      INSERT INTO events (title, date, time, description, category, image, ticketUrl, isRecurring, recurringPattern, recurringEndDate)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(title, date, time, description, category || 'special', image, ticketUrl, isRecurring ? 1 : 0, recurringPattern, recurringEndDate);
+    let slug;
+    if (requestedSlug && String(requestedSlug).trim()) {
+      slug = String(requestedSlug).trim().toLowerCase();
+      try {
+        assertSlugAvailable(db, slug);
+      } catch (slugErr) {
+        cleanupUpload();
+        return res.status(slugErr.status || 400).json({ error: slugErr.message, code: slugErr.code });
+      }
+    } else {
+      slug = generateUniqueSlug(db, title);
+    }
 
-    const payload = { id: result.lastInsertRowid, title, date, time, description, category, image, ticketUrl };
-    res.json(payload);
+    const result = db.prepare(`
+      INSERT INTO events (
+        title, date, time, description, category, image, ticketUrl, isRecurring, recurringPattern, recurringEndDate,
+        slug, seoTitle, seoDescription, seoKeywords, ogTitle, ogDescription, ogImage
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      title, date, time, description, category || 'special', image, ticketUrl, isRecurring ? 1 : 0, recurringPattern, recurringEndDate,
+      slug, seoTitle || '', seoDescription || '', seoKeywords || '', ogTitle || '', ogDescription || '', ogImage || ''
+    );
+
+    const created = db.prepare('SELECT * FROM events WHERE id = ?').get(result.lastInsertRowid);
+    res.json(created);
     broadcast('events');
   } catch (err) {
     console.error('Event create error:', err);
+    if (String(err.message || '').includes('UNIQUE')) {
+      return res.status(409).json({ error: 'Slug already exists', code: 'SLUG_TAKEN' });
+    }
     res.status(500).json({ error: 'Failed to create event' });
   }
 });
 
 app.put('/api/events/:id', requireAuth, upload.single('image'), (req, res) => {
   const { id } = req.params;
-  const { title, date, time, description, category, ticketUrl, status, isRecurring, recurringPattern, recurringEndDate } = req.body;
+  const {
+    title, date, time, description, category, ticketUrl, status, isRecurring, recurringPattern, recurringEndDate,
+    slug: requestedSlug, seoTitle, seoDescription, seoKeywords, ogTitle, ogDescription, ogImage,
+  } = req.body;
   const image = req.file ? `/uploads/${req.file.filename}` : undefined;
+  const cleanupUpload = () => {
+    if (req.file) { try { fs.unlinkSync(path.join(uploadsDir, req.file.filename)); } catch (_e) {} }
+  };
 
   try {
     const existing = db.prepare('SELECT * FROM events WHERE id = ?').get(id);
-    if (!existing) return res.status(404).json({ error: 'Event not found' });
+    if (!existing) { cleanupUpload(); return res.status(404).json({ error: 'Event not found' }); }
+
+    let slug = existing.slug;
+    if (requestedSlug !== undefined && String(requestedSlug).trim() && String(requestedSlug).trim().toLowerCase() !== existing.slug) {
+      slug = String(requestedSlug).trim().toLowerCase();
+      try {
+        assertSlugAvailable(db, slug, Number(id));
+      } catch (slugErr) {
+        cleanupUpload();
+        return res.status(slugErr.status || 400).json({ error: slugErr.message, code: slugErr.code });
+      }
+    }
 
     db.prepare(`
       UPDATE events SET
@@ -500,26 +586,56 @@ app.put('/api/events/:id', requireAuth, upload.single('image'), (req, res) => {
         isRecurring = COALESCE(?, isRecurring),
         recurringPattern = COALESCE(?, recurringPattern),
         recurringEndDate = COALESCE(?, recurringEndDate),
+        slug = ?,
+        seoTitle = COALESCE(?, seoTitle),
+        seoDescription = COALESCE(?, seoDescription),
+        seoKeywords = COALESCE(?, seoKeywords),
+        ogTitle = COALESCE(?, ogTitle),
+        ogDescription = COALESCE(?, ogDescription),
+        ogImage = COALESCE(?, ogImage),
         updatedAt = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).run(title, date, time, description, category, image, ticketUrl, status, isRecurring ? 1 : 0, recurringPattern, recurringEndDate, id);
+    `).run(
+      title, date, time, description, category, image, ticketUrl, status, isRecurring !== undefined ? (isRecurring ? 1 : 0) : undefined, recurringPattern, recurringEndDate,
+      slug, seoTitle, seoDescription, seoKeywords, ogTitle, ogDescription, ogImage, id
+    );
 
     const updated = db.prepare('SELECT * FROM events WHERE id = ?').get(id);
     res.json(updated);
     broadcast('events');
   } catch (err) {
     console.error('Event update error:', err);
+    if (String(err.message || '').includes('UNIQUE')) {
+      return res.status(409).json({ error: 'Slug already exists', code: 'SLUG_TAKEN' });
+    }
     res.status(500).json({ error: 'Failed to update event' });
   }
 });
 
+// Soft delete — row preserved, deleted_at timestamp set. Public queries + admin
+// default list exclude it; ?deleted=true reveals it; POST /restore clears it.
 app.delete('/api/events/:id', requireAuth, (req, res) => {
   try {
-    db.prepare('DELETE FROM events WHERE id = ?').run(req.params.id);
+    const existing = db.prepare('SELECT id FROM events WHERE id = ?').get(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Event not found' });
+    db.prepare("UPDATE events SET deleted_at = datetime('now'), updatedAt = CURRENT_TIMESTAMP WHERE id = ?").run(req.params.id);
     res.json({ success: true });
     broadcast('events');
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete event' });
+  }
+});
+
+app.post('/api/events/:id/restore', requireAuth, (req, res) => {
+  try {
+    const existing = db.prepare('SELECT id FROM events WHERE id = ?').get(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Event not found' });
+    db.prepare('UPDATE events SET deleted_at = NULL, updatedAt = CURRENT_TIMESTAMP WHERE id = ?').run(req.params.id);
+    const restored = db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id);
+    res.json(restored);
+    broadcast('events');
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to restore event' });
   }
 });
 

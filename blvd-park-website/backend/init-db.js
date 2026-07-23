@@ -21,6 +21,14 @@ const initDatabase = (dbPath = defaultDbPath) => {
     isRecurring INTEGER DEFAULT 0,
     recurringPattern TEXT,
     recurringEndDate TEXT,
+    slug TEXT UNIQUE,
+    seoTitle TEXT DEFAULT '',
+    seoDescription TEXT DEFAULT '',
+    seoKeywords TEXT DEFAULT '',
+    ogTitle TEXT DEFAULT '',
+    ogDescription TEXT DEFAULT '',
+    ogImage TEXT DEFAULT '',
+    deleted_at TEXT DEFAULT NULL,
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
   );
@@ -165,6 +173,8 @@ const initDatabase = (dbPath = defaultDbPath) => {
     CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
     CREATE INDEX IF NOT EXISTS idx_users_password_reset_token ON users(password_reset_token);
     CREATE INDEX IF NOT EXISTS idx_pages_status ON pages(status);
+    CREATE INDEX IF NOT EXISTS idx_events_slug ON events(slug);
+    CREATE INDEX IF NOT EXISTS idx_events_deleted_at ON events(deleted_at);
   `);
 
   // Seed default hours

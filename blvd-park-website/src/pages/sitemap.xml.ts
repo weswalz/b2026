@@ -13,11 +13,20 @@ export const GET: APIRoute = async () => {
     if (r.ok) cms = await r.json();
   } catch (_e) {}
 
+  let events: { slug: string | null; date: string; updatedAt: string; status: string; isRecurring: number; deleted_at: string | null }[] = [];
+  try {
+    const r = await fetch(`${INTERNAL_API}/api/events`);
+    if (r.ok) events = await r.json();
+  } catch (_e) {}
+
   const urls = [
     ...STATIC_PATHS.map((p) => `  <url><loc>${BASE}${p === "/" ? "/" : p}</loc></url>`),
     ...cms
       .filter((p) => !String(p.robots || "").includes("noindex"))
       .map((p) => `  <url><loc>${BASE}/${p.slug}</loc><lastmod>${new Date(p.updated_at + "Z").toISOString()}</lastmod></url>`),
+    ...events
+      .filter((e) => e.slug && e.status === "active" && !e.deleted_at)
+      .map((e) => `  <url><loc>${BASE}/events/${e.slug}</loc><lastmod>${new Date(e.updatedAt + "Z").toISOString()}</lastmod></url>`),
   ].join("\n");
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;

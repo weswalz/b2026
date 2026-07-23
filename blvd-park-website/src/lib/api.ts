@@ -39,6 +39,14 @@ export interface Event {
   isRecurring: number;
   recurringPattern: string | null;
   recurringEndDate: string | null;
+  slug: string | null;
+  seoTitle: string;
+  seoDescription: string;
+  seoKeywords: string;
+  ogTitle: string;
+  ogDescription: string;
+  ogImage: string;
+  deleted_at: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -176,8 +184,12 @@ export const api = {
   },
 
   // Events
-  async getEvents(all = false): Promise<Event[]> {
-    const url = all ? `${API_URL}/api/events?all=true` : `${API_URL}/api/events`;
+  async getEvents(all = false, deleted = false): Promise<Event[]> {
+    const params = new URLSearchParams();
+    if (all) params.append('all', 'true');
+    if (deleted) params.append('deleted', 'true');
+    const qs = params.toString();
+    const url = qs ? `${API_URL}/api/events?${qs}` : `${API_URL}/api/events`;
     const res = await fetch(url);
     if (!res.ok) throw apiError(res, 'Failed to fetch events');
     return res.json();
@@ -209,6 +221,15 @@ export const api = {
       headers: getAuthHeaders(),
     });
     if (!res.ok) throw apiError(res, 'Failed to delete event');
+  },
+
+  async restoreEvent(id: number): Promise<Event> {
+    const res = await fetch(`${API_URL}/api/events/${id}/restore`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to restore event');
+    return res.json();
   },
 
   // Gallery
