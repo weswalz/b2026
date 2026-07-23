@@ -96,11 +96,21 @@ ensureColumns(db, 'users', [
   { name: 'isActive', ddl: 'isActive INTEGER DEFAULT 1' },
 ]);
 
+ensureColumns(db, 'pages', [
+  { name: 'faq_items', ddl: "faq_items TEXT DEFAULT '[]'" },
+]);
+
 const { assertSlugAvailable, generateUniqueSlug, backfillEventSlugs, syncEventStatuses } = require('./lib/events');
 const backfilledCount = backfillEventSlugs(db);
 if (backfilledCount > 0) console.log(`Backfilled slugs for ${backfilledCount} existing event(s)`);
 
 const { logActivity, logAccess } = require('./lib/activity');
+const { pingIndexNow } = require('./lib/indexnow');
+
+// A page is "indexable" when published AND its robots directive allows indexing —
+// that's the B7 trigger condition (publish, unpublish, or robots-flip-to-indexable).
+const isIndexablePage = (page) => !!page && page.status === 'published' && String(page.robots || '').startsWith('index');
+const siteUrlBase = () => (process.env.FRONTEND_URL || 'https://blvdpark.com').replace(/\/$/, '');
 
 // Middleware
 const allowedOrigins = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || 'http://localhost:3000,http://localhost:4321,https://blvdpark.com,https://www.blvdpark.com')
@@ -405,13 +415,14 @@ app.post('/api/pages', requireAuth, upload.single('og_image_file'), verifyUpload
   if (req.file) page.og_image = `/uploads/${req.file.filename}`;
   try {
     const info = db.prepare(`
-      INSERT INTO pages (slug, title, description, content_sections, seo_title, seo_description, seo_keywords, og_image, json_ld, robots, status, updated_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(page.slug, page.title, page.description, page.content_sections, page.seo_title, page.seo_description, page.seo_keywords, page.og_image, page.json_ld, page.robots, page.status, req.user?.email || req.user?.username || 'api-key');
+      INSERT INTO pages (slug, title, description, content_sections, seo_title, seo_description, seo_keywords, og_image, json_ld, robots, status, faq_items, updated_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(page.slug, page.title, page.description, page.content_sections, page.seo_title, page.seo_description, page.seo_keywords, page.og_image, page.json_ld, page.robots, page.status, page.faq_items, req.user?.email || req.user?.username || 'api-key');
     const created = db.prepare('SELECT * FROM pages WHERE id = ?').get(info.lastInsertRowid);
     res.status(201).json(created);
     logActivity(db, { action: 'create', resourceType: 'page', resourceId: created.id, req, details: { slug: created.slug, status: created.status } });
     broadcast('pages');
+    if (isIndexablePage(created)) pingIndexNow(`${siteUrlBase()}/${created.slug}`);
   } catch (err) {
     if (String(err.message || '').includes('UNIQUE')) {
       return res.status(409).json({ error: 'Slug already exists' });
@@ -433,13 +444,18 @@ app.put('/api/pages/:id', requireAuth, upload.single('og_image_file'), verifyUpl
   if (req.file) page.og_image = `/uploads/${req.file.filename}`;
   try {
     db.prepare(`
-      UPDATE pages SET slug = ?, title = ?, description = ?, content_sections = ?, seo_title = ?, seo_description = ?, seo_keywords = ?, og_image = ?, json_ld = ?, robots = ?, status = ?, updated_at = CURRENT_TIMESTAMP, updated_by = ?
+      UPDATE pages SET slug = ?, title = ?, description = ?, content_sections = ?, seo_title = ?, seo_description = ?, seo_keywords = ?, og_image = ?, json_ld = ?, robots = ?, status = ?, faq_items = ?, updated_at = CURRENT_TIMESTAMP, updated_by = ?
       WHERE id = ?
-    `).run(page.slug, page.title, page.description, page.content_sections, page.seo_title, page.seo_description, page.seo_keywords, page.og_image, page.json_ld, page.robots, page.status, req.user?.email || req.user?.username || 'api-key', req.params.id);
+    `).run(page.slug, page.title, page.description, page.content_sections, page.seo_title, page.seo_description, page.seo_keywords, page.og_image, page.json_ld, page.robots, page.status, page.faq_items, req.user?.email || req.user?.username || 'api-key', req.params.id);
     const updatedPage = db.prepare('SELECT * FROM pages WHERE id = ?').get(req.params.id);
     res.json(updatedPage);
     logActivity(db, { action: 'update', resourceType: 'page', resourceId: req.params.id, req, details: { slug: updatedPage.slug, status: updatedPage.status } });
     broadcast('pages');
+    // Ping on publish, unpublish, or a robots-flip-to-indexable while staying published
+    // (also covers a slug change on an already-indexable page — new URL, must be pinged).
+    if (isIndexablePage(updatedPage) || (isIndexablePage(existing) && !isIndexablePage(updatedPage))) {
+      pingIndexNow(`${siteUrlBase()}/${updatedPage.slug}`);
+    }
   } catch (err) {
     if (String(err.message || '').includes('UNIQUE')) {
       return res.status(409).json({ error: 'Slug already exists' });
@@ -862,6 +878,7 @@ app.post('/api/events', requireAuth, upload.single('image'), verifyUploadedFile,
     res.json(created);
     logActivity(db, { action: 'create', resourceType: 'event', resourceId: created.id, req, details: { title: created.title, slug: created.slug } });
     broadcast('events');
+    if (created.slug) pingIndexNow(`${siteUrlBase()}/events/${created.slug}`);
   } catch (err) {
     console.error('Event create error:', err);
     if (String(err.message || '').includes('UNIQUE')) {
@@ -928,6 +945,7 @@ app.put('/api/events/:id', requireAuth, upload.single('image'), verifyUploadedFi
     res.json(updated);
     logActivity(db, { action: 'update', resourceType: 'event', resourceId: id, req, details: { title: updated.title, slug: updated.slug } });
     broadcast('events');
+    if (updated.slug) pingIndexNow(`${siteUrlBase()}/events/${updated.slug}`);
   } catch (err) {
     console.error('Event update error:', err);
     if (String(err.message || '').includes('UNIQUE')) {

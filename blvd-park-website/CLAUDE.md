@@ -156,6 +156,7 @@ Frontend (`.env`, prefix `PUBLIC_` for browser exposure):
 - `PUBLIC_API_URL` — backend base URL (default `https://blvdpark.com`)
 - `PUBLIC_TINYMCE_API_KEY` — TinyMCE cloud key for content editor
 - `PUBLIC_ADMIN_HUB_URL` — CLE Admin Hub URL for SSO link
+- `INDEXNOW_KEY` — IndexNow key, read server-side only (not `PUBLIC_`-prefixed) by `src/pages/[key].txt.ts` to serve the key file IndexNow verifies against. Must match the backend's `INDEXNOW_KEY`.
 
 Backend (`backend/.env`):
 - `ADMIN_API_KEY` — super_admin bypass key
@@ -166,6 +167,7 @@ Backend (`backend/.env`):
 - `SSO_SECRET` — JWT signing secret shared with CLE Admin Hub
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM` — email for password reset
 - `RESET_DB` — set `true` to wipe and reinitialize DB on startup
+- `INDEXNOW_KEY` — 8-128 hex chars; when set, page publish/unpublish/robots-flip and event create/update ping IndexNow (`backend/lib/indexnow.js`). Unset = feature is a silent no-op.
 
 ---
 
