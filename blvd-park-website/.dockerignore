@@ -9,6 +9,8 @@ test-results
 tests
 .env
 .env.*
+backend/.env
+live_site_source.html
 .git
 .git_disabled
 .DS_Store
