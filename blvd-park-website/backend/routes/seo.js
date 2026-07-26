@@ -23,6 +23,18 @@ const {
   runSeoAudit,
 } = require('../lib/seo-audit');
 const {
+  createSeoResource,
+  listSeoResources,
+  getSeoResource,
+  saveSeoResource,
+  listSeoRevisions,
+  rollbackSeoRevision,
+  getSeoSiteSettings,
+  saveSeoSiteSettings,
+  createSeoBulkPreview,
+  listSeoBulkJobs,
+  applySeoBulkJob,
+  rollbackSeoBulkJob,
   listSeoAuditRuns,
   listSeoPageChecks,
   listSeoIssues,
@@ -32,6 +44,151 @@ const {
 
 function buildSeoRouter({ requireAuth, requireRole, logActivity, broadcast }) {
   const router = Router();
+
+  // Core SEO resource registry. These routes expose the already-proven
+  // resource/revision/bulk helpers to the admin UI; previously the helpers
+  // existed but had no HTTP surface.
+  router.get('/resources', requireAuth, (req, res) => {
+    try {
+      res.json(listSeoResources(req.app.locals.db));
+    } catch (err) {
+      console.error('SEO resource list error:', err);
+      res.status(err.status || 500).json({ error: err.message || 'Failed to fetch SEO resources' });
+    }
+  });
+
+  router.post('/resources', requireAuth, requireRole('admin', 'super_admin'), (req, res) => {
+    try {
+      const db = req.app.locals.db;
+      const created = createSeoResource(db, req.body || {}, req.user);
+      logActivity(db, { action: 'create', resourceType: 'seo_resource', resourceId: created.id, req, details: { path: created.path } });
+      broadcast('seo');
+      res.status(201).json(created);
+    } catch (err) {
+      res.status(err.status || 500).json({ error: err.message || 'Failed to create SEO resource' });
+    }
+  });
+
+  router.get('/resources/:resourceType/:resourceId', requireAuth, (req, res, next) => {
+    try {
+      // Existing entity/taxonomy routes use /resources/:numericSeoResourceId/*
+      // and are registered later on the parent app. Let those two-segment
+      // subroutes continue instead of treating their suffix as a resource id.
+      if (/^\d+$/.test(req.params.resourceType)) return next();
+      const resource = getSeoResource(req.app.locals.db, req.params.resourceType, req.params.resourceId, true);
+      if (!resource) return res.status(404).json({ error: 'SEO resource was not found.' });
+      res.json(resource);
+    } catch (err) {
+      res.status(err.status || 500).json({ error: err.message || 'Failed to fetch SEO resource' });
+    }
+  });
+
+  router.put('/resources/:resourceType/:resourceId', requireAuth, requireRole('admin', 'super_admin', 'editor'), (req, res) => {
+    try {
+      const db = req.app.locals.db;
+      const updated = saveSeoResource(db, req.params.resourceType, req.params.resourceId, req.body || {}, req.user);
+      logActivity(db, {
+        action: 'update',
+        resourceType: 'seo_resource',
+        resourceId: updated.id,
+        req,
+        details: { path: updated.path, changeSummary: req.body?.changeSummary || null },
+      });
+      broadcast('seo');
+      res.json(updated);
+    } catch (err) {
+      res.status(err.status || 500).json({ error: err.message || 'Failed to update SEO resource' });
+    }
+  });
+
+  router.get('/resources/:resourceType/:resourceId/revisions', requireAuth, (req, res) => {
+    try {
+      const db = req.app.locals.db;
+      const resource = getSeoResource(db, req.params.resourceType, req.params.resourceId, true);
+      if (!resource) return res.status(404).json({ error: 'SEO resource was not found.' });
+      const limit = Math.max(1, Math.min(100, Number(req.query.limit) || 25));
+      res.json(listSeoRevisions(db, resource.id, limit));
+    } catch (err) {
+      res.status(err.status || 500).json({ error: err.message || 'Failed to fetch SEO revisions' });
+    }
+  });
+
+  router.post('/revisions/:revisionId/rollback', requireAuth, requireRole('admin', 'super_admin'), (req, res) => {
+    try {
+      const db = req.app.locals.db;
+      const updated = rollbackSeoRevision(db, req.params.revisionId, req.user);
+      logActivity(db, { action: 'rollback', resourceType: 'seo_resource', resourceId: updated.id, req, details: { revisionId: req.params.revisionId, path: updated.path } });
+      broadcast('seo');
+      res.json(updated);
+    } catch (err) {
+      res.status(err.status || 500).json({ error: err.message || 'Failed to roll back SEO revision' });
+    }
+  });
+
+  router.get('/site-settings', requireAuth, (req, res) => {
+    try {
+      res.json(getSeoSiteSettings(req.app.locals.db));
+    } catch (err) {
+      console.error('SEO site settings fetch error:', err);
+      res.status(500).json({ error: 'Failed to fetch SEO site settings' });
+    }
+  });
+
+  router.put('/site-settings', requireAuth, requireRole('admin', 'super_admin'), (req, res) => {
+    try {
+      const db = req.app.locals.db;
+      const updated = saveSeoSiteSettings(db, req.body || {}, req.user);
+      logActivity(db, { action: 'update', resourceType: 'seo_site_settings', resourceId: 'default', req });
+      broadcast('seo');
+      res.json(updated);
+    } catch (err) {
+      res.status(err.status || 500).json({ error: err.message || 'Failed to update SEO site settings' });
+    }
+  });
+
+  router.get('/bulk', requireAuth, (req, res) => {
+    try {
+      res.json(listSeoBulkJobs(req.app.locals.db, req.query.limit));
+    } catch (err) {
+      console.error('SEO bulk job list error:', err);
+      res.status(500).json({ error: 'Failed to fetch SEO bulk jobs' });
+    }
+  });
+
+  router.post('/bulk/preview', requireAuth, requireRole('admin', 'super_admin'), (req, res) => {
+    try {
+      const db = req.app.locals.db;
+      const job = createSeoBulkPreview(db, req.body?.changes, req.user);
+      logActivity(db, { action: 'preview', resourceType: 'seo_bulk_job', resourceId: job.id, req, details: { rows: job.preview.length } });
+      res.status(201).json(job);
+    } catch (err) {
+      res.status(err.status || 500).json({ error: err.message || 'Failed to preview SEO bulk changes' });
+    }
+  });
+
+  router.post('/bulk/:id/apply', requireAuth, requireRole('admin', 'super_admin'), (req, res) => {
+    try {
+      const db = req.app.locals.db;
+      const job = applySeoBulkJob(db, req.params.id, req.user);
+      logActivity(db, { action: 'apply', resourceType: 'seo_bulk_job', resourceId: job.id, req });
+      broadcast('seo');
+      res.json(job);
+    } catch (err) {
+      res.status(err.status || 500).json({ error: err.message || 'Failed to apply SEO bulk changes' });
+    }
+  });
+
+  router.post('/bulk/:id/rollback', requireAuth, requireRole('admin', 'super_admin'), (req, res) => {
+    try {
+      const db = req.app.locals.db;
+      const job = rollbackSeoBulkJob(db, req.params.id, req.user);
+      logActivity(db, { action: 'rollback', resourceType: 'seo_bulk_job', resourceId: job.id, req });
+      broadcast('seo');
+      res.json(job);
+    } catch (err) {
+      res.status(err.status || 500).json({ error: err.message || 'Failed to roll back SEO bulk changes' });
+    }
+  });
 
   // Dashboard summary (resource counts, open/critical issue counts, last run).
   router.get('/summary', requireAuth, (req, res) => {
