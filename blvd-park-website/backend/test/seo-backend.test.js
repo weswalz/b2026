@@ -172,11 +172,17 @@ test('sitemap validator: missing XML declaration and empty urlset are both flagg
   assert.ok(empty.errors.some((e) => /empty/i.test(e)));
 });
 
-test('SITEMAP_FILES lists exactly BLVD\'s one real sitemap document', () => {
+test('SITEMAP_FILES lists BLVD\'s complete partitioned sitemap family', () => {
   const { SITEMAP_FILES } = require('../lib/sitemap-validation');
-  assert.strictEqual(SITEMAP_FILES.length, 1);
-  assert.strictEqual(SITEMAP_FILES[0].path, '/sitemap.xml');
-  assert.strictEqual(SITEMAP_FILES[0].kind, 'urlset');
+  assert.deepStrictEqual(
+    SITEMAP_FILES.map(({ key, path, kind }) => ({ key, path, kind })),
+    [
+      { key: 'sitemap.xml', path: '/sitemap.xml', kind: 'sitemapindex' },
+      { key: 'sitemap-pages.xml', path: '/sitemap-pages.xml', kind: 'urlset' },
+      { key: 'sitemap-images.xml', path: '/sitemap-images.xml', kind: 'urlset' },
+      { key: 'sitemap-videos.xml', path: '/sitemap-videos.xml', kind: 'urlset' },
+    ],
+  );
 });
 
 test('POST /api/seo/sitemap/validate runs a real check and records history visible via GET', async () => {
@@ -184,15 +190,15 @@ test('POST /api/seo/sitemap/validate runs a real check and records history visib
   assert.strictEqual(run.status, 201);
   const result = await run.json();
   assert.strictEqual(typeof result.overallValid, 'boolean');
-  assert.strictEqual(result.fileCount, 1);
-  assert.strictEqual(result.files.length, 1);
+  assert.strictEqual(result.fileCount, 4);
+  assert.strictEqual(result.files.length, 4);
   assert.strictEqual(result.files[0].key, 'sitemap.xml');
 
   const history = await fetch(`${BASE}/api/seo/sitemap/validations`, { headers: auth });
   assert.strictEqual(history.status, 200);
   const runs = await history.json();
   assert.ok(runs.length >= 1);
-  assert.ok(runs[0].files.length === 1);
+  assert.ok(runs[0].files.length === 4);
 });
 
 // ---------------------------------------------------------------------------
@@ -237,6 +243,32 @@ test('redirect CSV import: invalid row (reserved prefix) is rejected in preview,
 
   const apply = await fetch(`${BASE}/api/redirects/import/${job.id}/apply`, { method: 'POST', headers: auth });
   assert.strictEqual(apply.status, 400, 'apply must refuse a job with any invalid row');
+});
+
+test('redirect CSV import: rollback refuses to deactivate a row an admin edited after apply', async () => {
+  const csv = 'fromPath,toPath,statusCode,matchType,notes\n/csv-conflict-old,/csv-conflict-new,301,exact,original import\n';
+  const preview = await fetch(`${BASE}/api/redirects/import/preview`, { method: 'POST', headers: auth, body: JSON.stringify({ csv }) });
+  const job = await preview.json();
+  const apply = await fetch(`${BASE}/api/redirects/import/${job.id}/apply`, { method: 'POST', headers: auth });
+  assert.strictEqual(apply.status, 200);
+  const applied = await apply.json();
+  const imported = applied.result[0];
+
+  const edit = await fetch(`${BASE}/api/redirects/${imported.id}`, {
+    method: 'PUT',
+    headers: auth,
+    body: JSON.stringify({ toPath: '/csv-conflict-admin-edit', notes: 'edited after import' }),
+  });
+  assert.strictEqual(edit.status, 200);
+
+  const rollback = await fetch(`${BASE}/api/redirects/import/${job.id}/rollback`, { method: 'POST', headers: auth });
+  assert.strictEqual(rollback.status, 409);
+  assert.match((await rollback.json()).error, /changed after this import was applied/i);
+
+  const current = await fetch(`${BASE}/api/redirects`, { headers: auth }).then((response) => response.json());
+  const preserved = current.find((row) => row.id === imported.id);
+  assert.strictEqual(preserved.toPath, '/csv-conflict-admin-edit');
+  assert.strictEqual(preserved.isActive, 1, 'conflicted row must remain active instead of being overwritten by rollback');
 });
 
 test('GET /api/redirects/export.csv returns a real CSV with header row', async () => {
@@ -309,6 +341,43 @@ test('link migration: a page whose links point to healthy (non-redirected) paths
   const job = await preview.json();
   assert.ok(Array.isArray(job.preview.findings));
   assert.ok(!job.preview.findings.some((f) => f.pageId === page.id), 'a link to /menu (no redirect exists for it) must not be reported as stale');
+});
+
+test('link migration: rollback refuses to overwrite page content edited after apply', async () => {
+  await fetch(`${BASE}/api/redirects`, { method: 'POST', headers: auth, body: JSON.stringify({ fromPath: '/link-conflict-old', toPath: '/link-conflict-new', matchType: 'exact' }) });
+  const createPage = await fetch(`${BASE}/api/pages`, {
+    method: 'POST',
+    headers: auth,
+    body: JSON.stringify({
+      title: 'Link Migration Conflict Page',
+      slug: 'link-migration-conflict',
+      content_sections: [{ type: 'html', body: '<p><a href="/link-conflict-old">migrate me</a></p>' }],
+    }),
+  });
+  const page = await createPage.json();
+
+  const preview = await fetch(`${BASE}/api/redirects/link-migration/preview`, { method: 'POST', headers: auth });
+  const job = await preview.json();
+  const apply = await fetch(`${BASE}/api/redirects/link-migration/${job.id}/apply`, { method: 'POST', headers: auth });
+  assert.strictEqual(apply.status, 200);
+
+  const currentPage = await fetch(`${BASE}/api/pages/${page.id}`, { headers: auth }).then((response) => response.json());
+  const editedSections = JSON.parse(currentPage.content_sections);
+  editedSections[0].body += '<p>Administrator edit after migration</p>';
+  const edit = await fetch(`${BASE}/api/pages/${page.id}`, {
+    method: 'PUT',
+    headers: auth,
+    body: JSON.stringify({ ...currentPage, content_sections: editedSections }),
+  });
+  assert.strictEqual(edit.status, 200);
+
+  const rollback = await fetch(`${BASE}/api/redirects/link-migration/${job.id}/rollback`, { method: 'POST', headers: auth });
+  assert.strictEqual(rollback.status, 409);
+  assert.match((await rollback.json()).error, /changed after this migration was applied/i);
+
+  const preserved = await fetch(`${BASE}/api/pages/${page.id}`, { headers: auth }).then((response) => response.json());
+  assert.match(JSON.parse(preserved.content_sections)[0].body, /Administrator edit after migration/);
+  assert.match(JSON.parse(preserved.content_sections)[0].body, /href="\/link-conflict-new"/);
 });
 
 // ---------------------------------------------------------------------------
@@ -535,6 +604,7 @@ test('buildMasterEntityId produces the real stable @id URI shape', () => {
   const entity = { idSlug: 'organization', entityTypes: ['NightClub'], name: 'BLVD Park', description: null, sameAs: [], properties: {} };
   assert.strictEqual(buildMasterEntityId('https://blvdpark.com', entity), 'https://blvdpark.com/#organization');
   const jsonld = buildMasterEntityJsonLd('https://blvdpark.com', entity);
+  assert.strictEqual(jsonld['@context'], 'https://schema.org');
   assert.strictEqual(jsonld['@id'], 'https://blvdpark.com/#organization');
   assert.strictEqual(jsonld['@type'], 'NightClub');
 });

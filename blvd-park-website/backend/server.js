@@ -112,7 +112,17 @@ const backfilledCount = backfillEventSlugs(db);
 if (backfilledCount > 0) console.log(`Backfilled slugs for ${backfilledCount} existing event(s)`);
 
 const { logActivity, logAccess } = require('./lib/activity');
-const { pingIndexNow } = require('./lib/indexnow');
+const { enqueueIndexNow, startIndexNowWorker } = require('./lib/indexnow');
+const { startSeoScheduler } = require('./lib/seo-scheduler');
+const seoEditorial = require('./lib/seo-editorial');
+const seoEntities = require('./lib/seo-entities');
+const seoMasterEntities = require('./lib/seo-master-entities');
+const seoTaxonomy = require('./lib/seo-taxonomy');
+const seoRobots = require('./lib/robots');
+const seoSitemapValidation = require('./lib/sitemap-validation');
+const seoDirectives = require('./lib/seo-directives');
+const seoRedirectsExt = require('./lib/redirects');
+const { syncSeoResourceInventory, getSeoResource } = require('./lib/seo-resources');
 
 // A page is "indexable" when published AND its robots directive allows indexing —
 // that's the B7 trigger condition (publish, unpublish, or robots-flip-to-indexable).
@@ -373,9 +383,33 @@ const sanitizePageForPublic = (page) => {
   return { ...page, content_sections: JSON.stringify(sections) };
 };
 
+const publicSeoFor = (resourceType, resourceId, isEventContext = false) => {
+  syncSeoResourceInventory(db);
+  const resource = getSeoResource(db, resourceType, String(resourceId), true);
+  if (!resource) return null;
+  const references = seoEntities.listEntityReferencesForResource(db, resource.id);
+  const terms = seoTaxonomy.listTermsForResource(db, resource.id);
+  return {
+    resource,
+    terms,
+    entityJsonLd: seoEntities.buildEntityJsonLdProperties(references, { isEventContext }),
+  };
+};
+
 app.get('/api/pages/public-list', (req, res) => {
   try {
-    const rows = db.prepare("SELECT slug, updated_at, robots FROM pages WHERE status = 'published' ORDER BY slug").all();
+    syncSeoResourceInventory(db, true);
+    const rows = db.prepare(`
+      SELECT p.slug, p.updated_at, p.robots,
+             COALESCE(r.includeSitemap, 1) AS includeSitemap,
+             COALESCE(r.indexState, 'index') AS indexState,
+             COALESCE(r.httpStatus, 200) AS httpStatus,
+             COALESCE(r.isActive, 1) AS isActive
+      FROM pages p
+      LEFT JOIN seo_resources r ON r.resourceType = 'page' AND r.resourceId = CAST(p.id AS TEXT)
+      WHERE p.status = 'published'
+      ORDER BY p.slug
+    `).all();
     res.json(rows);
   } catch (err) {
     console.error('Pages public-list error:', err);
@@ -385,9 +419,10 @@ app.get('/api/pages/public-list', (req, res) => {
 
 app.get('/api/pages/public/:slug', (req, res) => {
   try {
+    syncSeoResourceInventory(db, true);
     const page = db.prepare("SELECT * FROM pages WHERE slug = ? AND status = 'published'").get(req.params.slug);
     if (!page) return res.status(404).json({ error: 'Page not found' });
-    res.json(sanitizePageForPublic(page));
+    res.json({ ...sanitizePageForPublic(page), _seo: publicSeoFor('page', page.id, false) });
   } catch (err) {
     console.error('Page public fetch error:', err);
     res.status(500).json({ error: 'Failed to fetch page' });
@@ -429,7 +464,7 @@ app.post('/api/pages', requireAuth, upload.single('og_image_file'), verifyUpload
     res.status(201).json(created);
     logActivity(db, { action: 'create', resourceType: 'page', resourceId: created.id, req, details: { slug: created.slug, status: created.status } });
     broadcast('pages');
-    if (isIndexablePage(created)) pingIndexNow(`${siteUrlBase()}/${created.slug}`);
+    if (isIndexablePage(created)) enqueueIndexNow(db, `${siteUrlBase()}/${created.slug}`, { action: 'created', submittedBy: req.user?.email || req.user?.username || 'api-key' });
   } catch (err) {
     if (String(err.message || '').includes('UNIQUE')) {
       return res.status(409).json({ error: 'Slug already exists' });
@@ -461,7 +496,7 @@ app.put('/api/pages/:id', requireAuth, upload.single('og_image_file'), verifyUpl
     // Ping on publish, unpublish, or a robots-flip-to-indexable while staying published
     // (also covers a slug change on an already-indexable page — new URL, must be pinged).
     if (isIndexablePage(updatedPage) || (isIndexablePage(existing) && !isIndexablePage(updatedPage))) {
-      pingIndexNow(`${siteUrlBase()}/${updatedPage.slug}`);
+      enqueueIndexNow(db, `${siteUrlBase()}/${updatedPage.slug}`, { action: isIndexablePage(updatedPage) ? 'updated' : 'deleted', submittedBy: req.user?.email || req.user?.username || 'api-key' });
     }
   } catch (err) {
     if (String(err.message || '').includes('UNIQUE')) {
@@ -783,6 +818,7 @@ app.post('/api/users/:id/resend-invite', requireAuth, requireRole('super_admin')
 app.get('/api/events', (req, res) => {
   const { all, deleted } = req.query;
   try {
+    syncSeoResourceInventory(db, true);
     syncEventStatuses(db);
     let query = 'SELECT * FROM events';
     const conditions = [];
@@ -797,7 +833,16 @@ app.get('/api/events', (req, res) => {
     }
     if (conditions.length) query += ' WHERE ' + conditions.join(' AND ');
     query += ' ORDER BY date ASC, time ASC';
-    const events = db.prepare(query).all();
+    const events = db.prepare(query).all().map((event) => {
+      const resource = publicSeoFor('event', event.id, true)?.resource;
+      return {
+        ...event,
+        includeSitemap: resource?.includeSitemap ?? 1,
+        indexState: resource?.indexState ?? 'index',
+        httpStatus: resource?.httpStatus ?? 200,
+        isActive: resource?.isActive ?? 1,
+      };
+    });
     res.json(events);
   } catch (err) {
     console.error('Events fetch error:', err);
@@ -809,10 +854,11 @@ app.get('/api/events', (req, res) => {
 // so 'public' is never captured as an :id param value.
 app.get('/api/events/public/:slug', (req, res) => {
   try {
+    syncSeoResourceInventory(db, true);
     syncEventStatuses(db);
     const event = db.prepare("SELECT * FROM events WHERE slug = ? AND deleted_at IS NULL AND status = 'active'").get(req.params.slug);
     if (!event) return res.status(404).json({ error: 'Event not found' });
-    res.json(event);
+    res.json({ ...event, _seo: publicSeoFor('event', event.id, true) });
   } catch (err) {
     console.error('Event public fetch error:', err);
     res.status(500).json({ error: 'Failed to fetch event' });
@@ -889,7 +935,7 @@ app.post('/api/events', requireAuth, upload.single('image'), verifyUploadedFile,
     res.json(created);
     logActivity(db, { action: 'create', resourceType: 'event', resourceId: created.id, req, details: { title: created.title, slug: created.slug } });
     broadcast('events');
-    if (created.slug) pingIndexNow(`${siteUrlBase()}/events/${created.slug}`);
+    if (created.slug) enqueueIndexNow(db, `${siteUrlBase()}/events/${created.slug}`, { action: 'created', submittedBy: req.user?.email || req.user?.username || 'api-key' });
   } catch (err) {
     console.error('Event create error:', err);
     if (String(err.message || '').includes('UNIQUE')) {
@@ -956,7 +1002,7 @@ app.put('/api/events/:id', requireAuth, upload.single('image'), verifyUploadedFi
     res.json(updated);
     logActivity(db, { action: 'update', resourceType: 'event', resourceId: id, req, details: { title: updated.title, slug: updated.slug } });
     broadcast('events');
-    if (updated.slug) pingIndexNow(`${siteUrlBase()}/events/${updated.slug}`);
+    if (updated.slug) enqueueIndexNow(db, `${siteUrlBase()}/events/${updated.slug}`, { action: 'updated', submittedBy: req.user?.email || req.user?.username || 'api-key' });
   } catch (err) {
     console.error('Event update error:', err);
     if (String(err.message || '').includes('UNIQUE')) {
@@ -1563,14 +1609,6 @@ app.post('/api/auth/logout', (req, res) => {
 // mutation, broadcast('topic') SSE calls on writes that affect admin lists.
 // ============================================================================
 
-const seoEditorial = require('./lib/seo-editorial');
-const seoEntities = require('./lib/seo-entities');
-const seoMasterEntities = require('./lib/seo-master-entities');
-const seoTaxonomy = require('./lib/seo-taxonomy');
-const seoRobots = require('./lib/robots');
-const seoSitemapValidation = require('./lib/sitemap-validation');
-const seoDirectives = require('./lib/seo-directives');
-const seoRedirectsExt = require('./lib/redirects');
 // The coordinator's already-built core resource registry (backend/lib/seo-resources.js,
 // treated as ALREADY BUILT per this task's instructions — used here, never
 // duplicated or rewritten). syncSeoResourceInventory(db) is what actually
@@ -1579,8 +1617,6 @@ const seoRedirectsExt = require('./lib/redirects');
 // so every route below that is keyed by (resourceType, resourceId) or by the
 // raw seo_resources.id calls it first — otherwise a freshly created page would
 // have no seo_resources row for editorial/entity/taxonomy data to attach to.
-const { syncSeoResourceInventory, getSeoResource } = require('./lib/seo-resources');
-
 // ---- Editorial: checklist definitions ----
 app.get('/api/seo/checklist-definitions', requireAuth, (req, res) => {
   try {
@@ -1767,6 +1803,29 @@ app.delete('/api/seo/entity-references/:id', requireAuth, (req, res) => {
 });
 
 // ---- Master entities (stable @id registry) ----
+app.get('/api/seo/public/sitemap-eligibility', (req, res) => {
+  try {
+    syncSeoResourceInventory(db, true);
+    res.json(db.prepare(`
+      SELECT path, includeSitemap, indexState, httpStatus, isActive
+      FROM seo_resources
+      ORDER BY path
+    `).all());
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Failed to fetch sitemap eligibility.' });
+  }
+});
+
+app.get('/api/seo/public/master-organization', (req, res) => {
+  try {
+    const entity = seoMasterEntities.getOrganizationEntity(db);
+    if (!entity) return res.status(404).json({ error: 'Master organization has not been configured.' });
+    res.json(seoMasterEntities.buildMasterEntityJsonLd(siteUrlBase(), entity));
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Failed to fetch public master organization' });
+  }
+});
+
 app.get('/api/seo/master-entities', requireAuth, (req, res) => {
   try {
     res.json(seoMasterEntities.listMasterEntities(db));
@@ -2136,6 +2195,9 @@ app.post('/api/seo/directives/preview', requireAuth, (req, res) => {
     res.status(err.status || 500).json({ error: err.message || 'Failed to build robots directives' });
   }
 });
+
+startSeoScheduler(db);
+startIndexNowWorker(db);
 
 app.listen(PORT, () => {
   console.log(`BLVD Park API running on port ${PORT}`);

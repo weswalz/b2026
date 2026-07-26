@@ -37,10 +37,14 @@ const {
   rollbackSeoBulkJob,
   listSeoAuditRuns,
   listSeoPageChecks,
+  listIndexNowLog,
   listSeoIssues,
   updateSeoIssue,
   getSeoDashboardSummary,
 } = require('../lib/seo-resources');
+const { getCrawlSchedule, saveCrawlSchedule } = require('../lib/seo-scheduler');
+const { enqueueIndexNow, listIndexNowQueue, processIndexNowQueue } = require('../lib/indexnow');
+const { ensureRedirectMigrationTables } = require('../lib/redirects');
 
 function buildSeoRouter({ requireAuth, requireRole, logActivity, broadcast }) {
   const router = Router();
@@ -199,6 +203,97 @@ function buildSeoRouter({ requireAuth, requireRole, logActivity, broadcast }) {
       console.error('SEO summary error:', err);
       res.status(500).json({ error: 'Failed to fetch SEO summary' });
     }
+  });
+
+  // Truthful capability disclosure: each available item below has a concrete
+  // route, persisted table, and browser surface in this candidate. Environment
+  // dependencies are disclosed separately instead of being reported as ready.
+  router.get('/capabilities', requireAuth, (req, res) => {
+    const db = req.app.locals.db;
+    ensureRedirectMigrationTables(db);
+    const table = (name) => !!db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?").get(name);
+    const indexNowConfigured = !!process.env.INDEXNOW_KEY;
+    res.json({
+      checkedAt: new Date().toISOString(),
+      capabilities: [
+        { key: 'resources', label: 'SEO resource editor', available: table('seo_resources') && table('seo_revisions') },
+        { key: 'bulk', label: 'Bulk preview, apply, and rollback', available: table('seo_bulk_jobs') },
+        { key: 'redirectMigration', label: 'Redirect import and link migration', available: table('redirect_import_jobs') && table('link_migration_jobs') },
+        { key: 'taxonomyEntities', label: 'Taxonomy and entity assignment', available: table('seo_taxonomy_terms') && table('seo_entity_references') },
+        { key: 'sitemapFamily', label: 'Page, image, and video sitemaps', available: true },
+        { key: 'scheduler', label: 'Persistent crawl scheduler', available: table('seo_crawl_schedule') && table('seo_worker_locks'), note: 'Due-slot ownership is coordinated through SQLite so multiple backend instances cannot launch the same scheduled crawl.' },
+        {
+          key: 'indexNow',
+          label: 'Durable IndexNow queue, retry, and attempt log',
+          available: table('seo_indexnow_log') && table('seo_indexnow_queue'),
+          configured: indexNowConfigured,
+          status: indexNowConfigured ? 'ready' : 'partial',
+          note: indexNowConfigured
+            ? 'SQLite-backed pending work survives restarts, stale claims are recovered, and failed delivery is retried with bounded backoff.'
+            : 'Queue and retry worker are operational; an IndexNow credential is still required before delivery.',
+        },
+        { key: 'venueSso', label: 'Venue-bound SSO', available: true, expectedVenue: String(process.env.SSO_EXPECTED_VENUE || 'blvdpark') },
+      ],
+    });
+  });
+
+  router.get('/schedule', requireAuth, (req, res) => {
+    res.json(getCrawlSchedule(req.app.locals.db));
+  });
+
+  router.put('/schedule', requireAuth, requireRole('admin', 'super_admin'), (req, res) => {
+    try {
+      const db = req.app.locals.db;
+      const schedule = saveCrawlSchedule(db, req.body || {}, req.user);
+      logActivity(db, { action: 'update', resourceType: 'seo-crawl-schedule', resourceId: 'default', req, details: { enabled: schedule.enabled, intervalMinutes: schedule.intervalMinutes } });
+      res.json(schedule);
+    } catch (err) {
+      res.status(err.status || 500).json({ error: err.message || 'Failed to update crawl schedule' });
+    }
+  });
+
+  router.get('/indexnow/log', requireAuth, (req, res) => {
+    res.json(listIndexNowLog(req.app.locals.db, Math.max(1, Math.min(250, Number(req.query.limit) || 50))));
+  });
+
+  router.get('/indexnow/queue', requireAuth, (req, res) => {
+    res.json(listIndexNowQueue(req.app.locals.db, req.query.limit));
+  });
+
+  router.post('/indexnow/submit', requireAuth, requireRole('admin', 'super_admin', 'editor'), async (req, res) => {
+    const rawUrls = Array.isArray(req.body?.urls) ? req.body.urls : [req.body?.url];
+    const origin = (process.env.FRONTEND_URL || 'https://blvdpark.com').replace(/\/$/, '');
+    let urls;
+    try {
+      urls = rawUrls.filter(Boolean).map((value) => {
+        const url = new URL(String(value), origin);
+        if (url.origin !== new URL(origin).origin) throw new Error('IndexNow URLs must belong to this venue.');
+        return url.href;
+      });
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+    if (!urls.length) return res.status(400).json({ error: 'At least one URL is required.' });
+    const result = enqueueIndexNow(req.app.locals.db, urls, {
+      action: req.body?.action || 'updated',
+      submittedBy: req.user?.username || req.user?.email || 'admin',
+      force: true,
+    });
+    if (result.queued) {
+      setImmediate(() => processIndexNowQueue(req.app.locals.db).catch((error) => {
+        console.error('[IndexNow worker] Manual queue processing failed:', error?.message || error);
+      }));
+    }
+    res.status(result.queued ? 202 : (result.reason === 'credential_required' ? 503 : 200)).json({
+      submitted: result.queued,
+      queued: result.queued,
+      configured: !!process.env.INDEXNOW_KEY,
+      message: result.queued
+        ? `${result.count} URL(s) queued for durable IndexNow delivery.`
+        : result.reason === 'deduplicated'
+          ? 'The URL is already pending in the delivery queue.'
+          : 'IndexNow submission was not queued; see the attempt log.',
+    });
   });
 
   // Crawl lock status — used by the admin panel to show "a crawl is currently

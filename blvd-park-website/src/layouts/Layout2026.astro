@@ -9,6 +9,9 @@ export interface Props {
   title: string;
   description?: string;
   image?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImage?: string;
   canonicalURL?: string;
   metaTitleKey?: string;
   metaDescriptionKey?: string;
@@ -24,6 +27,9 @@ const {
   title,
   description = "The Heights' premier sports bar with free pickleball courts. Craft cocktails, game day vibes, and a vibrant atmosphere at Houston's favorite playground.",
   image = "/images/hero-background.webp",
+  ogTitle,
+  ogDescription,
+  ogImage,
   canonicalURL,
   metaTitleKey,
   metaDescriptionKey,
@@ -33,6 +39,9 @@ const {
   jsonLd,
   canonicalLink,
 } = Astro.props;
+const socialTitle = ogTitle || title;
+const socialDescription = ogDescription || description;
+const socialImage = ogImage || image;
 
 // Site-wide venue JSON-LD (Wave-2 net-new — BLVD had NO site-wide venue
 // schema anywhere before this; confirmed by grepping every src/ file for
@@ -59,22 +68,19 @@ const {
 // will not appear in prerendered pages' JSON-LD until the next rebuild —
 // disclosed here, not silently assumed away.
 const INTERNAL_API = process.env.INTERNAL_API_URL || import.meta.env.PUBLIC_API_URL || "https://blvdpark.com";
-let masterVenueEntity: { idSlug: string } | null = null;
+let masterVenueEntity: Record<string, any> | null = null;
 try {
-  const res = await fetch(`${INTERNAL_API}/api/seo/master-entities`);
-  if (res.ok) {
-    const entities = await res.json();
-    masterVenueEntity = Array.isArray(entities) ? entities.find((e: any) => e.idSlug === "organization") || null : null;
-  }
+  const res = await fetch(`${INTERNAL_API}/api/seo/public/master-organization`);
+  if (res.ok) masterVenueEntity = await res.json();
 } catch (_e) {
   // Backend unreachable at build/request time — fall back to the plain
   // fragment id below rather than failing the page render.
 }
 const siteOrigin = "https://blvdpark.com";
-const venueSchema = {
+const fallbackVenueSchema = {
   "@context": "https://schema.org",
   "@type": ["BarOrPub", "LocalBusiness"],
-  "@id": masterVenueEntity ? `${siteOrigin}/#${masterVenueEntity.idSlug}` : `${siteOrigin}/#organization`,
+  "@id": `${siteOrigin}/#organization`,
   name: "BLVD Park",
   url: siteOrigin,
   image: `${siteOrigin}/images/hero-background.webp`,
@@ -86,6 +92,9 @@ const venueSchema = {
     { "@type": "LocationFeatureSpecification", name: "Game Day Viewing" },
   ],
 };
+const venueSchema = masterVenueEntity
+  ? { ...fallbackVenueSchema, ...masterVenueEntity }
+  : fallbackVenueSchema;
 const venueSchemaString = JSON.stringify(venueSchema).replace(/</g, "\\u003c");
 ---
 
@@ -112,17 +121,17 @@ const venueSchemaString = JSON.stringify(venueSchema).replace(/</g, "\\u003c");
     <!-- Open Graph -->
     <meta
       property="og:title"
-      content={title}
+      content={socialTitle}
       data-cms-attr={metaTitleKey ? `content:${metaTitleKey}` : undefined}
     />
     <meta
       property="og:description"
-      content={description}
+      content={socialDescription}
       data-cms-attr={metaDescriptionKey ? `content:${metaDescriptionKey}` : undefined}
     />
     <meta
       property="og:image"
-      content={image}
+      content={socialImage}
       data-cms-attr={metaImageKey ? `content:${metaImageKey}` : undefined}
     />
     <meta property="og:type" content="website" />
@@ -132,17 +141,17 @@ const venueSchemaString = JSON.stringify(venueSchema).replace(/</g, "\\u003c");
     <meta name="twitter:card" content="summary_large_image" />
     <meta
       name="twitter:title"
-      content={title}
+      content={socialTitle}
       data-cms-attr={metaTitleKey ? `content:${metaTitleKey}` : undefined}
     />
     <meta
       name="twitter:description"
-      content={description}
+      content={socialDescription}
       data-cms-attr={metaDescriptionKey ? `content:${metaDescriptionKey}` : undefined}
     />
     <meta
       name="twitter:image"
-      content={image}
+      content={socialImage}
       data-cms-attr={metaImageKey ? `content:${metaImageKey}` : undefined}
     />
 

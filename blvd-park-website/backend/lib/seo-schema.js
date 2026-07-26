@@ -167,6 +167,22 @@ function applySeoSchema(db) {
       submittedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
       submittedBy TEXT
     );
+    CREATE TABLE IF NOT EXISTS seo_indexnow_queue (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      url TEXT NOT NULL,
+      action TEXT NOT NULL DEFAULT 'updated',
+      status TEXT NOT NULL DEFAULT 'pending',
+      attemptCount INTEGER NOT NULL DEFAULT 0,
+      maxAttempts INTEGER NOT NULL DEFAULT 5,
+      nextAttemptAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      lockedAt TEXT,
+      lockedBy TEXT,
+      lastError TEXT,
+      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+      completedAt TEXT,
+      submittedBy TEXT
+    );
     CREATE TABLE IF NOT EXISTS seo_404_log (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       path TEXT NOT NULL,
@@ -358,6 +374,12 @@ function applySeoSchema(db) {
       createdBy TEXT,
       FOREIGN KEY (auditRunId) REFERENCES seo_audit_runs(id)
     );
+    CREATE TABLE IF NOT EXISTS seo_worker_locks (
+      name TEXT PRIMARY KEY,
+      owner TEXT,
+      expiresAt TEXT,
+      updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
     CREATE TABLE IF NOT EXISTS seo_sitemap_checks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       checkedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -385,6 +407,8 @@ function applySeoSchema(db) {
     CREATE INDEX IF NOT EXISTS idx_seo_issues_status ON seo_issues(status, severity);
     CREATE INDEX IF NOT EXISTS idx_seo_issues_run ON seo_issues(runId);
     CREATE INDEX IF NOT EXISTS idx_seo_indexnow_submitted ON seo_indexnow_log(submittedAt DESC);
+    CREATE INDEX IF NOT EXISTS idx_seo_indexnow_queue_due ON seo_indexnow_queue(status, nextAttemptAt);
+    CREATE INDEX IF NOT EXISTS idx_seo_indexnow_queue_url ON seo_indexnow_queue(url, status);
     CREATE INDEX IF NOT EXISTS idx_seo_404_last_seen ON seo_404_log(lastSeenAt DESC);
     CREATE INDEX IF NOT EXISTS idx_seo_bulk_jobs_created ON seo_bulk_jobs(createdAt DESC);
     CREATE INDEX IF NOT EXISTS idx_seo_citations_resource ON seo_citations(seoResourceId, displayOrder);

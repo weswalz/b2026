@@ -3,6 +3,7 @@
 // full SEO head + auto-generated Event JSON-LD (https://schema.org/Event); missing/deleted
 // slugs 404. Data comes from blvdpark-api. Pattern mirrors src/pages/[slug].astro (CMS pages).
 import Layout2026 from "@layouts/Layout2026.astro";
+import { buildEventJsonLd } from "../../lib/public-seo.mjs";
 
 const { slug } = Astro.params;
 const INTERNAL_API = process.env.INTERNAL_API_URL || import.meta.env.PUBLIC_API_URL || "https://blvdpark.com";
@@ -20,35 +21,14 @@ if (slug && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) {
 if (!event) Astro.response.status = 404;
 
 let jsonLdSafe = "";
+const resourceSeo = event?._seo?.resource || null;
 if (event) {
-  const startDateTime = event.time ? `${event.date}T${event.time}:00` : event.date;
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Event",
-    name: event.title,
-    startDate: startDateTime,
-    eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
-    eventStatus:
-      event.status === "cancelled"
-        ? "https://schema.org/EventCancelled"
-        : "https://schema.org/EventScheduled",
-    location: {
-      "@type": "Place",
-      name: "BLVD Park",
-      address: {
-        "@type": "PostalAddress",
-        streetAddress: "1119 W 20th Street",
-        addressLocality: "Houston",
-        addressRegion: "TX",
-        postalCode: "77008",
-        addressCountry: "US",
-      },
-    },
-    ...(event.description ? { description: event.description } : {}),
-    ...(event.image ? { image: [`https://blvdpark.com${event.image}`] } : {}),
-    ...(event.ticketUrl ? { url: event.ticketUrl } : {}),
-  };
-  jsonLdSafe = JSON.stringify(jsonLd).replace(/</g, "\\u003c");
+  jsonLdSafe = buildEventJsonLd({
+    event,
+    resource: resourceSeo,
+    entityJsonLd: event._seo?.entityJsonLd,
+    terms: event._seo?.terms,
+  });
 }
 
 const ogImage = event ? (event.ogImage || event.image || undefined) : undefined;
@@ -57,13 +37,16 @@ const ogImage = event ? (event.ogImage || event.image || undefined) : undefined;
 {
   event ? (
     <Layout2026
-      title={event.seoTitle || event.ogTitle || `${event.title} | BLVD Park`}
-      description={event.seoDescription || event.ogDescription || event.description || undefined}
-      image={ogImage}
+      title={resourceSeo?.seoTitle || event.seoTitle || event.ogTitle || `${event.title} | BLVD Park`}
+      description={resourceSeo?.seoDescription || event.seoDescription || event.ogDescription || event.description || undefined}
+      image={resourceSeo?.ogImage || ogImage}
+      ogTitle={resourceSeo?.ogTitle || event.ogTitle || undefined}
+      ogDescription={resourceSeo?.ogDescription || event.ogDescription || undefined}
+      ogImage={resourceSeo?.ogImage || ogImage}
       keywords={event.seoKeywords || undefined}
-      robots="index, follow"
-      canonicalLink={`https://blvdpark.com/events/${event.slug}`}
-      canonicalURL={`https://blvdpark.com/events/${event.slug}`}
+      robots={resourceSeo ? `${resourceSeo.indexState}, ${resourceSeo.followState}` : "index, follow"}
+      canonicalLink={resourceSeo?.canonicalUrl || `https://blvdpark.com/events/${event.slug}`}
+      canonicalURL={resourceSeo?.canonicalUrl || `https://blvdpark.com/events/${event.slug}`}
       jsonLd={jsonLdSafe}
     >
       <section class="section-padding">

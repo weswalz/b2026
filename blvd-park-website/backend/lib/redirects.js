@@ -471,9 +471,18 @@ function rollbackRedirectImportJob(id, db, actor = {}) {
   const rollback = db.transaction(() => {
     for (const created of job.result) {
       const current = db.prepare('SELECT * FROM redirects WHERE id = ?').get(created.id);
-      if (current && current.isActive) {
-        db.prepare('UPDATE redirects SET isActive = 0, updatedAt = ? WHERE id = ?').run(now, created.id);
+      // Hit counters may legitimately advance after import, but every
+      // administrator-editable field (and updatedAt) must still match the row
+      // captured at apply time. Otherwise a rollback would silently erase an
+      // administrator's later redirect edit.
+      const guardedFields = ['fromPath', 'toPath', 'statusCode', 'matchType', 'isActive', 'notes', 'updatedAt'];
+      const changed = !current || guardedFields.some((field) => current[field] !== created[field]);
+      if (changed) {
+        const e = new Error(`Redirect import rollback refused: redirect id ${created.id} changed after this import was applied.`);
+        e.status = 409;
+        throw e;
       }
+      db.prepare('UPDATE redirects SET isActive = 0, updatedAt = ? WHERE id = ?').run(now, created.id);
     }
     db.prepare("UPDATE redirect_import_jobs SET status = 'rolled_back', rolledBackAt = ?, rolledBackBy = ? WHERE id = ?")
       .run(now, actorLabel(actor), id);
@@ -715,8 +724,14 @@ function rollbackLinkMigrationJob(id, db, actor = {}) {
   const now = new Date().toISOString();
   const rollback = db.transaction(() => {
     for (const touched of job.result) {
-      const page = db.prepare('SELECT id FROM pages WHERE id = ?').get(touched.pageId);
-      if (!page) continue; // page was deleted since apply; nothing to restore it onto
+      const page = db.prepare('SELECT id, slug, content_sections FROM pages WHERE id = ?').get(touched.pageId);
+      let currentSections = null;
+      try { currentSections = page ? JSON.parse(page.content_sections || '[]') : null; } catch (_error) {}
+      if (!page || JSON.stringify(currentSections) !== JSON.stringify(touched.afterSections)) {
+        const e = new Error(`Link migration rollback refused: page id ${touched.pageId} changed after this migration was applied.`);
+        e.status = 409;
+        throw e;
+      }
       db.prepare('UPDATE pages SET content_sections = ?, updated_at = CURRENT_TIMESTAMP, updated_by = ? WHERE id = ?')
         .run(JSON.stringify(touched.beforeSections), actorLabel(actor), touched.pageId);
     }

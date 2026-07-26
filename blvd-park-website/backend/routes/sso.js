@@ -17,6 +17,17 @@ router.get('/', async (req, res) => {
   const ssoUser = await verifySSOToken(token);
   if (!ssoUser) return res.redirect('/admin/sso-error');
 
+  // Tokens are minted for one CLE venue. Never accept a valid token issued for
+  // another property (or a legacy token with no venue claim). The default
+  // matches the Admin Hub's stable venue id; deployments can override it
+  // explicitly without weakening claim enforcement.
+  const expectedVenue = String(process.env.SSO_EXPECTED_VENUE || 'blvdpark').trim().toLowerCase();
+  const claimedVenue = typeof ssoUser.venue === 'string' ? ssoUser.venue.trim().toLowerCase() : '';
+  if (!claimedVenue || claimedVenue !== expectedVenue) {
+    console.warn('[SSO] Venue claim missing or mismatched:', claimedVenue || '(missing)');
+    return res.redirect('/admin/sso-error');
+  }
+
   try {
     const db = req.app.locals.db;
 

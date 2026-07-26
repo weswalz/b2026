@@ -1,5 +1,6 @@
-// Legacy sitemap URL (advertised in older robots.txt / search consoles) — permanent redirect.
-import type { APIRoute } from "astro";
+import type { APIRoute } from 'astro';
+import { sitemapIndexResponse } from '../lib/sitemap-family';
 
-export const GET: APIRoute = () =>
-  new Response(null, { status: 301, headers: { Location: "/sitemap.xml" } });
+// Explicit alias for operators and sitemap validators. This is a real 200 XML
+// sitemap index, not the former redirect to /sitemap.xml.
+export const GET: APIRoute = () => sitemapIndexResponse();

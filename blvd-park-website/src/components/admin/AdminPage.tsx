@@ -15,6 +15,7 @@ import AdminUsers from './AdminUsers';
 import AdminSeo from './AdminSeo';
 import AdminSeoRobots from './AdminSeoRobots';
 import AdminSeoTaxonomy from './AdminSeoTaxonomy';
+import AdminSeoResources from './AdminSeoResources';
 
 export default function AdminPage({
   currentPath,
@@ -36,7 +37,8 @@ export default function AdminPage({
     | 'users'
     | 'seo'
     | 'seo-robots'
-    | 'seo-taxonomy';
+    | 'seo-taxonomy'
+    | 'seo-resources';
 }) {
   const pages = {
     dashboard: AdminDashboard,
@@ -54,6 +56,7 @@ export default function AdminPage({
     seo: AdminSeo,
     'seo-robots': AdminSeoRobots,
     'seo-taxonomy': AdminSeoTaxonomy,
+    'seo-resources': AdminSeoResources,
   };
 
   const PageComponent = pages[page];
@@ -61,7 +64,7 @@ export default function AdminPage({
   return (
     <Providers>
       <AdminSidebar currentPath={currentPath} />
-      <main className="flex-1 overflow-auto">
+      <main className="min-w-0 flex-1 overflow-auto pt-16 md:pt-0">
         <PageComponent />
       </main>
     </Providers>

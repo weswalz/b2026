@@ -2,6 +2,7 @@
 // CMS page route — SSR only (no prerender). Published pages render with full SEO head;
 // drafts and unknown slugs 404. Data comes from blvdpark-api.
 import Layout2026 from "@layouts/Layout2026.astro";
+import { buildPageJsonLd, serializeJsonLd } from "../lib/public-seo.mjs";
 
 const { slug } = Astro.params;
 const INTERNAL_API = process.env.INTERNAL_API_URL || import.meta.env.PUBLIC_API_URL || "https://blvdpark.com";
@@ -22,18 +23,23 @@ let sections: { type: string; body: string }[] = [];
 let faqItems: { question: string; answer: string }[] = [];
 let jsonLdSafe = "";
 let faqJsonLdSafe = "";
+let resourceSeo: any = null;
 if (page) {
+  resourceSeo = page._seo?.resource || null;
   try {
     sections = JSON.parse(page.content_sections || "[]");
   } catch (_e) {}
   try {
     faqItems = JSON.parse(page.faq_items || "[]");
   } catch (_e) {}
-  if (page.json_ld) {
-    try {
-      jsonLdSafe = JSON.stringify(JSON.parse(page.json_ld)).replace(/</g, "\\u003c");
-    } catch (_e) {}
-  }
+  try {
+    jsonLdSafe = buildPageJsonLd({
+      page,
+      resource: resourceSeo,
+      entityJsonLd: page._seo?.entityJsonLd,
+      terms: page._seo?.terms,
+    });
+  } catch (_e) {}
   // Auto FAQPage JSON-LD (https://schema.org/FAQPage, https://schema.org/Question) —
   // kept separate from the manual json_ld field per the shared Pages contract. Note:
   // Google deprecated FAQ rich results in Search as of May 2026, but the schema.org
@@ -48,7 +54,7 @@ if (page) {
         acceptedAnswer: { "@type": "Answer", text: item.answer },
       })),
     };
-    faqJsonLdSafe = JSON.stringify(faqSchema).replace(/</g, "\\u003c");
+    faqJsonLdSafe = serializeJsonLd(faqSchema);
   }
 }
 ---
@@ -56,13 +62,16 @@ if (page) {
 {
   page ? (
     <Layout2026
-      title={page.seo_title || page.title}
-      description={page.seo_description || page.description || undefined}
-      image={page.og_image || undefined}
+      title={resourceSeo?.seoTitle || page.seo_title || page.title}
+      description={resourceSeo?.seoDescription || page.seo_description || page.description || undefined}
+      image={resourceSeo?.ogImage || page.og_image || undefined}
+      ogTitle={resourceSeo?.ogTitle || undefined}
+      ogDescription={resourceSeo?.ogDescription || undefined}
+      ogImage={resourceSeo?.ogImage || page.og_image || undefined}
       keywords={page.seo_keywords || undefined}
-      robots={page.robots}
-      canonicalLink={`https://blvdpark.com/${page.slug}`}
-      canonicalURL={`https://blvdpark.com/${page.slug}`}
+      robots={resourceSeo ? `${resourceSeo.indexState}, ${resourceSeo.followState}` : page.robots}
+      canonicalLink={resourceSeo?.canonicalUrl || `https://blvdpark.com/${page.slug}`}
+      canonicalURL={resourceSeo?.canonicalUrl || `https://blvdpark.com/${page.slug}`}
       jsonLd={jsonLdSafe || undefined}
     >
       <section class="section-padding">

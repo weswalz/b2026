@@ -174,6 +174,89 @@ export interface SeoDashboardSummary {
   lastRun: SeoAuditRun | null;
 }
 
+export interface SeoResource {
+  id: number;
+  resourceType: string;
+  resourceId: string;
+  path: string;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  canonicalUrl: string | null;
+  indexState: 'index' | 'noindex';
+  followState: 'follow' | 'nofollow';
+  includeSitemap: number;
+  ogTitle: string | null;
+  ogDescription: string | null;
+  ogImage: string | null;
+  schemaType: string | null;
+  updatedAt: string;
+  updatedBy: string | null;
+}
+
+export interface SeoRevision {
+  id: number;
+  seoResourceId: number;
+  revisionNumber: number;
+  changeSummary: string | null;
+  createdAt: string;
+  createdBy: string | null;
+}
+
+export interface SeoBulkJob {
+  id: number;
+  status: 'preview' | 'applied' | 'rolled_back';
+  preview: Array<{ path: string; valid: boolean; errors: string[]; changedFields: string[] }>;
+  createdAt: string;
+}
+
+export interface SeoCapabilityStatus {
+  checkedAt: string;
+  capabilities: Array<{
+    key: string;
+    label: string;
+    available: boolean;
+    configured?: boolean;
+    expectedVenue?: string;
+    status?: 'ready' | 'partial';
+    note?: string;
+  }>;
+}
+
+export interface SeoCrawlSchedule {
+  id: string;
+  enabled: number;
+  intervalMinutes: number;
+  scopeType: 'all' | 'prefix';
+  scopePrefix: string | null;
+  maxPages: number;
+  maxDurationMs: number;
+  lastScheduledRunAt: string | null;
+}
+
+export interface IndexNowLogItem {
+  id: number;
+  url: string;
+  action: string;
+  status: string;
+  responseStatus: number | null;
+  responseBody: string | null;
+  submittedAt: string;
+  submittedBy: string | null;
+}
+
+export interface IndexNowQueueItem {
+  id: number;
+  url: string;
+  action: string;
+  status: 'pending' | 'processing' | 'succeeded' | 'failed';
+  attemptCount: number;
+  maxAttempts: number;
+  nextAttemptAt: string;
+  lastError: string | null;
+  createdAt: string;
+  completedAt: string | null;
+}
+
 export interface SeoAuditRun {
   id: number;
   baseUrl: string;
@@ -242,6 +325,18 @@ export interface SeoEntity {
   schemaType: string | null;
 }
 
+export interface SeoTermAssignment extends SeoTaxonomyTerm {
+  assignmentId: number;
+}
+
+export interface SeoEntityReference {
+  id: number;
+  role: 'mentions' | 'about' | 'performer' | 'organizer' | 'sponsor';
+  entityId: number;
+  entityType: string;
+  name: string;
+}
+
 export interface SitemapValidationRun {
   id: number;
   checkedAt: string;
@@ -270,6 +365,14 @@ export interface RedirectImportJob {
   result: unknown;
   createdAt: string;
   createdBy: string | null;
+}
+
+export interface LinkMigrationJob {
+  id: number;
+  status: string;
+  preview: { generatedAt: string; pagesScanned: number; findings: Array<{ pageSlug: string; rawHref: string; redirectTarget: string }> };
+  result: unknown;
+  createdAt: string;
 }
 
 export interface RedirectItem {
@@ -750,6 +853,106 @@ export const api = {
     return res.json();
   },
 
+  async getSeoCapabilities(): Promise<SeoCapabilityStatus> {
+    const res = await fetch(`${API_URL}/api/seo/capabilities`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to fetch capability status');
+    return res.json();
+  },
+
+  async getSeoResources(): Promise<SeoResource[]> {
+    const res = await fetch(`${API_URL}/api/seo/resources`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to fetch SEO resources');
+    return res.json();
+  },
+
+  async updateSeoResource(resource: SeoResource, data: Partial<SeoResource> & { changeSummary?: string }): Promise<SeoResource> {
+    const res = await fetch(`${API_URL}/api/seo/resources/${encodeURIComponent(resource.resourceType)}/${encodeURIComponent(resource.resourceId)}`, {
+      method: 'PUT',
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to update SEO resource');
+    return res.json();
+  },
+
+  async getSeoRevisions(resource: SeoResource): Promise<SeoRevision[]> {
+    const res = await fetch(`${API_URL}/api/seo/resources/${encodeURIComponent(resource.resourceType)}/${encodeURIComponent(resource.resourceId)}/revisions`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to fetch SEO revisions');
+    return res.json();
+  },
+
+  async rollbackSeoRevision(id: number): Promise<SeoResource> {
+    const res = await fetch(`${API_URL}/api/seo/revisions/${id}/rollback`, { method: 'POST', headers: getAuthHeaders() });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to roll back SEO revision');
+    return res.json();
+  },
+
+  async getSeoBulkJobs(): Promise<SeoBulkJob[]> {
+    const res = await fetch(`${API_URL}/api/seo/bulk`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to fetch bulk jobs');
+    return res.json();
+  },
+
+  async previewSeoBulk(changes: Array<{ resourceType: string; resourceId: string; patch: Record<string, unknown> }>): Promise<SeoBulkJob> {
+    const res = await fetch(`${API_URL}/api/seo/bulk/preview`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ changes }),
+    });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to preview bulk changes');
+    return res.json();
+  },
+
+  async applySeoBulk(id: number): Promise<SeoBulkJob> {
+    const res = await fetch(`${API_URL}/api/seo/bulk/${id}/apply`, { method: 'POST', headers: getAuthHeaders() });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to apply bulk changes');
+    return res.json();
+  },
+
+  async rollbackSeoBulk(id: number): Promise<SeoBulkJob> {
+    const res = await fetch(`${API_URL}/api/seo/bulk/${id}/rollback`, { method: 'POST', headers: getAuthHeaders() });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to roll back bulk changes');
+    return res.json();
+  },
+
+  async getSeoSchedule(): Promise<SeoCrawlSchedule> {
+    const res = await fetch(`${API_URL}/api/seo/schedule`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to fetch crawl schedule');
+    return res.json();
+  },
+
+  async updateSeoSchedule(data: Partial<SeoCrawlSchedule>): Promise<SeoCrawlSchedule> {
+    const res = await fetch(`${API_URL}/api/seo/schedule`, {
+      method: 'PUT',
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to update crawl schedule');
+    return res.json();
+  },
+
+  async getIndexNowLog(): Promise<IndexNowLogItem[]> {
+    const res = await fetch(`${API_URL}/api/seo/indexnow/log`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to fetch IndexNow log');
+    return res.json();
+  },
+
+  async getIndexNowQueue(): Promise<IndexNowQueueItem[]> {
+    const res = await fetch(`${API_URL}/api/seo/indexnow/queue`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to fetch IndexNow queue');
+    return res.json();
+  },
+
+  async submitIndexNow(url: string, action = 'updated'): Promise<{ submitted: boolean; configured: boolean; message: string }> {
+    const res = await fetch(`${API_URL}/api/seo/indexnow/submit`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, action }),
+    });
+    if (!res.ok) throw await apiErrorWithBody(res, 'IndexNow submission failed');
+    return res.json();
+  },
+
   async getSeoCrawlStatus(): Promise<{ running: boolean; crawlRunId: number | null }> {
     const res = await fetch(`${API_URL}/api/seo/crawl/status`, { headers: getAuthHeaders() });
     if (!res.ok) throw apiError(res, 'Failed to fetch crawl status');
@@ -860,6 +1063,37 @@ export const api = {
     return res.json();
   },
 
+  async updateTaxonomyTerm(id: number, data: Partial<SeoTaxonomyTerm>): Promise<SeoTaxonomyTerm> {
+    const res = await fetch(`${API_URL}/api/seo/taxonomy/terms/${id}`, {
+      method: 'PUT', headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify(data),
+    });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to update taxonomy term');
+    return res.json();
+  },
+
+  async deleteTaxonomyTerm(id: number): Promise<void> {
+    const res = await fetch(`${API_URL}/api/seo/taxonomy/terms/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to retire taxonomy term');
+  },
+
+  async getResourceTerms(seoResourceId: number): Promise<SeoTermAssignment[]> {
+    const res = await fetch(`${API_URL}/api/seo/resources/${seoResourceId}/terms`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to fetch resource terms');
+    return res.json();
+  },
+
+  async assignResourceTerm(seoResourceId: number, termId: number): Promise<void> {
+    const res = await fetch(`${API_URL}/api/seo/resource-terms`, {
+      method: 'POST', headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify({ seoResourceId, termId }),
+    });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to assign taxonomy term');
+  },
+
+  async removeResourceTerm(assignmentId: number): Promise<void> {
+    const res = await fetch(`${API_URL}/api/seo/resource-terms/${assignmentId}`, { method: 'DELETE', headers: getAuthHeaders() });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to remove taxonomy term');
+  },
+
   // Master entities
   async getMasterEntities(): Promise<SeoMasterEntity[]> {
     const res = await fetch(`${API_URL}/api/seo/master-entities`, { headers: getAuthHeaders() });
@@ -875,6 +1109,11 @@ export const api = {
     });
     if (!res.ok) throw await apiErrorWithBody(res, 'Failed to create master entity');
     return res.json();
+  },
+
+  async deleteMasterEntity(id: number): Promise<void> {
+    const res = await fetch(`${API_URL}/api/seo/master-entities/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to retire master entity');
   },
 
   // Entities (content-level)
@@ -894,6 +1133,29 @@ export const api = {
     return res.json();
   },
 
+  async deleteSeoEntity(id: number): Promise<void> {
+    const res = await fetch(`${API_URL}/api/seo/entities/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to retire entity');
+  },
+
+  async getResourceEntityReferences(seoResourceId: number): Promise<SeoEntityReference[]> {
+    const res = await fetch(`${API_URL}/api/seo/resources/${seoResourceId}/entity-references`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to fetch entity assignments');
+    return res.json();
+  },
+
+  async assignResourceEntity(seoResourceId: number, seoEntityId: number, role: SeoEntityReference['role']): Promise<void> {
+    const res = await fetch(`${API_URL}/api/seo/entity-references`, {
+      method: 'POST', headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify({ seoResourceId, seoEntityId, role }),
+    });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to assign entity');
+  },
+
+  async removeResourceEntityReference(id: number): Promise<void> {
+    const res = await fetch(`${API_URL}/api/seo/entity-references/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to remove entity assignment');
+  },
+
   // Redirects CSV import
   async previewRedirectImport(records: Record<string, string>[]): Promise<RedirectImportJob> {
     const res = await fetch(`${API_URL}/api/redirects/import/preview`, {
@@ -905,9 +1167,55 @@ export const api = {
     return res.json();
   },
 
+  async previewRedirectCsv(csv: string): Promise<RedirectImportJob> {
+    const res = await fetch(`${API_URL}/api/redirects/import/preview`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ csv }),
+    });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to preview redirect import');
+    return res.json();
+  },
+
+  async getRedirectImportJobs(): Promise<RedirectImportJob[]> {
+    const res = await fetch(`${API_URL}/api/redirects/import`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to fetch redirect import history');
+    return res.json();
+  },
+
   async applyRedirectImport(id: number): Promise<RedirectImportJob> {
     const res = await fetch(`${API_URL}/api/redirects/import/${id}/apply`, { method: 'POST', headers: getAuthHeaders() });
     if (!res.ok) throw await apiErrorWithBody(res, 'Failed to apply redirect import');
+    return res.json();
+  },
+
+  async rollbackRedirectImport(id: number): Promise<RedirectImportJob> {
+    const res = await fetch(`${API_URL}/api/redirects/import/${id}/rollback`, { method: 'POST', headers: getAuthHeaders() });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to roll back redirect import');
+    return res.json();
+  },
+
+  async getLinkMigrationJobs(): Promise<LinkMigrationJob[]> {
+    const res = await fetch(`${API_URL}/api/redirects/link-migration`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to fetch link migration history');
+    return res.json();
+  },
+
+  async previewLinkMigration(): Promise<LinkMigrationJob> {
+    const res = await fetch(`${API_URL}/api/redirects/link-migration/preview`, { method: 'POST', headers: getAuthHeaders() });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to scan stale internal links');
+    return res.json();
+  },
+
+  async applyLinkMigration(id: number): Promise<LinkMigrationJob> {
+    const res = await fetch(`${API_URL}/api/redirects/link-migration/${id}/apply`, { method: 'POST', headers: getAuthHeaders() });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to apply link migration');
+    return res.json();
+  },
+
+  async rollbackLinkMigration(id: number): Promise<LinkMigrationJob> {
+    const res = await fetch(`${API_URL}/api/redirects/link-migration/${id}/rollback`, { method: 'POST', headers: getAuthHeaders() });
+    if (!res.ok) throw await apiErrorWithBody(res, 'Failed to roll back link migration');
     return res.json();
   },
 

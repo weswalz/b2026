@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, type RedirectItem } from '../../lib/api';
 
@@ -7,19 +7,24 @@ const STATUS_CODES = [301, 302, 307, 308];
 
 const emptyForm = () => ({ fromPath: '', toPath: '', matchType: 'exact' as RedirectItem['matchType'], statusCode: 301, notes: '' });
 
-function toCsv(rows: RedirectItem[]) {
-  const escape = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const header = ['fromPath', 'toPath', 'matchType', 'statusCode', 'isActive', 'hitCount', 'lastHitAt', 'notes'];
-  const lines = rows.map((r) => [r.fromPath, r.toPath, r.matchType, r.statusCode, r.isActive, r.hitCount, r.lastHitAt, r.notes].map(escape).join(','));
-  return [header.join(','), ...lines].join('\n');
-}
-
 export default function AdminRedirects() {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm());
+  const [csvText, setCsvText] = useState('');
+  const [canManageOperations, setCanManageOperations] = useState(false);
+  useEffect(() => {
+    try {
+      const role = JSON.parse(localStorage.getItem('blvd-user') || '{}').role;
+      setCanManageOperations(role === 'admin' || role === 'super_admin');
+    } catch {
+      setCanManageOperations(false);
+    }
+  }, []);
 
   const { data: redirects = [], isLoading } = useQuery({ queryKey: ['redirects'], queryFn: api.getRedirects });
+  const { data: importJobs = [] } = useQuery({ queryKey: ['redirect-import-jobs'], queryFn: api.getRedirectImportJobs });
+  const { data: linkJobs = [] } = useQuery({ queryKey: ['link-migration-jobs'], queryFn: api.getLinkMigrationJobs });
 
   const createMutation = useMutation({
     mutationFn: api.createRedirect,
@@ -35,14 +40,25 @@ export default function AdminRedirects() {
     mutationFn: api.deleteRedirect,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['redirects'] }),
   });
+  const refreshOperations = () => {
+    queryClient.invalidateQueries({ queryKey: ['redirects'] });
+    queryClient.invalidateQueries({ queryKey: ['redirect-import-jobs'] });
+    queryClient.invalidateQueries({ queryKey: ['link-migration-jobs'] });
+  };
+  const importPreviewMutation = useMutation({ mutationFn: () => api.previewRedirectCsv(csvText), onSuccess: refreshOperations });
+  const importApplyMutation = useMutation({ mutationFn: api.applyRedirectImport, onSuccess: refreshOperations });
+  const importRollbackMutation = useMutation({ mutationFn: api.rollbackRedirectImport, onSuccess: refreshOperations });
+  const linkPreviewMutation = useMutation({ mutationFn: api.previewLinkMigration, onSuccess: refreshOperations });
+  const linkApplyMutation = useMutation({ mutationFn: api.applyLinkMigration, onSuccess: refreshOperations });
+  const linkRollbackMutation = useMutation({ mutationFn: api.rollbackLinkMigration, onSuccess: refreshOperations });
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     createMutation.mutate(form);
   };
 
-  const handleExportCsv = () => {
-    const blob = new Blob([toCsv(redirects)], { type: 'text/csv;charset=utf-8;' });
+  const handleExportCsv = async () => {
+    const blob = await api.exportRedirectsCsv();
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -62,13 +78,13 @@ export default function AdminRedirects() {
   }
 
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-4 sm:p-8">
+      <div className="flex flex-col justify-between gap-4 mb-6 lg:flex-row lg:items-center">
         <div>
           <h1 className="text-2xl font-semibold text-white">Redirects</h1>
           <p className="text-white/50 mt-1">{redirects.length} redirects</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <button
             onClick={handleExportCsv}
             disabled={redirects.length === 0}
@@ -86,6 +102,60 @@ export default function AdminRedirects() {
             New Redirect
           </button>
         </div>
+      </div>
+
+      <div className="mb-6 grid gap-6 xl:grid-cols-2">
+        <section className="rounded-xl border border-white/10 bg-white/5 p-5">
+          <h2 className="text-lg font-semibold text-white">CSV import &amp; rollback</h2>
+          <p className="mb-3 text-sm text-white/50">Paste or load CSV, preview every row through the redirect-loop validator, then apply explicitly.</p>
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            onChange={async (event) => {
+              const file = event.target.files?.[0];
+              if (file) setCsvText(await file.text());
+            }}
+            className="mb-3 block w-full text-sm text-white/60 file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-white"
+          />
+          <textarea value={csvText} onChange={(e) => setCsvText(e.target.value)} rows={5} className="w-full rounded-lg border border-white/10 bg-black/20 p-3 font-mono text-xs text-white" placeholder={'fromPath,toPath,statusCode,matchType,notes\n/old,/new,301,exact,Migration'} />
+          <button disabled={!csvText.trim() || importPreviewMutation.isPending} onClick={() => importPreviewMutation.mutate()} className="mt-3 rounded-lg bg-[#C9A962] px-4 py-2 text-[#1C1C1C] disabled:opacity-40">Preview CSV</button>
+          {importPreviewMutation.error && <p className="mt-2 text-sm text-red-300">{importPreviewMutation.error.message}</p>}
+          {(importApplyMutation.error || importRollbackMutation.error) && <p className="mt-2 text-sm text-red-300">{(importApplyMutation.error || importRollbackMutation.error)?.message}</p>}
+          <div className="mt-4 space-y-2">
+            {importJobs.slice(0, 8).map((job) => (
+              <div key={job.id} className="flex flex-wrap items-center gap-2 border-t border-white/5 pt-2 text-xs">
+                <span className="text-white">Import #{job.id}</span><span className="text-white/50">{job.status} · {job.preview.length} rows</span>
+                <span className="flex-1 text-red-300">{job.preview.filter((row) => !row.valid).length ? `${job.preview.filter((row) => !row.valid).length} invalid` : ''}</span>
+                {job.status === 'preview' && canManageOperations && <button disabled={job.preview.some((row) => !row.valid)} onClick={() => importApplyMutation.mutate(job.id)} className="rounded bg-[#1A5F36] px-3 py-1.5 text-white disabled:opacity-40">Apply</button>}
+                {job.status === 'applied' && canManageOperations && <button onClick={() => importRollbackMutation.mutate(job.id)} className="rounded bg-white/10 px-3 py-1.5 text-white">Rollback</button>}
+                {(job.status === 'preview' || job.status === 'applied') && !canManageOperations && <span className="text-white/40">Admin role required to apply or roll back.</span>}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-white/10 bg-white/5 p-5">
+          <h2 className="text-lg font-semibold text-white">Stale-link migration</h2>
+          <p className="mb-4 text-sm text-white/50">Scan CMS HTML for internal links that still point through active redirects. Preview, apply, and restore exact page snapshots.</p>
+          <button disabled={linkPreviewMutation.isPending} onClick={() => linkPreviewMutation.mutate()} className="rounded-lg bg-[#1A5F36] px-4 py-2 text-white">{linkPreviewMutation.isPending ? 'Scanning…' : 'Scan stale internal links'}</button>
+          {linkPreviewMutation.error && <p className="mt-2 text-sm text-red-300">{linkPreviewMutation.error.message}</p>}
+          {(linkApplyMutation.error || linkRollbackMutation.error) && <p className="mt-2 text-sm text-red-300">{(linkApplyMutation.error || linkRollbackMutation.error)?.message}</p>}
+          <div className="mt-4 space-y-2">
+            {linkJobs.slice(0, 8).map((job) => (
+              <div key={job.id} className="border-t border-white/5 pt-3 text-xs">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-white">Migration #{job.id}</span>
+                  <span className="text-white/50">{job.status} · {job.preview?.findings?.length || 0} links across {job.preview?.pagesScanned || 0} pages</span>
+                  <span className="flex-1" />
+                  {job.status === 'preview' && canManageOperations && <button disabled={!job.preview?.findings?.length} onClick={() => linkApplyMutation.mutate(job.id)} className="rounded bg-[#1A5F36] px-3 py-1.5 text-white disabled:opacity-40">Apply</button>}
+                  {job.status === 'applied' && canManageOperations && <button onClick={() => linkRollbackMutation.mutate(job.id)} className="rounded bg-white/10 px-3 py-1.5 text-white">Rollback</button>}
+                  {(job.status === 'preview' || job.status === 'applied') && !canManageOperations && <span className="text-white/40">Admin role required to apply or roll back.</span>}
+                </div>
+                {job.preview?.findings?.slice(0, 3).map((finding, index) => <p key={index} className="mt-1 truncate font-mono text-white/40">{finding.pageSlug}: {finding.rawHref} → {finding.redirectTarget}</p>)}
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
 
       {showForm && (

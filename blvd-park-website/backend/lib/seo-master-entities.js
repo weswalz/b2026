@@ -248,6 +248,7 @@ function buildMasterEntityId(siteOrigin, entity) {
 function buildMasterEntityJsonLd(siteOrigin, entity) {
   if (!entity) return null;
   return {
+    '@context': 'https://schema.org',
     '@type': entity.entityTypes.length > 1 ? entity.entityTypes : entity.entityTypes[0],
     '@id': buildMasterEntityId(siteOrigin, entity),
     name: entity.name,

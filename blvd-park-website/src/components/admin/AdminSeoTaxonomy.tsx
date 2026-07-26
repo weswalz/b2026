@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../lib/api';
+import { api, type SeoEntityReference } from '../../lib/api';
 
 const TERM_TYPES = ['category', 'tag', 'collection', 'topic'];
 const ENTITY_TYPES = ['NightClub', 'EventVenue', 'LocalBusiness', 'Organization', 'Person', 'Service'];
@@ -14,11 +14,18 @@ export default function AdminSeoTaxonomy() {
   const [termError, setTermError] = useState<string | null>(null);
   const [entityError, setEntityError] = useState<string | null>(null);
   const [contentEntityError, setContentEntityError] = useState<string | null>(null);
+  const [selectedResourceId, setSelectedResourceId] = useState(0);
+  const [termToAssign, setTermToAssign] = useState(0);
+  const [entityToAssign, setEntityToAssign] = useState(0);
+  const [entityRole, setEntityRole] = useState<SeoEntityReference['role']>('mentions');
 
   const { data: terms = [] } = useQuery({ queryKey: ['taxonomy-terms'], queryFn: api.getTaxonomyTerms });
   const { data: duplicates = [] } = useQuery({ queryKey: ['taxonomy-duplicates'], queryFn: api.getTaxonomyDuplicates });
   const { data: masterEntities = [] } = useQuery({ queryKey: ['master-entities'], queryFn: api.getMasterEntities });
   const { data: contentEntities = [] } = useQuery({ queryKey: ['seo-entities'], queryFn: api.getSeoEntities });
+  const { data: resources = [] } = useQuery({ queryKey: ['seo-resources'], queryFn: api.getSeoResources });
+  const { data: resourceTerms = [] } = useQuery({ queryKey: ['resource-terms', selectedResourceId], queryFn: () => api.getResourceTerms(selectedResourceId), enabled: selectedResourceId > 0 });
+  const { data: entityReferences = [] } = useQuery({ queryKey: ['resource-entities', selectedResourceId], queryFn: () => api.getResourceEntityReferences(selectedResourceId), enabled: selectedResourceId > 0 });
 
   const createTermMutation = useMutation({
     mutationFn: () => api.createTaxonomyTerm(termForm),
@@ -50,11 +57,30 @@ export default function AdminSeoTaxonomy() {
     },
     onError: (err: Error) => setContentEntityError(err.message),
   });
+  const retireTermMutation = useMutation({ mutationFn: api.deleteTaxonomyTerm, onSuccess: () => queryClient.invalidateQueries({ queryKey: ['taxonomy-terms'] }) });
+  const retireMasterMutation = useMutation({ mutationFn: api.deleteMasterEntity, onSuccess: () => queryClient.invalidateQueries({ queryKey: ['master-entities'] }) });
+  const retireContentEntityMutation = useMutation({ mutationFn: api.deleteSeoEntity, onSuccess: () => queryClient.invalidateQueries({ queryKey: ['seo-entities'] }) });
+  const assignTermMutation = useMutation({
+    mutationFn: () => api.assignResourceTerm(selectedResourceId, termToAssign),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['resource-terms', selectedResourceId] }),
+  });
+  const removeTermMutation = useMutation({
+    mutationFn: api.removeResourceTerm,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['resource-terms', selectedResourceId] }),
+  });
+  const assignEntityMutation = useMutation({
+    mutationFn: () => api.assignResourceEntity(selectedResourceId, entityToAssign, entityRole),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['resource-entities', selectedResourceId] }),
+  });
+  const removeEntityMutation = useMutation({
+    mutationFn: api.removeResourceEntityReference,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['resource-entities', selectedResourceId] }),
+  });
 
   const inputCls = 'w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white focus:border-[#C9A962] focus:outline-none';
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       <div className="mb-8">
         <h1 className="text-2xl font-semibold text-white">Entities &amp; Taxonomy</h1>
         <p className="text-white/50 mt-1">Manage categories, tags, and the stable-@id entity database</p>
@@ -112,6 +138,7 @@ export default function AdminSeoTaxonomy() {
                 <span className={`px-2 py-0.5 text-xs rounded-full ${term.indexEligible ? 'bg-[#1A5F36]/30 text-[#22C55E]' : 'bg-white/10 text-white/50'}`}>
                   {term.indexEligible ? 'Indexable' : 'Not Indexed'}
                 </span>
+                <button type="button" onClick={() => { if (confirm(`Retire "${term.name}"?`)) retireTermMutation.mutate(term.id); }} className="text-xs text-red-300">Retire</button>
               </div>
             ))}
           </div>
@@ -163,6 +190,7 @@ export default function AdminSeoTaxonomy() {
                 <span className="flex-1 text-white text-sm">{entity.name}</span>
                 <span className="text-white/40 text-xs">{entity.entityTypes.join(', ')}</span>
                 <span className="text-white/40 text-xs font-mono">#{entity.idSlug}</span>
+                <button type="button" onClick={() => { if (confirm(`Retire "${entity.name}"?`)) retireMasterMutation.mutate(entity.id); }} className="text-xs text-red-300">Retire</button>
               </div>
             ))}
           </div>
@@ -204,11 +232,50 @@ export default function AdminSeoTaxonomy() {
               <div key={entity.id} className="flex items-center gap-3 py-2 border-b border-white/5">
                 <span className="px-2 py-0.5 text-xs rounded-full bg-white/10 text-white/60">{entity.entityType}</span>
                 <span className="flex-1 text-white text-sm">{entity.name}</span>
+                <button type="button" onClick={() => { if (confirm(`Retire "${entity.name}"?`)) retireContentEntityMutation.mutate(entity.id); }} className="text-xs text-red-300">Retire</button>
               </div>
             ))}
           </div>
         </div>
       </div>
+
+      <section className="mt-6 rounded-xl border border-white/10 bg-white/5 p-5 sm:p-6">
+        <h2 className="text-lg font-semibold text-white">Resource assignments</h2>
+        <p className="mb-4 text-sm text-white/50">Attach managed terms and real-world entities to a public page or event. Entity assignments are consumed by public JSON-LD.</p>
+        <select value={selectedResourceId} onChange={(e) => setSelectedResourceId(Number(e.target.value))} className={inputCls}>
+          <option value="0" className="bg-[#1C1C1C]">Choose a resource…</option>
+          {resources.map((resource) => <option key={resource.id} value={resource.id} className="bg-[#1C1C1C]">{resource.path}</option>)}
+        </select>
+        {selectedResourceId > 0 && (
+          <div className="mt-5 grid gap-6 lg:grid-cols-2">
+            <div>
+              <h3 className="mb-3 font-medium text-white">Taxonomy terms</h3>
+              <form onSubmit={(e) => { e.preventDefault(); assignTermMutation.mutate(); }} className="flex gap-2">
+                <select required value={termToAssign} onChange={(e) => setTermToAssign(Number(e.target.value))} className={inputCls}>
+                  <option value="0" className="bg-[#1C1C1C]">Choose term…</option>
+                  {terms.filter((term) => !resourceTerms.some((assigned) => assigned.id === term.id)).map((term) => <option key={term.id} value={term.id} className="bg-[#1C1C1C]">{term.termType}: {term.name}</option>)}
+                </select>
+                <button disabled={!termToAssign} className="rounded-lg bg-[#1A5F36] px-4 text-white disabled:opacity-40">Assign</button>
+              </form>
+              <div className="mt-3 space-y-2">{resourceTerms.map((term) => <div key={term.assignmentId} className="flex items-center gap-2 rounded bg-black/20 p-2 text-sm"><span className="flex-1 text-white">{term.name}</span><button onClick={() => removeTermMutation.mutate(term.assignmentId)} className="text-red-300">Remove</button></div>)}</div>
+            </div>
+            <div>
+              <h3 className="mb-3 font-medium text-white">Entity references</h3>
+              <form onSubmit={(e) => { e.preventDefault(); assignEntityMutation.mutate(); }} className="grid gap-2 sm:grid-cols-[1fr_9rem_auto]">
+                <select required value={entityToAssign} onChange={(e) => setEntityToAssign(Number(e.target.value))} className={inputCls}>
+                  <option value="0" className="bg-[#1C1C1C]">Choose entity…</option>
+                  {contentEntities.map((entity) => <option key={entity.id} value={entity.id} className="bg-[#1C1C1C]">{entity.entityType}: {entity.name}</option>)}
+                </select>
+                <select value={entityRole} onChange={(e) => setEntityRole(e.target.value as SeoEntityReference['role'])} className={inputCls}>
+                  {['mentions', 'about', 'performer', 'organizer', 'sponsor'].map((role) => <option key={role} className="bg-[#1C1C1C]">{role}</option>)}
+                </select>
+                <button disabled={!entityToAssign} className="rounded-lg bg-[#1A5F36] px-4 text-white disabled:opacity-40">Assign</button>
+              </form>
+              <div className="mt-3 space-y-2">{entityReferences.map((reference) => <div key={reference.id} className="flex items-center gap-2 rounded bg-black/20 p-2 text-sm"><span className="text-white/50">{reference.role}</span><span className="flex-1 text-white">{reference.name}</span><button onClick={() => removeEntityMutation.mutate(reference.id)} className="text-red-300">Remove</button></div>)}</div>
+            </div>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

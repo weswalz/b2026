@@ -86,7 +86,7 @@ const { title } = Astro.props;
         if (ssoToken) {
           localStorage.setItem('blvd-auth-token', ssoToken);
           if (ssoUser) {
-            try { localStorage.setItem('blvd-user', ssoUser); } catch(e) {}
+            try { localStorage.setItem('blvd-user', ssoUser); } catch(_e) {}
           }
           // Remove hash and reload cleanly
           history.replaceState(null, '', window.location.pathname);

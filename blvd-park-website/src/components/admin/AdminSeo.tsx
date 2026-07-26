@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, type SeoIssue } from '../../lib/api';
 
@@ -8,9 +8,17 @@ const SEVERITY_COLORS: Record<string, string> = {
   info: 'bg-white/10 text-white/60',
 };
 
+const formatAdminTimestamp = (value: string) => {
+  const hasTimezone = /(?:Z|[+-]\d{2}:\d{2})$/i.test(value);
+  const date = new Date(hasTimezone ? value : `${value}Z`);
+  return Number.isNaN(date.getTime()) ? 'Timestamp unavailable' : date.toLocaleString('en-US');
+};
+
 export default function AdminSeo() {
   const queryClient = useQueryClient();
   const [crawlError, setCrawlError] = useState<string | null>(null);
+  const [scheduleForm, setScheduleForm] = useState({ enabled: false, intervalMinutes: 1440, scopeType: 'all', scopePrefix: '', maxPages: 500, maxDurationMs: 600000 });
+  const [indexNowUrl, setIndexNowUrl] = useState('');
 
   const { data: summary, isLoading: summaryLoading } = useQuery({
     queryKey: ['seo-summary'],
@@ -38,6 +46,22 @@ export default function AdminSeo() {
     queryKey: ['sitemap-validations'],
     queryFn: () => api.getSitemapValidations(3),
   });
+  const { data: capabilityStatus } = useQuery({ queryKey: ['seo-capabilities'], queryFn: api.getSeoCapabilities });
+  const { data: schedule } = useQuery({ queryKey: ['seo-schedule'], queryFn: api.getSeoSchedule });
+  const { data: indexNowLog = [] } = useQuery({ queryKey: ['seo-indexnow-log'], queryFn: api.getIndexNowLog });
+  const { data: indexNowQueue = [] } = useQuery({ queryKey: ['seo-indexnow-queue'], queryFn: api.getIndexNowQueue, refetchInterval: 5000 });
+
+  useEffect(() => {
+    if (!schedule) return;
+    setScheduleForm({
+      enabled: !!schedule.enabled,
+      intervalMinutes: schedule.intervalMinutes,
+      scopeType: schedule.scopeType,
+      scopePrefix: schedule.scopePrefix || '',
+      maxPages: schedule.maxPages,
+      maxDurationMs: schedule.maxDurationMs,
+    });
+  }, [schedule]);
 
   const runCrawlMutation = useMutation({
     mutationFn: () => api.runSeoCrawl(),
@@ -57,15 +81,29 @@ export default function AdminSeo() {
     mutationFn: ({ id, status }: { id: number; status: string }) => api.updateSeoIssue(id, { status }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['seo-issues'] }),
   });
+  const updateScheduleMutation = useMutation({
+    mutationFn: () => api.updateSeoSchedule(scheduleForm as any),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['seo-schedule'] }),
+  });
+  const indexNowMutation = useMutation({
+    mutationFn: () => api.submitIndexNow(indexNowUrl),
+    onSuccess: () => {
+      setIndexNowUrl('');
+      queryClient.invalidateQueries({ queryKey: ['seo-indexnow-log'] });
+      queryClient.invalidateQueries({ queryKey: ['seo-indexnow-queue'] });
+    },
+    onError: () => queryClient.invalidateQueries({ queryKey: ['seo-indexnow-log'] }),
+  });
 
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-8">
+    <div className="p-4 sm:p-8">
+      <div className="flex flex-col justify-between gap-4 mb-8 xl:flex-row xl:items-center">
         <div>
           <h1 className="text-2xl font-semibold text-white">SEO</h1>
           <p className="text-white/50 mt-1">Site health, crawl issues, and search indexing controls</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
+          <a href="/admin/seo/resources" className="px-5 py-2.5 bg-[#C9A962] text-[#1C1C1C] rounded-lg hover:bg-[#d7bd7c] transition-colors">Resources &amp; Revisions</a>
           <a href="/admin/seo/robots" className="px-5 py-2.5 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors">Robots.txt</a>
           <a href="/admin/seo/taxonomy" className="px-5 py-2.5 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors">Entities &amp; Taxonomy</a>
           <button
@@ -152,7 +190,7 @@ export default function AdminSeo() {
                         {run.status}
                       </span>
                       <div className="flex-1 min-w-0 text-white/70 text-sm">
-                        {new Date(run.startedAt + 'Z').toLocaleString('en-US')} · {run.totalUrls} URLs · {run.issueCount} issues
+                        {formatAdminTimestamp(run.startedAt)} · {run.totalUrls} URLs · {run.issueCount} issues
                       </div>
                     </div>
                   ))}
@@ -183,7 +221,7 @@ export default function AdminSeo() {
                         {run.overallValid ? 'Valid' : 'Failed'}
                       </span>
                       <div className="flex-1 min-w-0 text-white/70 text-sm">
-                        {new Date(run.checkedAt + 'Z').toLocaleString('en-US')} · {run.validFileCount}/{run.fileCount} files well-formed
+                        {formatAdminTimestamp(run.checkedAt)} · {run.validFileCount}/{run.fileCount} files well-formed
                       </div>
                     </div>
                   ))}
@@ -192,6 +230,76 @@ export default function AdminSeo() {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="mt-6 grid gap-6 xl:grid-cols-2">
+        <section className="rounded-xl border border-white/10 bg-white/5 p-5">
+          <h2 className="text-lg font-semibold text-white">Capability status</h2>
+          <p className="mb-4 text-sm text-white/50">Live checks of this candidate's wired subsystems and required configuration.</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {capabilityStatus?.capabilities.map((capability) => {
+              const configured = capability.configured !== false;
+              const partial = capability.status === 'partial';
+              const ready = capability.available && configured && !partial;
+              const state = ready
+                ? 'Ready'
+                : partial
+                  ? configured ? 'Partial' : 'Partial, configuration required'
+                  : capability.available ? 'Available, configuration required' : 'Unavailable';
+              return (
+                <div key={capability.key} className="flex items-center gap-3 rounded-lg border border-white/5 bg-black/20 p-3">
+                  <span className={`h-2.5 w-2.5 rounded-full ${ready ? 'bg-[#22C55E]' : capability.available ? 'bg-[#C9A962]' : 'bg-red-400'}`} />
+                  <div className="min-w-0">
+                    <p className="text-sm text-white">{capability.label}</p>
+                    <p className="text-xs text-white/40">{state}</p>
+                    {capability.note && <p className="mt-1 text-xs text-white/30">{capability.note}</p>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-white/10 bg-white/5 p-5">
+          <h2 className="text-lg font-semibold text-white">Crawl schedule</h2>
+          <p className="mb-4 text-sm text-white/50">Persistent schedule shared with the manual crawler lock.</p>
+          {updateScheduleMutation.error && <p className="mb-3 text-sm text-red-300">{updateScheduleMutation.error.message}</p>}
+          <form onSubmit={(event) => { event.preventDefault(); updateScheduleMutation.mutate(); }} className="grid gap-3 sm:grid-cols-2">
+            <label className="flex items-center gap-2 text-sm text-white"><input type="checkbox" checked={scheduleForm.enabled} onChange={(e) => setScheduleForm({ ...scheduleForm, enabled: e.target.checked })} /> Enable scheduled crawls</label>
+            <label className="text-sm text-white/70">Every (minutes)<input type="number" min="15" max="10080" value={scheduleForm.intervalMinutes} onChange={(e) => setScheduleForm({ ...scheduleForm, intervalMinutes: Number(e.target.value) })} className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white" /></label>
+            <label className="text-sm text-white/70">Scope<select value={scheduleForm.scopeType} onChange={(e) => setScheduleForm({ ...scheduleForm, scopeType: e.target.value })} className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white"><option className="bg-[#1C1C1C]" value="all">Entire site</option><option className="bg-[#1C1C1C]" value="prefix">Path prefix</option></select></label>
+            <label className="text-sm text-white/70">Prefix<input disabled={scheduleForm.scopeType !== 'prefix'} value={scheduleForm.scopePrefix} onChange={(e) => setScheduleForm({ ...scheduleForm, scopePrefix: e.target.value })} placeholder="/events" className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white disabled:opacity-40" /></label>
+            <button disabled={updateScheduleMutation.isPending} className="rounded-lg bg-[#1A5F36] px-4 py-2.5 text-white sm:col-span-2">{updateScheduleMutation.isPending ? 'Saving…' : 'Save crawl schedule'}</button>
+          </form>
+          <p className="mt-3 text-xs text-white/40">Last scheduled start: {schedule?.lastScheduledRunAt ? new Date(schedule.lastScheduledRunAt).toLocaleString() : 'Never'}</p>
+        </section>
+
+        <section className="rounded-xl border border-white/10 bg-white/5 p-5 xl:col-span-2">
+          <h2 className="text-lg font-semibold text-white">IndexNow operations</h2>
+          <p className="mb-4 text-sm text-white/50">Queue a venue URL for durable delivery. Pending work survives restarts and failed attempts retry automatically with bounded backoff.</p>
+          <form onSubmit={(event) => { event.preventDefault(); indexNowMutation.mutate(); }} className="flex flex-col gap-3 sm:flex-row">
+            <input required value={indexNowUrl} onChange={(e) => setIndexNowUrl(e.target.value)} placeholder="https://blvdpark.com/page-or-event" className="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-white" />
+            <button disabled={indexNowMutation.isPending} className="rounded-lg bg-[#1A5F36] px-5 py-2.5 text-white">{indexNowMutation.isPending ? 'Submitting…' : 'Submit URL'}</button>
+          </form>
+          {indexNowMutation.error && <p className="mt-3 text-sm text-red-300">{indexNowMutation.error.message}</p>}
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            {['pending', 'processing', 'succeeded', 'failed'].map((status) => (
+              <div key={status} className="rounded-lg border border-white/5 bg-black/20 p-3">
+                <p className="text-xs uppercase tracking-wide text-white/40">{status}</p>
+                <p className="mt-1 text-xl text-white">{indexNowQueue.filter((item) => item.status === status).length}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 max-h-64 overflow-auto">
+            {indexNowLog.length ? indexNowLog.map((row) => (
+              <div key={row.id} className="grid gap-1 border-t border-white/5 py-2 text-xs sm:grid-cols-[8rem_1fr_10rem]">
+                <span className={row.status === 'submitted' ? 'text-[#22C55E]' : row.status === 'failed' ? 'text-red-300' : 'text-[#C9A962]'}>{row.status}</span>
+                <span className="truncate font-mono text-white/60">{row.url}</span>
+                <span className="text-white/40">{new Date(row.submittedAt).toLocaleString()}</span>
+              </div>
+            )) : <p className="text-sm text-white/40">No IndexNow attempts recorded.</p>}
+          </div>
+        </section>
       </div>
     </div>
   );

@@ -46,6 +46,17 @@ test('SEO resource routes require authentication', async () => {
   assert.strictEqual(bulk.status, 401);
 });
 
+test('capability endpoint describes the durable IndexNow queue and credential state truthfully', async () => {
+  const response = await fetch(`${BASE}/api/seo/capabilities`, { headers: auth });
+  assert.strictEqual(response.status, 200);
+  const indexNow = (await response.json()).capabilities.find((capability) => capability.key === 'indexNow');
+  assert.strictEqual(indexNow.status, 'partial');
+  assert.match(indexNow.label, /durable IndexNow queue/i);
+  assert.match(indexNow.note, /credential.*required/i);
+  assert.strictEqual(indexNow.available, true);
+  assert.strictEqual(indexNow.configured, false);
+});
+
 test('SEO resource create, update, revision list, and rollback round-trip', async () => {
   const create = await fetch(`${BASE}/api/seo/resources`, {
     method: 'POST',
@@ -163,4 +174,57 @@ test('SEO bulk preview, apply, and rollback round-trip', async () => {
 
   const restored = await fetch(`${BASE}/api/seo/resources/route/seo-bulk-test`, { headers: auth });
   assert.strictEqual((await restored.json()).seoDescription, 'Before bulk');
+});
+
+test('public page and event APIs expose saved resource OG metadata and schemaJson', async () => {
+  const pageCreate = await fetch(`${BASE}/api/pages`, {
+    method: 'POST',
+    headers: auth,
+    body: JSON.stringify({ title: 'Public SEO Page', slug: 'public-seo-page', status: 'published', robots: 'index, follow' }),
+  });
+  assert.strictEqual(pageCreate.status, 201);
+  const page = await pageCreate.json();
+
+  const eventCreate = await fetch(`${BASE}/api/events`, {
+    method: 'POST',
+    headers: auth,
+    body: JSON.stringify({ title: 'Public SEO Event', slug: 'public-seo-event', date: '2030-01-02', time: '19:00', category: 'special' }),
+  });
+  assert.strictEqual(eventCreate.status, 200);
+  const event = await eventCreate.json();
+
+  const resources = await fetch(`${BASE}/api/seo/resources`, { headers: auth }).then((response) => response.json());
+  assert.ok(resources.some((resource) => resource.resourceType === 'page' && resource.resourceId === String(page.id)));
+  assert.ok(resources.some((resource) => resource.resourceType === 'event' && resource.resourceId === String(event.id)));
+
+  const configured = {
+    ogTitle: 'Resource OG title',
+    ogDescription: 'Resource OG description',
+    ogImage: '/uploads/resource-og.jpg',
+    schemaJson: { '@context': 'https://schema.org', '@type': 'WebPage', identifier: 'resource-schema-public' },
+    changeSummary: 'Configure public output regression',
+  };
+  const pageSave = await fetch(`${BASE}/api/seo/resources/page/${page.id}`, {
+    method: 'PUT',
+    headers: auth,
+    body: JSON.stringify(configured),
+  });
+  assert.strictEqual(pageSave.status, 200);
+
+  const eventSave = await fetch(`${BASE}/api/seo/resources/event/${event.id}`, {
+    method: 'PUT',
+    headers: auth,
+    body: JSON.stringify({ ...configured, schemaJson: { ...configured.schemaJson, '@type': 'Event' } }),
+  });
+  assert.strictEqual(eventSave.status, 200);
+
+  for (const pathName of [`pages/public/${page.slug}`, `events/public/${event.slug}`]) {
+    const response = await fetch(`${BASE}/api/${pathName}`);
+    assert.strictEqual(response.status, 200);
+    const body = await response.json();
+    assert.strictEqual(body._seo.resource.ogTitle, configured.ogTitle);
+    assert.strictEqual(body._seo.resource.ogDescription, configured.ogDescription);
+    assert.strictEqual(body._seo.resource.ogImage, configured.ogImage);
+    assert.strictEqual(body._seo.resource.schemaJson.identifier, 'resource-schema-public');
+  }
 });

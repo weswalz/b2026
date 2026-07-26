@@ -15,21 +15,11 @@
 // full XML Schema validation against the sitemaps.org XSD — that limitation is
 // disclosed here, not silently implied to be more.
 //
-// Sitemap surface adaptation: Heights' module lists four sitemap-family files
-// (sitemap.xml, sitemap-images.xml, sitemap-videos.xml, sitemap-index.xml — all
-// real, separate documents in that codebase). BLVD has exactly ONE real
-// sitemap document: src/pages/sitemap.xml.ts (confirmed by reading that file in
-// full — a single urlset combining static paths + published CMS pages + active
-// events). src/pages/sitemap-index.xml.ts is NOT a real sitemapindex — it is a
-// 301 redirect to /sitemap.xml for a legacy URL (confirmed by reading that file
-// in full: `new Response(null, { status: 301, headers: { Location:
-// "/sitemap.xml" } })`), so validating it as XML would either false-fail (a 301
-// has no XML body) or require following the redirect and re-validating the same
-// document twice under two keys — neither is honest. SITEMAP_FILES below lists
-// only the one real urlset document BLVD actually serves.
-
 const SITEMAP_FILES = [
-  { key: 'sitemap.xml', path: '/sitemap.xml', kind: 'urlset' },
+  { key: 'sitemap.xml', path: '/sitemap.xml', kind: 'sitemapindex' },
+  { key: 'sitemap-pages.xml', path: '/sitemap-pages.xml', kind: 'urlset' },
+  { key: 'sitemap-images.xml', path: '/sitemap-images.xml', kind: 'urlset' },
+  { key: 'sitemap-videos.xml', path: '/sitemap-videos.xml', kind: 'urlset' },
 ];
 
 async function fetchWithTimeout(url, timeoutMs = 12000) {
