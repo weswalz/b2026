@@ -1,0 +1,73 @@
+---
+// src/components/cms/GalleryGrid.astro
+// Builder module: responsive gallery grid pulled from the live gallery API.
+// Mirrors Gallery2026's styling (rounded tiles, hover zoom, dark base).
+
+export interface Props {
+  title?: string;
+  category?: string;
+  limit?: number;
+  ctaLabel?: string;
+  ctaHref?: string;
+}
+
+const INTERNAL_API = process.env.INTERNAL_API_URL || import.meta.env.PUBLIC_API_URL || 'https://blvdpark.com';
+
+const { title = '', category = '', limit = 8, ctaLabel = '', ctaHref = '' } = Astro.props;
+
+let images: { url: string; alt: string; category: string }[] = [];
+try {
+  const params = new URLSearchParams();
+  if (category) params.set('category', category);
+  const res = await fetch(`${INTERNAL_API}/api/gallery?${params.toString()}`);
+  if (res.ok) {
+    const rows = await res.json();
+    images = (Array.isArray(rows) ? rows : []).slice(0, Math.max(1, Math.min(limit || 8, 24)));
+  }
+} catch (_e) {
+  // API unreachable — render the section empty rather than failing the page
+}
+---
+
+<section class="section-padding bg-dark-base">
+  <div class="max-w-7xl mx-auto px-6">
+    {title && (
+      <div class="text-center mb-12">
+        <span class="eyebrow">Gallery</span>
+        <h2 class="font-display font-bold text-white text-3xl sm:text-4xl md:text-5xl mt-3">{title}</h2>
+      </div>
+    )}
+
+    {images.length > 0 ? (
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        {images.map((img, i) => (
+          <div class={`group relative overflow-hidden rounded-2xl aspect-square ${i % 5 === 0 ? 'md:row-span-1' : ''}`}>
+            <img
+              src={img.url}
+              alt={img.alt}
+              loading="lazy"
+              class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <p class="text-center text-white/40 font-mono text-sm">Gallery coming soon.</p>
+    )}
+
+    {ctaLabel && ctaHref && (
+      <div class="mt-12 text-center">
+        <a
+          href={ctaHref}
+          class="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/5 backdrop-blur-md text-white font-display font-semibold text-base rounded-full border border-white/10 transition-all duration-500 hover:bg-white/10 hover:border-white/20"
+        >
+          <span>{ctaLabel}</span>
+          <svg class="w-4 h-4 opacity-50 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </a>
+      </div>
+    )}
+  </div>
+</section>

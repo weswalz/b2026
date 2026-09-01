@@ -10,11 +10,29 @@
 // - WebP RIFF....WEBP structure: https://developers.google.com/speed/webp/docs/riff_container
 // - SVG: no binary magic bytes (XML text format) — detected by content-sniffing for a
 //   `<svg` tag within the first bytes, ignoring a possible UTF-8 BOM / XML prolog / whitespace.
+// - MP4: 'ftyp' box type at byte offset 4 (ISO base media file format, ISO/IEC 14496-12 §4.3),
+//   with the major brand in bytes 8–11 restricted to common ISO-BMFF brands so a random file
+//   containing the ASCII "ftyp" doesn't pass.
+// - WebM: EBML magic 0x1A45DFA3 (https://www.matroska.org/technical/elements.html — the EBML
+//   header ID every Matroska/WebM file starts with).
 
 const SVG_PROBE_WINDOW = 512; // enough to skip past a BOM + <?xml ...?> prolog + whitespace
+const MP4_BRANDS = new Set(['isom', 'iso2', 'mp41', 'mp42', 'avc1', 'dash', 'msdh', 'M4V ', 'iso5', 'iso6']);
 
 function detectUploadMime(buffer) {
   if (!Buffer.isBuffer(buffer) || buffer.length < 3) return null;
+
+  if (buffer.length >= 12 && buffer.toString('ascii', 4, 8) === 'ftyp') {
+    const brand = buffer.toString('ascii', 8, 12);
+    if (MP4_BRANDS.has(brand)) return 'video/mp4';
+  }
+
+  if (
+    buffer.length >= 4 &&
+    buffer[0] === 0x1a && buffer[1] === 0x45 && buffer[2] === 0xdf && buffer[3] === 0xa3
+  ) {
+    return 'video/webm';
+  }
 
   if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
     return 'image/jpeg';

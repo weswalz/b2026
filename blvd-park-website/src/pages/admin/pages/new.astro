@@ -1,0 +1,10 @@
+---
+export const prerender = true;
+// Admin Page Builder — create a new CMS page
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import AdminPageEditor from '../../../components/admin/pageEditor/AdminPageEditor';
+---
+
+<AdminLayout title="New Page">
+  <AdminPageEditor client:only="react" mode="new" currentPath={Astro.url.pathname} />
+</AdminLayout>

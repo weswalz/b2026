@@ -1,0 +1,157 @@
+---
+// src/components/cms/DynamicSections.astro
+// Page-builder renderer: maps validated content_sections entries to real site
+// components, mirroring HEIGHTSASTRO's DynamicSections.astro architecture.
+// The component allowlist MUST stay in sync with the server-side contract in
+// backend/lib/pages-validate.js (PAGES_COMPONENT_DEFS) and the editor's
+// src/components/admin/pageEditor/defs.ts.
+// NOTE: all type narrowing happens in these frontmatter helpers — `as` casts
+// inside template JSX expressions break esbuild's Astro TSX transform.
+
+import ContentSection from './ContentSection.astro';
+import CallToAction from './CallToAction.astro';
+import GalleryGrid from './GalleryGrid.astro';
+import UpcomingEventsSection from './UpcomingEventsSection.astro';
+import ReserveCta from './ReserveCta.astro';
+import ContactStrip from './ContactStrip.astro';
+
+const componentMap: Record<string, any> = {
+  CallToAction,
+  GalleryGrid,
+  UpcomingEventsSection,
+  ReserveCta,
+  ContactStrip,
+};
+
+export interface Props {
+  sections?: { type: string; [key: string]: unknown }[];
+}
+
+const { sections = [] } = Astro.props;
+
+const componentFor = (name: unknown) =>
+  typeof name === 'string' ? componentMap[name] || null : null;
+
+const strProp = (section: { props?: unknown }, key: string): string => {
+  const props = section.props;
+  if (!props || typeof props !== 'object') return '';
+  const v = (props as Record<string, unknown>)[key];
+  return typeof v === 'string' ? v : '';
+};
+
+const numProp = (section: { props?: unknown }, key: string, fallback: number): number => {
+  const props = section.props;
+  if (!props || typeof props !== 'object') return fallback;
+  const v = Number((props as Record<string, unknown>)[key]);
+  return Number.isFinite(v) && v > 0 ? Math.trunc(v) : fallback;
+};
+
+const sectionBody = (section: { body?: unknown }): string =>
+  typeof section.body === 'string' ? section.body : '';
+
+const asText = (v: unknown): string => (typeof v === 'string' ? v : '');
+---
+
+<div class="dynamic-sections">
+  {Array.isArray(sections) && sections.map((section) => {
+    if (!section || typeof section !== 'object') return null;
+
+    if (section.type === 'text') {
+      return <p class="cms-text-section" set:html={`<p style="white-space: pre-wrap;">${asText(sectionBody(section))}</p>`} />;
+    }
+
+    if (section.type === 'html') {
+      return <div class="cms-html-section cms-html" set:html={sectionBody(section)} />;
+    }
+
+    if (section.type === 'content-section') {
+      return (
+        <ContentSection
+          title={asText(section.title)}
+          subtitle={asText(section.subtitle)}
+          contentHtml={asText(section.contentHtml)}
+          imageSrc={asText(section.imageSrc)}
+          imageAlt={asText(section.imageAlt)}
+          imagePosition={section.imagePosition === 'right' ? 'right' : 'left'}
+          headingLevel={section.headingLevel === 'h3' ? 'h3' : 'h2'}
+          id={asText(section.id)}
+        />
+      );
+    }
+
+    if (section.type === 'component') {
+      const Component = componentFor(section.name);
+      if (!Component) return null;
+
+      switch (section.name) {
+        case 'CallToAction':
+          return (
+            <Component
+              title={strProp(section, 'title')}
+              subtitle={strProp(section, 'subtitle')}
+              primaryLabel={strProp(section, 'primaryLabel')}
+              primaryHref={strProp(section, 'primaryHref')}
+              secondaryLabel={strProp(section, 'secondaryLabel')}
+              secondaryHref={strProp(section, 'secondaryHref')}
+            />
+          );
+        case 'GalleryGrid':
+          return (
+            <Component
+              title={strProp(section, 'title')}
+              category={strProp(section, 'category')}
+              limit={numProp(section, 'limit', 8)}
+              ctaLabel={strProp(section, 'ctaLabel')}
+              ctaHref={strProp(section, 'ctaHref')}
+            />
+          );
+        case 'UpcomingEventsSection':
+          return (
+            <Component
+              title={strProp(section, 'title')}
+              limit={numProp(section, 'limit', 3)}
+              ctaLabel={strProp(section, 'ctaLabel')}
+              ctaHref={strProp(section, 'ctaHref')}
+            />
+          );
+        case 'ReserveCta':
+          return (
+            <Component
+              title={strProp(section, 'title')}
+              subtitle={strProp(section, 'subtitle')}
+              buttonLabel={strProp(section, 'buttonLabel')}
+              buttonHref={strProp(section, 'buttonHref')}
+            />
+          );
+        case 'ContactStrip':
+          return (
+            <Component
+              title={strProp(section, 'title')}
+              subtitle={strProp(section, 'subtitle')}
+              buttonLabel={strProp(section, 'buttonLabel')}
+            />
+          );
+        default:
+          return null;
+      }
+    }
+
+    return null;
+  })}
+</div>
+
+<style>
+  .cms-text-section :global(p) {
+    max-width: 56rem;
+    margin: 3rem auto;
+    padding: 0 1.5rem;
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: var(--blvd-charcoal, #1c1c1c);
+  }
+  .cms-html-section {
+    max-width: 56rem;
+    margin: 3rem auto;
+    padding: 0 1.5rem;
+  }
+</style>

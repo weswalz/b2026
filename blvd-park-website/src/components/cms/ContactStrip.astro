@@ -1,0 +1,39 @@
+---
+// src/components/cms/ContactStrip.astro
+// Builder module: simple contact prompt on cream-dark, gold-accent button,
+// for pages that funnel visitors to the contact form.
+
+export interface Props {
+  title?: string;
+  subtitle?: string;
+  buttonLabel?: string;
+}
+
+const {
+  title = 'Get In Touch',
+  subtitle = '',
+  buttonLabel = 'Contact Us',
+} = Astro.props;
+---
+
+<section class="section-padding" style="background: var(--blvd-cream-dark, #ede9e0);">
+  <div class="max-w-3xl mx-auto px-6 text-center">
+    {title && (
+      <h2 class="font-display font-bold text-[#1C1C1C] text-3xl sm:text-4xl md:text-5xl leading-tight">{title}</h2>
+    )}
+    {subtitle && (
+      <p class="mt-5 text-[#1C1C1C]/60 text-base sm:text-lg">{subtitle}</p>
+    )}
+    <div class="mt-10">
+      <a
+        href="/contact"
+        class="group inline-flex items-center justify-center gap-2 px-10 py-4 bg-[#1A5F36] text-white font-display font-semibold text-base rounded-full transition-all duration-500 hover:bg-[#22C55E] hover:shadow-[0_0_40px_rgba(34,197,94,0.3)]"
+      >
+        <span>{buttonLabel}</span>
+        <svg class="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+        </svg>
+      </a>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,125 @@
+---
+// src/components/cms/UpcomingEventsSection.astro
+// Builder module: upcoming event cards pulled from the live events API,
+// styled after EventsSection2026 (dark base, gold date chips, pill CTAs).
+
+export interface Props {
+  title?: string;
+  limit?: number;
+  ctaLabel?: string;
+  ctaHref?: string;
+}
+
+const INTERNAL_API = process.env.INTERNAL_API_URL || import.meta.env.PUBLIC_API_URL || 'https://blvdpark.com';
+
+const { title = "What's On", limit = 3, ctaLabel = '', ctaHref = '' } = Astro.props;
+
+interface EventRow {
+  id: number;
+  title: string;
+  date: string;
+  time: string;
+  description: string;
+  category: string;
+  image: string | null;
+  ticketUrl: string | null;
+  slug: string | null;
+}
+
+let events: EventRow[] = [];
+try {
+  const res = await fetch(`${INTERNAL_API}/api/events`);
+  if (res.ok) {
+    const rows = await res.json();
+    events = (Array.isArray(rows) ? rows : []).slice(0, Math.max(1, Math.min(limit || 3, 12)));
+  }
+} catch (_e) {
+  // API unreachable — render empty rather than failing the page
+}
+
+const fmtDate = (dateStr: string) => {
+  try {
+    const d = new Date(`${dateStr}T12:00:00`);
+    return {
+      day: d.toLocaleDateString('en-US', { day: 'numeric' }),
+      month: d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase(),
+    };
+  } catch (_e) {
+    return { day: '—', month: '' };
+  }
+};
+
+const fmtTime = (t: string) => {
+  try {
+    const [h, m] = t.split(':').map(Number);
+    if (Number.isNaN(h)) return t;
+    const suffix = h >= 12 ? 'PM' : 'AM';
+    const hour12 = h % 12 || 12;
+    return `${hour12}${m ? `:${String(m).padStart(2, '0')}` : ''}${suffix}`;
+  } catch (_e) {
+    return t;
+  }
+};
+---
+
+<section class="section-padding bg-dark-base" id="events">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="flex flex-wrap items-end justify-between gap-6 mb-12">
+      <div>
+        <span class="eyebrow">Calendar</span>
+        <h2 class="font-display font-bold text-white text-3xl sm:text-4xl md:text-5xl mt-3">{title}</h2>
+      </div>
+      {ctaLabel && ctaHref && (
+        <a
+          href={ctaHref}
+          class="group inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/5 backdrop-blur-md text-white font-display font-semibold text-sm rounded-full border border-white/10 transition-all duration-500 hover:bg-white/10 hover:border-white/20"
+        >
+          <span>{ctaLabel}</span>
+          <svg class="w-4 h-4 opacity-50 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </a>
+      )}
+    </div>
+
+    {events.length > 0 ? (
+      <div class="grid md:grid-cols-3 gap-6">
+        {events.map((event) => {
+          const d = fmtDate(event.date);
+          const href = event.slug ? `/events/${event.slug}` : (event.ticketUrl || '/events');
+          return (
+            <a href={href} class="group relative bg-[#121212] rounded-2xl border border-white/10 overflow-hidden transition-all duration-500 hover:border-[#22C55E]/40 hover:-translate-y-1">
+              {event.image && (
+                <div class="aspect-[16/9] overflow-hidden">
+                  <img
+                    src={event.image}
+                    alt={event.title}
+                    loading="lazy"
+                    class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                </div>
+              )}
+              <div class="p-6">
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="flex flex-col items-center justify-center bg-[#1A5F36] rounded-lg px-3 py-1.5 min-w-[3.25rem]">
+                    <span class="font-display font-bold text-white text-lg leading-none">{d.day}</span>
+                    <span class="font-mono text-[#C9A962] text-[0.6rem] tracking-[0.2em] mt-1">{d.month}</span>
+                  </div>
+                  <span class="font-mono text-xs text-white/40 tracking-[0.15em] uppercase">{fmtTime(event.time)}</span>
+                </div>
+                <h3 class="font-display font-semibold text-white text-xl leading-snug group-hover:text-[#22C55E] transition-colors">
+                  {event.title}
+                </h3>
+                {event.description && (
+                  <p class="mt-2 text-sm text-white/50 line-clamp-2">{event.description}</p>
+                )}
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    ) : (
+      <p class="text-center text-white/40 font-mono text-sm">New events are announced soon — follow us for updates.</p>
+    )}
+  </div>
+</section>

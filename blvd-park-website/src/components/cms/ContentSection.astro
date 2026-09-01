@@ -1,0 +1,70 @@
+---
+// src/components/cms/ContentSection.astro
+// Builder module: heading + rich text + optional image, image left or right.
+// Follows the site's 2026 section rhythm — cream background, Clash Display
+// heading, gold eyebrow rule, rounded-2xl imagery.
+
+export interface Props {
+  title?: string;
+  subtitle?: string;
+  contentHtml?: string;
+  imageSrc?: string;
+  imageAlt?: string;
+  imagePosition?: 'left' | 'right';
+  headingLevel?: 'h2' | 'h3';
+  id?: string;
+}
+
+const {
+  title = '',
+  subtitle = '',
+  contentHtml = '',
+  imageSrc = '',
+  imageAlt = '',
+  imagePosition = 'left',
+  headingLevel = 'h2',
+  id = '',
+} = Astro.props;
+
+const imageFirst = imagePosition === 'left';
+const Heading = headingLevel === 'h3' ? 'h3' : 'h2';
+---
+
+<section class="section-padding cms-content-section" id={id || undefined}>
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="grid md:grid-cols-2 gap-10 md:gap-16 items-center">
+      {imageFirst && imageSrc && (
+        <div class="cms-content-image">
+          <img src={imageSrc} alt={imageAlt} loading="lazy" class="w-full rounded-2xl shadow-elevated-lg object-cover aspect-[4/3]" />
+        </div>
+      )}
+
+      <div>
+        {title && (
+          <div class="mb-4">
+            <span class="block w-10 h-px bg-[#C9A962]/60 mb-4"></span>
+            <Heading class={`font-display font-bold text-[#1C1C1C] ${headingLevel === 'h3' ? 'text-2xl sm:text-3xl' : 'text-3xl sm:text-4xl'} leading-tight`}>
+              {title}
+            </Heading>
+          </div>
+        )}
+        {subtitle && (
+          <p class="font-mono text-xs sm:text-sm text-[#1C1C1C]/50 tracking-[0.15em] uppercase mb-4">{subtitle}</p>
+        )}
+        {contentHtml && <div class="cms-html text-[#1C1C1C]/80 text-base sm:text-lg leading-relaxed" set:html={contentHtml} />}
+      </div>
+
+      {!imageFirst && imageSrc && (
+        <div class="cms-content-image">
+          <img src={imageSrc} alt={imageAlt} loading="lazy" class="w-full rounded-2xl shadow-elevated-lg object-cover aspect-[4/3]" />
+        </div>
+      )}
+    </div>
+  </div>
+</section>
+
+<style>
+  .cms-content-section:nth-child(even of .cms-content-section) {
+    background: var(--blvd-cream-dark, #ede9e0);
+  }
+</style>

@@ -1,7 +1,10 @@
 ---
 // CMS page route — SSR only (no prerender). Published pages render with full SEO head;
 // drafts and unknown slugs 404. Data comes from blvdpark-api.
+// Page-builder render order: PageHero (hero_json) → DynamicSections (modules) → FAQ.
 import Layout2026 from "@layouts/Layout2026.astro";
+import PageHero from "@components/cms/PageHero.astro";
+import DynamicSections from "@components/cms/DynamicSections.astro";
 import { buildPageJsonLd, serializeJsonLd } from "../lib/public-seo.mjs";
 
 const { slug } = Astro.params;
@@ -19,19 +22,17 @@ if (slug && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) {
 
 if (!page) Astro.response.status = 404;
 
-let sections: { type: string; body: string }[] = [];
+let sections: { type: string; [key: string]: unknown }[] = [];
 let faqItems: { question: string; answer: string }[] = [];
+let hero: { title?: string; subtitle?: string; eyebrow?: string; image?: string; video?: string; showLogo?: boolean; ctas?: { label: string; href: string; style?: string }[] } = {};
 let jsonLdSafe = "";
 let faqJsonLdSafe = "";
 let resourceSeo: any = null;
 if (page) {
   resourceSeo = page._seo?.resource || null;
-  try {
-    sections = JSON.parse(page.content_sections || "[]");
-  } catch (_e) {}
-  try {
-    faqItems = JSON.parse(page.faq_items || "[]");
-  } catch (_e) {}
+  try { sections = JSON.parse(page.content_sections || "[]"); } catch (_e) {}
+  try { faqItems = JSON.parse(page.faq_items || "[]"); } catch (_e) {}
+  try { hero = JSON.parse(page.hero_json || "{}"); } catch (_e) {}
   try {
     jsonLdSafe = buildPageJsonLd({
       page,
@@ -57,6 +58,13 @@ if (page) {
     faqJsonLdSafe = serializeJsonLd(faqSchema);
   }
 }
+
+// Hero title falls back to the page title so every page has a proper dark band
+// (this also keeps the fixed transparent navbar legible on every CMS page).
+const heroTitle = hero.title || page?.title || "";
+
+const heroHasContent = !!(heroTitle || hero.subtitle || hero.image || hero.video || (hero.ctas && hero.ctas.length > 0));
+const hasBody = sections.length > 0;
 ---
 
 {
@@ -64,30 +72,37 @@ if (page) {
     <Layout2026
       title={resourceSeo?.seoTitle || page.seo_title || page.title}
       description={resourceSeo?.seoDescription || page.seo_description || page.description || undefined}
-      image={resourceSeo?.ogImage || page.og_image || undefined}
+      image={resourceSeo?.ogImage || page.og_image || hero.image || undefined}
       ogTitle={resourceSeo?.ogTitle || undefined}
       ogDescription={resourceSeo?.ogDescription || undefined}
-      ogImage={resourceSeo?.ogImage || page.og_image || undefined}
+      ogImage={resourceSeo?.ogImage || hero.image || page.og_image || undefined}
       keywords={page.seo_keywords || undefined}
       robots={resourceSeo ? `${resourceSeo.indexState}, ${resourceSeo.followState}` : page.robots}
       canonicalLink={resourceSeo?.canonicalUrl || `https://blvdpark.com/${page.slug}`}
       canonicalURL={resourceSeo?.canonicalUrl || `https://blvdpark.com/${page.slug}`}
       jsonLd={jsonLdSafe || undefined}
     >
-      <section class="section-padding">
-        <div style="max-width: 72rem; margin: 0 auto; padding: 0 1.5rem;">
-          <h1 class="font-display text-display-md" style="margin-bottom: 2rem;">
-            {page.title}
-          </h1>
-          {sections.map((s) =>
-            s.type === "html" ? (
-              <div class="cms-html" set:html={s.body} />
-            ) : (
-              <p style="white-space: pre-wrap;">{s.body}</p>
-            )
-          )}
-        </div>
-      </section>
+      {heroHasContent ? (
+        <PageHero
+          title={heroTitle}
+          subtitle={hero.subtitle || ""}
+          eyebrow={hero.eyebrow || ""}
+          image={hero.image || ""}
+          video={hero.video || ""}
+          showLogo={!!hero.showLogo}
+          ctas={hero.ctas || []}
+        />
+      ) : null}
+
+      {hasBody && <DynamicSections sections={sections} />}
+
+      {!heroHasContent && !hasBody && (
+        <section class="section-padding">
+          <div class="max-w-4xl mx-auto px-6 text-center">
+            <h1 class="font-display text-display-md">{page.title}</h1>
+          </div>
+        </section>
+      )}
 
       {faqItems.length > 0 && (
         <section class="section-padding" style="background: var(--blvd-cream-dark);">

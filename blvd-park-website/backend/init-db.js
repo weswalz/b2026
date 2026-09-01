@@ -164,6 +164,7 @@ const initDatabase = (dbPath = defaultDbPath) => {
     robots TEXT NOT NULL DEFAULT 'noindex, nofollow',
     status TEXT NOT NULL DEFAULT 'draft',
     faq_items TEXT DEFAULT '[]',
+    hero_json TEXT DEFAULT '{}',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_by TEXT DEFAULT ''
@@ -234,6 +235,7 @@ const initDatabase = (dbPath = defaultDbPath) => {
   ]);
   ensureColumns(db, 'pages', [
     { name: 'faq_items', ddl: "faq_items TEXT DEFAULT '[]'" },
+    { name: 'hero_json', ddl: "hero_json TEXT DEFAULT '{}'" },
   ]);
 
   // SEO-ops platform (Wave-2 port from HEIGHTSASTRO) — 20 tables, camelCase

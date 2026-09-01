@@ -98,6 +98,7 @@ ensureColumns(db, 'users', [
 
 ensureColumns(db, 'pages', [
   { name: 'faq_items', ddl: "faq_items TEXT DEFAULT '[]'" },
+  { name: 'hero_json', ddl: "hero_json TEXT DEFAULT '{}'" },
 ]);
 
 // SEO-ops platform (Wave-2): schema is applied by initDatabase(dbPath) above
@@ -227,6 +228,58 @@ const verifyUploadedFile = (req, res, next) => {
     try { fs.unlinkSync(path.join(uploadsDir, req.file.filename)); } catch (_e) {}
     res.status(500).json({ error: 'Failed to verify uploaded file' });
   }
+};
+
+// Media upload (images + hero video) for the page-builder routes, which accept two
+// optional files in one multipart POST/PUT. Video cap sits under nginx's
+// client_max_body_size (50m in conf.d/blvdpark.conf) so oversized files fail here
+// with a clear 413 instead of a truncated proxy error.
+const uploadMedia = multer({
+  storage,
+  limits: { fileSize: 45 * 1024 * 1024, files: 2 },
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const isImage = file.mimetype.startsWith('image/') && ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'].includes(ext);
+    const isVideo = (file.mimetype === 'video/mp4' && ext === '.mp4') || (file.mimetype === 'video/webm' && ext === '.webm');
+    if (isImage || isVideo) cb(null, true);
+    else cb(new Error('Only image files (jpg, png, gif, webp, svg) or video files (mp4, webm) are allowed'), false);
+  }
+});
+
+// Expected real content type per upload field — images must sniff as image/*, the
+// hero video as video/mp4 or video/webm.
+const PAGE_UPLOAD_FIELD_TYPES = {
+  og_image_file: ['image/'],
+  hero_video_file: ['video/mp4', 'video/webm'],
+};
+
+const verifyUploadedFiles = (req, res, next) => {
+  const files = req.files || {};
+  const entries = Object.entries(files).flatMap(([, arr]) => arr);
+  if (entries.length === 0) return next();
+  const failures = [];
+  for (const file of entries) {
+    const allowedTypes = PAGE_UPLOAD_FIELD_TYPES[file.fieldname];
+    if (!allowedTypes) { failures.push({ filename: file.filename, reason: 'unexpected field' }); continue; }
+    try {
+      const filePath = path.join(uploadsDir, file.filename);
+      const buffer = fs.readFileSync(filePath);
+      const detected = detectUploadMime(buffer);
+      const ok = !!detected && allowedTypes.some((t) => (t.endsWith('/') ? detected.startsWith(t) : detected === t));
+      if (!ok) {
+        try { fs.unlinkSync(filePath); } catch (_e) {}
+        failures.push({ filename: file.originalname, declared: file.mimetype, detected: detected || 'unrecognized' });
+      }
+    } catch (err) {
+      console.error('Upload verification error:', err);
+      try { fs.unlinkSync(path.join(uploadsDir, file.filename)); } catch (_e) {}
+      failures.push({ filename: file.originalname, reason: 'read failed' });
+    }
+  }
+  if (failures.length > 0) {
+    return res.status(400).json({ error: 'File content does not match its declared type', files: failures });
+  }
+  next();
 };
 
 // Input validation helpers
@@ -447,19 +500,43 @@ app.get('/api/pages/:id', requireAuth, (req, res) => {
   }
 });
 
-app.post('/api/pages', requireAuth, upload.single('og_image_file'), verifyUploadedFile, (req, res) => {
+// Applies any uploaded files for the page-builder routes onto the validated payload:
+// og_image_file → page.og_image, hero_video_file → hero_json.video.
+const applyPageUploads = (page, files) => {
+  const ogFile = files?.og_image_file?.[0];
+  if (ogFile) page.og_image = `/uploads/${ogFile.filename}`;
+  const videoFile = files?.hero_video_file?.[0];
+  if (videoFile) {
+    let hero = {};
+    try { hero = JSON.parse(page.hero_json || '{}'); } catch (_e) { hero = {}; }
+    hero.video = `/uploads/${videoFile.filename}`;
+    page.hero_json = JSON.stringify(hero);
+  }
+};
+
+const cleanupPageUploads = (files) => {
+  const entries = Object.values(files || {}).flat();
+  for (const file of entries) {
+    if (file?.filename) { try { fs.unlinkSync(path.join(uploadsDir, file.filename)); } catch (_e) {} }
+  }
+};
+
+app.post('/api/pages', requireAuth, uploadMedia.fields([
+  { name: 'og_image_file', maxCount: 1 },
+  { name: 'hero_video_file', maxCount: 1 },
+]), verifyUploadedFiles, (req, res) => {
   const result = validatePagePayload(req.body || {});
   if (!result.ok) {
-    if (req.file) { try { fs.unlinkSync(path.join(uploadsDir, req.file.filename)); } catch (_e) {} }
+    cleanupPageUploads(req.files);
     return res.status(400).json({ error: 'Validation failed', details: result.errors });
   }
   const page = result.page;
-  if (req.file) page.og_image = `/uploads/${req.file.filename}`;
+  applyPageUploads(page, req.files);
   try {
     const info = db.prepare(`
-      INSERT INTO pages (slug, title, description, content_sections, seo_title, seo_description, seo_keywords, og_image, json_ld, robots, status, faq_items, updated_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(page.slug, page.title, page.description, page.content_sections, page.seo_title, page.seo_description, page.seo_keywords, page.og_image, page.json_ld, page.robots, page.status, page.faq_items, req.user?.email || req.user?.username || 'api-key');
+      INSERT INTO pages (slug, title, description, content_sections, seo_title, seo_description, seo_keywords, og_image, json_ld, robots, status, faq_items, hero_json, updated_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(page.slug, page.title, page.description, page.content_sections, page.seo_title, page.seo_description, page.seo_keywords, page.og_image, page.json_ld, page.robots, page.status, page.faq_items, page.hero_json, req.user?.email || req.user?.username || 'api-key');
     const created = db.prepare('SELECT * FROM pages WHERE id = ?').get(info.lastInsertRowid);
     res.status(201).json(created);
     logActivity(db, { action: 'create', resourceType: 'page', resourceId: created.id, req, details: { slug: created.slug, status: created.status } });
@@ -474,21 +551,24 @@ app.post('/api/pages', requireAuth, upload.single('og_image_file'), verifyUpload
   }
 });
 
-app.put('/api/pages/:id', requireAuth, upload.single('og_image_file'), verifyUploadedFile, (req, res) => {
+app.put('/api/pages/:id', requireAuth, uploadMedia.fields([
+  { name: 'og_image_file', maxCount: 1 },
+  { name: 'hero_video_file', maxCount: 1 },
+]), verifyUploadedFiles, (req, res) => {
   const existing = db.prepare('SELECT * FROM pages WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Page not found' });
   const result = validatePagePayload(req.body || {});
   if (!result.ok) {
-    if (req.file) { try { fs.unlinkSync(path.join(uploadsDir, req.file.filename)); } catch (_e) {} }
+    cleanupPageUploads(req.files);
     return res.status(400).json({ error: 'Validation failed', details: result.errors });
   }
   const page = result.page;
-  if (req.file) page.og_image = `/uploads/${req.file.filename}`;
+  applyPageUploads(page, req.files);
   try {
     db.prepare(`
-      UPDATE pages SET slug = ?, title = ?, description = ?, content_sections = ?, seo_title = ?, seo_description = ?, seo_keywords = ?, og_image = ?, json_ld = ?, robots = ?, status = ?, faq_items = ?, updated_at = CURRENT_TIMESTAMP, updated_by = ?
+      UPDATE pages SET slug = ?, title = ?, description = ?, content_sections = ?, seo_title = ?, seo_description = ?, seo_keywords = ?, og_image = ?, json_ld = ?, robots = ?, status = ?, faq_items = ?, hero_json = ?, updated_at = CURRENT_TIMESTAMP, updated_by = ?
       WHERE id = ?
-    `).run(page.slug, page.title, page.description, page.content_sections, page.seo_title, page.seo_description, page.seo_keywords, page.og_image, page.json_ld, page.robots, page.status, page.faq_items, req.user?.email || req.user?.username || 'api-key', req.params.id);
+    `).run(page.slug, page.title, page.description, page.content_sections, page.seo_title, page.seo_description, page.seo_keywords, page.og_image, page.json_ld, page.robots, page.status, page.faq_items, page.hero_json, req.user?.email || req.user?.username || 'api-key', req.params.id);
     const updatedPage = db.prepare('SELECT * FROM pages WHERE id = ?').get(req.params.id);
     res.json(updatedPage);
     logActivity(db, { action: 'update', resourceType: 'page', resourceId: req.params.id, req, details: { slug: updatedPage.slug, status: updatedPage.status } });

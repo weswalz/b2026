@@ -1,0 +1,17 @@
+---
+export const prerender = false;
+// Admin Page Builder — edit an existing CMS page by id (SSR: per-id route)
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import AdminPageEditor from '../../../components/admin/pageEditor/AdminPageEditor';
+
+const { id } = Astro.params;
+const pageId = Number(id);
+---
+
+<AdminLayout title="Edit Page">
+  {Number.isInteger(pageId) && pageId > 0 ? (
+    <AdminPageEditor client:only="react" mode="edit" pageId={pageId} currentPath={Astro.url.pathname} />
+  ) : (
+    <p style="padding:2rem;color:#f87171">Invalid page id.</p>
+  )}
+</AdminLayout>

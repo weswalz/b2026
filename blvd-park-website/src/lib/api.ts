@@ -157,6 +157,46 @@ export interface PageSection {
   body: string;
 }
 
+export interface ContentSectionModule {
+  type: 'content-section';
+  title: string;
+  subtitle: string;
+  contentHtml: string;
+  imageSrc: string;
+  imageAlt: string;
+  imagePosition: 'left' | 'right';
+  headingLevel: 'h2' | 'h3';
+  id: string;
+}
+
+export interface ComponentSectionModule {
+  type: 'component';
+  name: string;
+  props: Record<string, string | number | boolean>;
+}
+
+export type BuilderSection = PageSection | ContentSectionModule | ComponentSectionModule;
+
+export interface HeroCta {
+  label: string;
+  href: string;
+  style: 'primary' | 'secondary';
+}
+
+export interface PageHero {
+  title: string;
+  subtitle: string;
+  eyebrow: string;
+  image: string;
+  video: string;
+  showLogo: boolean;
+  ctas: HeroCta[];
+}
+
+export const emptyPageHero = (): PageHero => ({
+  title: '', subtitle: '', eyebrow: '', image: '', video: '', showLogo: false, ctas: [],
+});
+
 export interface MediaItem {
   url: string;
   filename: string;
@@ -427,6 +467,7 @@ export interface Page {
   robots: string;
   status: 'draft' | 'published';
   faq_items: string; // JSON string of FaqItem[]
+  hero_json: string; // JSON string of PageHero
   created_at: string;
   updated_at: string;
   updated_by: string;
@@ -672,6 +713,12 @@ export const api = {
   async getPages(): Promise<Page[]> {
     const res = await fetch(`${API_URL}/api/pages`, { headers: getAuthHeaders() });
     if (!res.ok) throw apiError(res, 'Failed to fetch pages');
+    return res.json();
+  },
+
+  async getPage(id: number): Promise<Page> {
+    const res = await fetch(`${API_URL}/api/pages/${id}`, { headers: getAuthHeaders() });
+    if (!res.ok) throw apiError(res, 'Failed to fetch page');
     return res.json();
   },
 

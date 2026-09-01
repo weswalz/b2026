@@ -1,0 +1,130 @@
+---
+// src/components/cms/PageHero.astro
+// Hero module for CMS-built pages. Mirrors the homepage Hero2026 aesthetic —
+// full-bleed video/image background, dark gradient scrim, gold eyebrow,
+// Clash Display headline, pill CTAs — so builder pages match the main site.
+// Falls back to a solid dark-green band when no image/video is set (this also
+// guarantees the fixed transparent navbar always has a dark backdrop).
+
+export interface Props {
+  title: string;
+  subtitle?: string;
+  eyebrow?: string;
+  image?: string;
+  video?: string;
+  showLogo?: boolean;
+  ctas?: { label: string; href: string; style?: string }[];
+}
+
+const {
+  title,
+  subtitle = '',
+  eyebrow = '',
+  image = '',
+  video = '',
+  showLogo = false,
+  ctas = [],
+} = Astro.props;
+
+const hasMedia = !!(image || video);
+---
+
+<section class="page-hero relative flex items-center justify-center overflow-hidden">
+  {hasMedia && (
+    <div class="absolute inset-0 z-0">
+      {video ? (
+        <video
+          class="absolute inset-0 w-full h-full object-cover"
+          autoplay
+          muted
+          loop
+          playsinline
+          webkit-playsinline
+          poster={image || undefined}
+        >
+          <source src={video} type={video.endsWith('.webm') ? 'video/webm' : 'video/mp4'} />
+        </video>
+      ) : (
+        <div
+          class="absolute inset-0 bg-cover bg-center"
+          style={`background-image: url('${image}');`}
+        ></div>
+      )}
+      <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80"></div>
+    </div>
+  )}
+
+  <div class="relative z-10 container mx-auto px-5 sm:px-6 py-32 sm:py-40 text-center">
+    {showLogo && (
+      <img
+        src="/images/logos/blvd-park-logo.webp"
+        alt="BLVD Park"
+        class="logo-overlay mx-auto mb-10 h-16 sm:h-20 w-auto"
+      />
+    )}
+
+    {eyebrow && (
+      <div class="mb-6">
+        <span class="inline-flex items-center gap-3 text-[#C9A962] font-mono text-xs sm:text-sm tracking-[0.2em] uppercase">
+          <span class="w-6 sm:w-10 h-px bg-[#C9A962]/60"></span>
+          <span>{eyebrow}</span>
+          <span class="w-6 sm:w-10 h-px bg-[#C9A962]/60"></span>
+        </span>
+      </div>
+    )}
+
+    <h1 class="font-display font-bold text-white text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-[0.95] tracking-tight">
+      {title}
+    </h1>
+
+    {subtitle && (
+      <p class="mt-6 mx-auto max-w-2xl font-mono text-sm sm:text-base text-white/60 tracking-[0.08em] uppercase">
+        {subtitle}
+      </p>
+    )}
+
+    {ctas.length > 0 && (
+      <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+        {ctas.map((cta) => (
+          <a
+            href={cta.href}
+            class={
+              cta.style === 'secondary'
+                ? 'group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/5 backdrop-blur-md text-white font-display font-semibold text-base rounded-full border border-white/10 transition-all duration-500 hover:bg-white/10 hover:border-white/20'
+                : 'group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#1A5F36] text-white font-display font-semibold text-base rounded-full transition-all duration-500 hover:bg-[#22C55E] hover:shadow-[0_0_40px_rgba(34,197,94,0.3)]'
+            }
+          >
+            <span>{cta.label}</span>
+            <svg class="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+            </svg>
+          </a>
+        ))}
+      </div>
+    )}
+  </div>
+</section>
+
+<style>
+  .page-hero {
+    min-height: 62vh;
+    background: var(--blvd-dark-green, #0f3d22);
+  }
+
+  .page-hero::after {
+    /* Subtle green accent glow along the bottom edge, matching Hero2026 */
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 33%;
+    background: linear-gradient(to top, rgba(26, 95, 54, 0.2), transparent);
+    pointer-events: none;
+  }
+
+  .logo-overlay {
+    filter: brightness(0) invert(1);
+    opacity: 0.95;
+  }
+</style>
