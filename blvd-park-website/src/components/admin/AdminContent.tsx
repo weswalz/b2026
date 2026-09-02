@@ -6,8 +6,7 @@ import MediaPicker from './MediaPicker';
 
 type ContentMap = Record<string, string>;
 
-const TINYMCE_API_KEY = import.meta.env.PUBLIC_TINYMCE_API_KEY || 'no-api-key';
-const TINYMCE_SCRIPT = `https://cdn.tiny.cloud/1/${TINYMCE_API_KEY}/tinymce/6/tinymce.min.js`;
+const TINYMCE_SCRIPT = '/tinymce/tinymce.min.js';
 
 const fieldInputClass =
   'w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:border-[#C9A962] focus:outline-none';

@@ -243,11 +243,11 @@ export default function AdminSidebar({ currentPath }: { currentPath: string }) {
         {currentUser && (
           <div className="flex items-center gap-3 px-4 py-3 mb-2 bg-white/5 rounded-lg">
             <div className="w-8 h-8 rounded-full bg-[#1A5F36] flex items-center justify-center">
-              <span className="text-white font-medium text-sm">{currentUser.username.charAt(0).toUpperCase()}</span>
+              <span className="text-white font-medium text-sm">{(currentUser.username || currentUser.email || 'A').charAt(0).toUpperCase()}</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white text-sm font-medium truncate">{currentUser.username}</p>
-              <p className="text-white/40 text-xs truncate">{currentUser.role.replace('_', ' ')}</p>
+              <p className="text-white text-sm font-medium truncate">{currentUser.username || currentUser.email || 'Admin'}</p>
+              <p className="text-white/40 text-xs truncate">{(currentUser.role || 'admin').replace('_', ' ')}</p>
             </div>
           </div>
         )}
