@@ -1,10 +1,13 @@
 ---
 // src/components/cms/PageHero.astro
-// Hero module for CMS-built pages. Mirrors the homepage Hero2026 aesthetic —
-// full-bleed video/image background, dark gradient scrim, gold eyebrow,
-// Clash Display headline, pill CTAs — so builder pages match the main site.
-// Falls back to a solid dark-green band when no image/video is set (this also
-// guarantees the fixed transparent navbar always has a dark backdrop).
+// Hero module for CMS-built pages. 100% parity with Hero2026 homepage aesthetic:
+// - Cinematic background video / image with poster and fallback
+// - Dark gradient scrim, green accent glow, and film grain texture
+// - Gold eyebrow with flanking horizontal lines
+// - Clash Display headline with green gradient highlight
+// - Monospace tracking uppercase subtitle
+// - Refined pill CTAs (green primary + glass secondary)
+// - Glassmorphism bottom info bar with live hours status
 
 export interface Props {
   title: string;
@@ -26,101 +29,159 @@ const {
   ctas = [],
 } = Astro.props;
 
-const hasMedia = !!(image || video);
+const videoSrc = video || (!image ? '/images/blvdhero.mp4' : '');
+const posterSrc = image || '/images/venue/venue-hero-tall.webp';
+const fallbackSrc = image || '/images/venue/venue-hero-tall.webp';
+
+// Headline formatting: if multiple words, format first line white + last word vibrant green gradient
+const words = (title || '').trim().split(/\s+/);
+const hasMultiWords = words.length > 1;
+const topWords = hasMultiWords ? words.slice(0, -1).join(' ') : '';
+const highlightWord = hasMultiWords ? words[words.length - 1] : title;
 ---
 
-<section class="page-hero relative flex items-center justify-center overflow-hidden">
-  {hasMedia && (
-    <div class="absolute inset-0 z-0">
-      {video ? (
-        <video
-          class="absolute inset-0 w-full h-full object-cover"
-          autoplay
-          muted
-          loop
-          playsinline
-          webkit-playsinline
-          poster={image || undefined}
-        >
-          <source src={video} type={video.endsWith('.webm') ? 'video/webm' : 'video/mp4'} />
-        </video>
-      ) : (
-        <div
-          class="absolute inset-0 bg-cover bg-center"
-          style={`background-image: url('${image}');`}
-        ></div>
-      )}
-      <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80"></div>
-    </div>
-  )}
+<section class="page-hero relative min-h-screen flex items-center justify-center overflow-hidden">
+  <!-- Video/Image Background with fixed mobile support -->
+  <div class="absolute inset-0 z-0">
+    {videoSrc ? (
+      <video
+        id="page-hero-video"
+        class="absolute inset-0 w-full h-full object-cover"
+        autoplay
+        muted
+        loop
+        playsinline
+        webkit-playsinline
+        poster={posterSrc}
+      >
+        <source src={videoSrc} type={videoSrc.endsWith('.webm') ? 'video/webm' : 'video/mp4'} />
+      </video>
+    ) : null}
 
-  <div class="relative z-10 container mx-auto px-5 sm:px-6 py-32 sm:py-40 text-center">
+    <!-- Fallback static image -->
+    <div
+      id="page-hero-fallback"
+      class={`absolute inset-0 bg-cover bg-center ${videoSrc ? 'hidden' : ''}`}
+      style={`background-image: url('${fallbackSrc}');`}
+    ></div>
+
+    <!-- Premium gradient overlay -->
+    <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-black/80"></div>
+
+    <!-- Subtle green accent glow -->
+    <div class="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-[#1A5F36]/20 to-transparent"></div>
+
+    <!-- Film grain texture -->
+    <div
+      class="absolute inset-0 opacity-[0.04] mix-blend-overlay pointer-events-none"
+      style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27noise%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.8%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23noise)%27/%3E%3C/svg%3E');"
+    ></div>
+  </div>
+
+  <!-- Hero Content -->
+  <div class="relative z-10 container mx-auto px-5 sm:px-6 pt-24 pb-32 sm:pb-36 text-center">
     {showLogo && (
       <img
         src="/images/logos/blvd-park-logo.webp"
         alt="BLVD Park"
-        class="logo-overlay mx-auto mb-10 h-16 sm:h-20 w-auto"
+        class="logo-overlay mx-auto mb-8 h-14 sm:h-18 w-auto"
       />
     )}
 
-    {eyebrow && (
-      <div class="mb-6">
-        <span class="inline-flex items-center gap-3 text-[#C9A962] font-mono text-xs sm:text-sm tracking-[0.2em] uppercase">
-          <span class="w-6 sm:w-10 h-px bg-[#C9A962]/60"></span>
-          <span>{eyebrow}</span>
-          <span class="w-6 sm:w-10 h-px bg-[#C9A962]/60"></span>
-        </span>
-      </div>
-    )}
+    <!-- Eyebrow with gold rule accents -->
+    <div class="mb-6">
+      <span class="inline-flex items-center gap-3 text-[#C9A962] font-mono text-xs sm:text-sm tracking-[0.2em] uppercase">
+        <span class="w-6 sm:w-10 h-px bg-[#C9A962]/60"></span>
+        <span>{eyebrow || 'BLVD PARK · HOUSTON, TX'}</span>
+        <span class="w-6 sm:w-10 h-px bg-[#C9A962]/60"></span>
+      </span>
+    </div>
 
-    <h1 class="font-display font-bold text-white text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-[0.95] tracking-tight">
-      {title}
+    <!-- Main Headline with 2026 Typography -->
+    <h1 class="font-display font-bold mb-6">
+      {hasMultiWords ? (
+        <>
+          <span class="block text-3xl sm:text-4xl md:text-5xl text-white/90 tracking-wide mb-2">
+            {topWords}
+          </span>
+          <span class="block text-5xl sm:text-6xl md:text-7xl lg:text-8xl bg-gradient-to-r from-[#22C55E] via-[#4ADE80] to-[#22C55E] bg-clip-text text-transparent leading-[0.9] tracking-tight">
+            {highlightWord}
+          </span>
+        </>
+      ) : (
+        <span class="block text-5xl sm:text-6xl md:text-7xl lg:text-8xl bg-gradient-to-r from-[#22C55E] via-[#4ADE80] to-[#22C55E] bg-clip-text text-transparent leading-[0.9] tracking-tight">
+          {title}
+        </span>
+      )}
     </h1>
 
+    <!-- Subtitle -->
     {subtitle && (
-      <p class="mt-6 mx-auto max-w-2xl font-mono text-sm sm:text-base text-white/60 tracking-[0.08em] uppercase">
+      <p class="font-mono text-sm sm:text-base md:text-lg text-white/60 max-w-2xl mx-auto mb-10 tracking-[0.15em] uppercase">
         {subtitle}
       </p>
     )}
 
+    <!-- CTAs -->
     {ctas.length > 0 && (
-      <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
         {ctas.map((cta) => (
           <a
             href={cta.href}
             class={
               cta.style === 'secondary'
                 ? 'group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/5 backdrop-blur-md text-white font-display font-semibold text-base rounded-full border border-white/10 transition-all duration-500 hover:bg-white/10 hover:border-white/20'
-                : 'group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#1A5F36] text-white font-display font-semibold text-base rounded-full transition-all duration-500 hover:bg-[#22C55E] hover:shadow-[0_0_40px_rgba(34,197,94,0.3)]'
+                : 'group relative w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#1A5F36] text-white font-display font-semibold text-base rounded-full overflow-hidden transition-all duration-500 hover:bg-[#22C55E] hover:shadow-[0_0_40px_rgba(34,197,94,0.3)]'
             }
           >
-            <span>{cta.label}</span>
-            <svg class="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-            </svg>
+            <span class="relative z-10">{cta.label}</span>
+            {cta.style === 'secondary' ? (
+              <svg class="w-4 h-4 opacity-50 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            ) : (
+              <svg class="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            )}
           </a>
         ))}
       </div>
     )}
   </div>
+
+  <!-- Bottom Info Bar - Glassmorphism -->
+  <div class="absolute bottom-0 left-0 right-0 z-10">
+    <div class="bg-black/40 backdrop-blur-xl border-t border-white/5">
+      <div class="container mx-auto px-4 sm:px-6 py-4 sm:py-5">
+        <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 sm:gap-x-10 text-xs sm:text-sm">
+          <!-- Location -->
+          <div class="flex items-center gap-2 text-white/60">
+            <svg class="w-4 h-4 text-[#22C55E]" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+            </svg>
+            <span class="font-mono">Heights, HTX</span>
+          </div>
+
+          <!-- Status Indicator -->
+          <div class="flex items-center gap-2 text-white/60">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-[#22C55E]"></span>
+            </span>
+            <span class="font-mono text-[#22C55E]">Open Daily</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>
 
 <style>
   .page-hero {
-    min-height: 62vh;
-    background: var(--blvd-dark-green, #0f3d22);
-  }
-
-  .page-hero::after {
-    /* Subtle green accent glow along the bottom edge, matching Hero2026 */
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 33%;
-    background: linear-gradient(to top, rgba(26, 95, 54, 0.2), transparent);
-    pointer-events: none;
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: #0f3d22;
   }
 
   .logo-overlay {
@@ -128,3 +189,19 @@ const hasMedia = !!(image || video);
     opacity: 0.95;
   }
 </style>
+
+<script is:inline>
+  document.addEventListener('DOMContentLoaded', () => {
+    const video = document.getElementById('page-hero-video');
+    const fallback = document.getElementById('page-hero-fallback');
+    if (video && fallback) {
+      video.addEventListener('error', () => {
+        video.classList.add('hidden');
+        fallback.classList.remove('hidden');
+      });
+      video.play().catch(() => {
+        fallback.classList.remove('hidden');
+      });
+    }
+  });
+</script>
